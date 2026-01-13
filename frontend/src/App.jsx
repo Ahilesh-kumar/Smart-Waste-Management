@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
-import { Power, Activity, AlertTriangle, Webcam, Settings, Trash2, Zap, Sun, Moon, TrendingUp, BarChart2, PieChart } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ScatterChart, Scatter, ZAxis } from 'recharts';
+import { Power, Activity, AlertTriangle, Webcam, Settings, Trash2, Zap, Sun, Moon, TrendingUp, BarChart2, PieChart, Recycle, Clock, ArrowUpRight, Download, BellRing, BellOff, Database, Sliders } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ScatterChart, Scatter, ZAxis } from 'recharts';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -55,6 +55,7 @@ function App() {
   });
 
   const [alert, setAlert] = useState(null);
+  const [isConnected, setIsConnected] = useState(socket.connected);
   const [camUrl, setCamUrl] = useState(''); // State for IP Camera URL
   const [rotation, setRotation] = useState(0); // State for video rotation
   const [isTorchOn, setIsTorchOn] = useState(false); // State for Torch
@@ -65,6 +66,25 @@ function App() {
   const [theme, setTheme] = useState('dark');
   const [graphType, setGraphType] = useState('line');
   const [selectedBin, setSelectedBin] = useState(null);
+  const [eventLog, setEventLog] = useState([]); // NEW: Last 50 AI detections
+  const [processingCounts, setProcessingCounts] = useState({
+    total: 0,
+    bio: 0,
+    hazard: 0,
+    wet: 0,
+    dry: 0
+  }); // NEW: Real-time processing counters
+
+  // Time-series data for charts (last 20 data points)
+  const [timeSeriesData, setTimeSeriesData] = useState([]);
+  const [confidenceHistory, setConfidenceHistory] = useState([]);
+
+  // NEW: Session Timer (only when ON), Fullscreen, Notifications
+  const [activeSeconds, setActiveSeconds] = useState(0);
+  const [sessionDuration, setSessionDuration] = useState('00:00:00');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
+  const [expandedGraph, setExpandedGraph] = useState(null); // For graph pop-out modal
 
   const toggleTheme = () => {
     playClick();
@@ -89,6 +109,10 @@ function App() {
   useEffect(() => {
     socket.on('connect', () => {
       console.log('Connected to backend');
+      setIsConnected(true);
+    });
+    socket.on('disconnect', () => {
+      setIsConnected(false);
     });
 
     socket.on('system_state', (newState) => {
@@ -134,44 +158,229 @@ function App() {
 
     return () => {
       socket.off('connect');
+      socket.off('disconnect');
       socket.off('system_state');
       socket.off('alert');
       socket.off('ai_inference');
     };
   }, []);
 
+  // Session Timer - only runs when system is ON
+  useEffect(() => {
+    if (!data.isOn) return; // Don't tick if system is off
+
+    const interval = setInterval(() => {
+      setActiveSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [data.isOn]);
+
+  // Format active seconds into HH:MM:SS
+  useEffect(() => {
+    const hours = Math.floor(activeSeconds / 3600);
+    const minutes = Math.floor((activeSeconds % 3600) / 60);
+    const seconds = activeSeconds % 60;
+    setSessionDuration(
+      `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    );
+  }, [activeSeconds]);
+
+  // Bin Full Alert - Auto turn off system if any bin reaches 100%
+  useEffect(() => {
+    const fullBin = data.bins?.find(bin => bin.volume >= 100);
+    if (fullBin && data.isOn) {
+      socket.emit('toggle_power', false);
+      setAlert({ type: 'critical', message: `${fullBin.name} is FULL! System auto-paused.` });
+      if (notificationEnabled && Notification.permission === 'granted') {
+        new Notification('🚨 Bin Full Alert!', { body: `${fullBin.name} is full. System paused.` });
+      }
+    }
+  }, [data.bins, data.isOn, notificationEnabled]);
+
+  // Export Event Log to CSV
+  const exportToCSV = () => {
+    if (eventLog.length === 0) return;
+    const headers = ['Time', 'Class', 'Category', 'Confidence'];
+    const csv = [
+      headers.join(','),
+      ...eventLog.map(e => [e.time, e.rawClass, e.category, e.confidence].join(','))
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `waste_log_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Request Notification Permission
+  const enableNotifications = async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        setNotificationEnabled(true);
+        new Notification('🔔 Notifications Enabled!', { body: 'You will receive alerts for bin status.' });
+      }
+    }
+  };
+
+  // ESC key to close expanded graph
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setExpandedGraph(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Toggle Fullscreen Camera
+  const toggleFullscreen = () => {
+    const camElement = document.getElementById('live-feed-img');
+    if (camElement) {
+      if (!document.fullscreenElement) {
+        camElement.requestFullscreen?.();
+        setIsFullscreen(true);
+      } else {
+        document.exitFullscreen?.();
+        setIsFullscreen(false);
+      }
+    }
+  };
+
   // --- AI Logic (Driven by Python Backend) ---
   const [model] = useState(null); // Keep to prevent ReferenceError
 
   // Listen for Python AI Events (Including Real Box Data)
   useEffect(() => {
-    const handleInference = (data) => {
+    let hasItemInFrame = false; // Was there an item in the last frame?
+    let itemCounted = false; // Has this item been counted already?
+
+    const handleInference = (inferenceData) => {
+      // If system is OFF, pause AI detection
+      if (!data.isOn) {
+        setAiData(prev => ({
+          ...prev,
+          class: 'System Off',
+          confidence: 0,
+          box: null
+        }));
+        hasItemInFrame = false;
+        itemCounted = false;
+        return; // Don't process anything
+      }
+
       setAiData(prev => ({
         ...prev,
-        class: data.class,
-        confidence: data.confidence,
-        box: data.box // New: Real coordinates from Python
+        class: inferenceData.class,
+        confidence: inferenceData.confidence,
+        box: inferenceData.box
       }));
+
+      // DEDUPLICATION: Only count when item ENTERS frame (was absent, now present)
+      // Once counted, don't count again until item LEAVES then re-enters
+      const hasBoxNow = inferenceData.box !== null;
+      const highConfidence = inferenceData.confidence > 85 && inferenceData.class !== 'Waiting...';
+
+      // Determine category from class name
+      const className = inferenceData.class.toLowerCase();
+      let category = 'unknown';
+      if (className.includes('bio')) category = 'Bio-medical';
+      else if (className.includes('haz')) category = 'Hazardous';
+      else if (className.includes('wet') || className.includes('org')) category = 'Wet Waste';
+      else if (className.includes('dry') || className.includes('rec')) category = 'Dry Waste';
+
+      // Item just LEFT the frame - reset counting
+      if (!hasBoxNow && hasItemInFrame) {
+        hasItemInFrame = false;
+        itemCounted = false;
+        return;
+      }
+
+      // Item is NOW in frame
+      if (hasBoxNow) {
+        hasItemInFrame = true;
+
+        // Only count if NOT already counted and high confidence
+        if (!itemCounted && highConfidence) {
+          itemCounted = true; // Mark as counted - won't count again until item leaves
+
+          // DEDUPLICATION: Check if we've seen this class recently (within 2 seconds)
+          const now = Date.now();
+          const lastSeenTime = window.lastSeenItemTime || 0;
+          const lastSeenClass = window.lastSeenItemClass || '';
+
+          // Only count if it's a new item (different class OR > 2 seconds since last count)
+          if (now - lastSeenTime > 2000 || inferenceData.class !== lastSeenClass) {
+
+            // Update global trackers
+            window.lastSeenItemTime = now;
+            window.lastSeenItemClass = inferenceData.class;
+
+            const logEntry = {
+              id: now,
+              time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              rawClass: inferenceData.class,
+              category: category,
+              confidence: inferenceData.confidence.toFixed(1)
+            };
+
+            setEventLog(prev => [logEntry, ...prev].slice(0, 50)); // Keep last 50
+
+            // Increment processing counters (real-time)
+            setProcessingCounts(prev => {
+              const newCounts = { ...prev, total: prev.total + 1 };
+              if (category === 'Bio-medical') newCounts.bio = prev.bio + 1;
+              else if (category === 'Hazardous') newCounts.hazard = prev.hazard + 1;
+              else if (category === 'Wet Waste') newCounts.wet = prev.wet + 1;
+              else if (category === 'Dry Waste') newCounts.dry = prev.dry + 1;
+              return newCounts;
+            });
+          }
+
+          // Update Time-Series Data for Line/Area Charts
+          const timeLabel = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          setTimeSeriesData(prev => {
+            const newData = [...prev, {
+              time: timeLabel,
+              bio: category === 'Bio-medical' ? 1 : 0,
+              hazard: category === 'Hazardous' ? 1 : 0,
+              wet: category === 'Wet Waste' ? 1 : 0,
+              dry: category === 'Dry Waste' ? 1 : 0,
+              total: 1
+            }];
+            return newData.slice(-20); // Keep last 20
+          });
+
+          // Update Confidence History for Scatter Plot
+          setConfidenceHistory(prev => {
+            const newEntry = {
+              time: timeLabel,
+              confidence: parseFloat(inferenceData.confidence.toFixed(1)),
+              category: category
+            };
+            return [...prev, newEntry].slice(-50); // Keep last 50
+          });
+        }
+      }
     };
 
     socket.on('ai_inference', handleInference);
     return () => socket.off('ai_inference', handleInference);
-  }, []);
+  }, [data.isOn]); // Re-register handler when system on/off changes
 
   // Set Box Position (Prioritize Real Python Data > Hand-Tracking > Simulation)
   useEffect(() => {
     if (aiData.box) {
-      // Use Real Coordinates from Python
+      // Use Real Percentages from Python directly
       setBoxPos({
-        x: aiData.box.x + (aiData.box.w / 2),
-        y: aiData.box.y + (aiData.box.h / 2),
+        x: aiData.box.x,
+        y: aiData.box.y,
         w: aiData.box.w,
         h: aiData.box.h
       });
     } else {
-      // If no box found, STAY STILL (No random movement)
-      // We essentially just reset to center or do nothing.
-      setBoxPos({ x: 50, y: 50 });
+      setBoxPos(null);
     }
   }, [aiData.confidence, aiData.box]);
 
@@ -195,11 +404,60 @@ function App() {
     socket.emit('set_servo', { id, angle });
   };
 
+  // Helper variables for JSX
+  const speed = data.conveyorSpeed;
+  const direction = data.conveyorDirection;
+  const servos = [0, 1, 2, 3].map(id => ({ id, angle: data.manualServo[id] }));
+
   return (
     <div className={clsx(
       "min-h-screen font-sans p-6 transition-all duration-700",
       theme === 'dark' ? "animate-mesh-dark text-slate-100" : "animate-mesh-light text-slate-800"
     )}>
+      {/* Expanded Graph Modal */}
+      <AnimatePresence>
+        {expandedGraph && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95"
+            onClick={() => setExpandedGraph(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className={clsx(
+                "w-[90vw] max-w-5xl p-8 rounded-3xl shadow-2xl border",
+                theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
+              )}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className={clsx("text-2xl font-bold", theme === 'dark' ? "text-white" : "text-slate-800")}>
+                  {expandedGraph.title}
+                </h3>
+                <button
+                  onClick={() => setExpandedGraph(null)}
+                  className={clsx("p-2 rounded-full hover:bg-slate-500/20 transition")}
+                >
+                  <AlertTriangle size={24} className="rotate-45 text-slate-400" />
+                </button>
+              </div>
+              <p className={clsx("text-sm mb-6", theme === 'dark' ? "text-slate-400" : "text-slate-500")}>
+                Use mouse wheel or slider to scroll.
+              </p>
+              <div className="h-[60vh] w-full overflow-x-auto pb-4">
+                <div style={{ minWidth: '1000px', height: '100%' }}>
+                  {expandedGraph.chart}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <header className={clsx(
         "flex justify-between items-center mb-8 pb-4 border-b transition-all duration-300",
@@ -207,104 +465,65 @@ function App() {
       )}>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl shadow-lg shadow-green-500/20">
-            <Trash2 size={28} className="text-white" />
+            <Recycle size={24} className="text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Smart Waste Management</h1>
-            <p className={clsx("text-xs font-medium uppercase tracking-widest", theme === 'dark' ? "text-slate-400" : "text-slate-500")}>
-              Dashboard Control Center
-            </p>
+            <h1 className="text-2xl font-black tracking-tight">Smart Waste Management</h1>
+            <p className="text-xs font-medium opacity-60">AI-Powered Sorting System</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          {/* Debug Info (ALWAYS VISIBLE for troubleshooting) */}
-          <div className="text-right pr-4 border-r border-white/10 mr-4 flex flex-col items-end">
-            <p className="text-[10px] font-mono opacity-50 uppercase tracking-widest mb-1">AI DEBUG</p>
-
-            {/* Model Status */}
-            <div className="flex items-center gap-1 mb-1">
-              <div className={clsx("w-2 h-2 rounded-full", model ? "bg-green-500" : "bg-red-500 animate-pulse")} />
-              <span className="text-[10px] font-bold">{model ? "MODEL READY" : "LOADING..."}</span>
-            </div>
-
-            {/* Predictions */}
-            {model && aiData.allPredictions ? (
-              aiData.allPredictions.map((p, i) => (
-                <div key={i} className={clsx("text-xs font-mono flex gap-2 justify-end", p.className === aiData.class ? "text-green-400 font-bold" : "opacity-40")}>
-                  <span>{p.className}:</span>
-                  <span>{(p.probability * 100).toFixed(0)}%</span>
-                </div>
-              )).slice(0, 3)
-            ) : (
-              <span className="text-[10px] opacity-40">Waiting for data...</span>
-            )}
-          </div>
-
-          {/* Status Indicator */}
+        <div className="flex items-center gap-4">
           <div className={clsx(
-            "flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md shadow-sm transition-all border",
-            data.isOn ? (theme === 'dark' ? "bg-green-500/10 border-green-500/30" : "bg-green-100 border-green-200") : (theme === 'dark' ? "bg-black/20 border-white/10" : "bg-white/30 border-white/40")
+            "flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md shadow-sm border",
+            data.isOn ? (theme === 'dark' ? "bg-green-500/10 border-green-500/30" : "bg-green-100 border-green-200") : (theme === 'dark' ? "bg-red-500/10 border-red-500/30" : "bg-red-100 border-red-200")
           )}>
-            <div className={clsx("w-3 h-3 rounded-full animate-pulse", data.isOn ? "bg-green-500" : "bg-red-500")} />
-            <span className={clsx("text-sm font-bold", theme === 'dark' ? "text-slate-300" : "text-slate-600")}>
-              {data.isOn ? "SYSTEM ACTIVE" : "SYSTEM OFFLINE"}
+            <div className={clsx("w-2 h-2 rounded-full animate-pulse", data.isOn ? "bg-green-500" : "bg-red-500")} />
+            <span className={clsx("text-xs font-bold uppercase", theme === 'dark' ? "text-slate-300" : "text-slate-600")}>
+              {data.isOn ? "System Online" : "System Offline"}
             </span>
           </div>
 
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className={clsx(
-              "p-3 rounded-full transition-all duration-300 shadow-lg border",
-              theme === 'dark' ? "bg-white/10 border-white/10 hover:bg-white/20" : "bg-white/40 border-white/40 hover:bg-white/60"
-            )}
-          >
+          <button onClick={toggleTheme} className="p-3 rounded-full hover:bg-slate-500/10 transition">
             {theme === 'dark' ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-slate-600" />}
-          </button>
-
-          <button
-            onClick={togglePower}
-            className={clsx(
-              "p-3 rounded-full transition-all duration-300 shadow-lg",
-              data.isOn
-                ? "bg-red-500 hover:bg-red-600 shadow-red-500/30"
-                : "bg-green-500 hover:bg-green-600 shadow-green-500/30"
-            )}
-          >
-            <Power size={24} className="text-white" />
           </button>
         </div>
       </header>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* NEW LAYOUT GRID */}
+      <div className="grid grid-cols-12 gap-6">
 
-        {/* Left Column: Camera Only */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Camera Feed */}
+        {/* LEFT COLUMN (Camera & Controls) - 66% width */}
+        <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
+
+          {/* Main Camera Feed */}
           <div className={clsx(
-            "rounded-3xl p-1 relative overflow-hidden h-[500px] transition-all duration-500 group",
-            theme === 'dark' ? "glass-panel-dark" : "glass-panel-light"
+            "rounded-3xl p-1 relative overflow-hidden h-[500px] xl:h-[600px] shadow-2xl transition-all duration-500 group",
+            theme === 'dark' ? "bg-slate-900 border border-slate-700" : "bg-white border border-slate-200"
           )}>
             <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2 border border-white/10">
               <Webcam size={16} className="text-red-500 animate-pulse" />
-              <span className="text-xs font-bold text-white tracking-wider">LIVE CAM 1</span>
+              <span className="text-xs font-bold text-white tracking-wider">LIVE FEED</span>
             </div>
 
-            <div className="w-full h-full rounded-2xl overflow-hidden relative bg-black/5 flex items-center justify-center">
+            <div className="w-full h-full rounded-2xl overflow-hidden relative bg-black flex items-center justify-center">
               {camUrl ? (
                 <>
                   <img
                     id="live-feed-img"
                     crossOrigin="anonymous"
-                    src={`${camUrl}/video`}
-                    alt="Live Feed"
-                    className="w-full h-full object-contain bg-black transition-transform duration-300"
+                    src={camUrl.startsWith('http') ? `${camUrl}/video` : `http://${camUrl}/video`}
+                    alt="Live Feed - Check Console for Errors"
+                    className="w-full h-full object-contain transition-transform duration-300"
                     style={{ transform: `rotate(${rotation}deg)` }}
-                    onError={() => setCamUrl('')}
+                    onError={(e) => {
+                      console.error("Camera Feed Error:", e);
+                      // Don't clear URL immediately so user can see it failed
+                      // setCamUrl(''); 
+                    }}
                   />
-                  <div className="absolute top-2 right-2 flex gap-2">
+                  {/* Camera Controls Overlay */}
+                  <div className="absolute top-4 right-4 flex gap-2">
                     <button
                       onClick={() => {
                         playClick();
@@ -314,417 +533,356 @@ function App() {
                           .catch(err => console.error("Torch error", err));
                       }}
                       className={clsx("p-2 rounded-full text-white transition-opacity backdrop-blur-md border border-white/20", isTorchOn ? "bg-yellow-500/90 hover:bg-yellow-600" : "bg-black/40 hover:bg-yellow-500 opacity-0 group-hover:opacity-100")}
-                      title="Toggle Torch"
                     >
-                      <Zap size={16} className={isTorchOn ? "fill-white" : ""} />
+                      <Zap size={18} className={isTorchOn ? "fill-white" : ""} />
                     </button>
-                    <button
-                      onClick={() => { playClick(); setRotation(r => (r + 90) % 360); }}
-                      className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-blue-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Rotate Video"
-                    >
-                      <Settings size={16} className="rotate-45" />
+                    <button onClick={() => { playClick(); setRotation(r => (r + 90) % 360); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-blue-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Settings size={18} className="rotate-45" />
                     </button>
-                    <button
-                      onClick={() => { playClick(); setCamUrl(''); }}
-                      className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Disconnect Camera"
-                    >
-                      <Trash2 size={16} />
+                    <button onClick={() => { playClick(); setCamUrl(''); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Trash2 size={18} />
+                    </button>
+                    <button onClick={() => { playClick(); toggleFullscreen(); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-purple-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Activity size={18} />
                     </button>
                   </div>
                 </>
               ) : (
-                <div className="text-center p-6 w-full max-w-sm relative z-10">
-                  <div className={clsx("w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-6", theme === 'dark' ? "bg-slate-800 text-slate-600" : "bg-slate-200 text-slate-400")}>
-                    <Webcam size={40} />
+                <div className="text-center p-8">
+                  <div className="w-20 h-20 mx-auto bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-500">
+                    <Webcam size={32} />
                   </div>
-                  <h3 className={clsx("text-lg font-bold mb-2", theme === 'dark' ? "text-white" : "text-slate-800")}>Connect IP Camera</h3>
-                  <p className={clsx("mb-6 text-sm", theme === 'dark' ? "text-slate-400" : "text-slate-500")}>Enter the IP address shown on your IP Webcam app to view the live feed.</p>
-
-                  <div className="flex gap-2 relative">
+                  <h3 className="text-lg font-bold text-slate-300 mb-2">Connect Camera</h3>
+                  <div className="flex gap-2 max-w-xs mx-auto">
                     <input
                       type="text"
                       placeholder="http://192.168.1.x:8080"
-                      className={clsx(
-                        "flex-1 rounded-xl px-4 py-3 text-sm focus:outline-none border transition-all",
-                        theme === 'dark'
-                          ? "bg-slate-900/80 border-slate-700 text-white focus:border-blue-500"
-                          : "bg-white border-slate-300 text-slate-800 focus:border-blue-500 shadow-inner"
-                      )}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') setCamUrl(e.currentTarget.value);
-                      }}
+                      className="flex-1 rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                      onKeyDown={(e) => e.key === 'Enter' && setCamUrl(e.currentTarget.value)}
                     />
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-3 font-mono">Example: http://192.168.1.5:8080</p>
                 </div>
               )}
 
-              {/* Real AI Bounding Box Overlay */}
-              {camUrl && (
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  <motion.div
-                    animate={{
-                      left: `${boxPos.x}%`,
-                      top: `${boxPos.y}%`,
-                      width: `${boxPos.w}%`,
-                      height: `${boxPos.h}%`,
-                      borderColor: aiData.confidence > 90 ? "#22c55e" : "#eab308"
-                    }}
-                    transition={{ duration: 0.05, ease: "linear" }}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 border-2 rounded-lg flex flex-col justify-between shadow-[0_0_15px_rgba(0,0,0,0.3)]"
-                  >
-                    <div className="bg-green-500/90 text-black text-xs font-bold px-2 py-1 self-start flex items-center gap-1">
-                      <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                      {aiData.class.toUpperCase()}
-                    </div>
-                    <div className="bg-black/60 text-white text-xs px-2 py-1 self-end backdrop-blur-md font-mono">
-                      CONF: {aiData.confidence.toFixed(1)}%
-                    </div>
-                  </motion.div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Controls & Bins Mockup/List */}
-        <div className="flex flex-col gap-6">
-          {/* Control Panel: Speed & Maintenance */}
-          <div className={clsx(
-            "flex flex-col gap-6 rounded-3xl p-6 transition-all duration-500",
-            theme === 'dark' ? "glass-panel-dark" : "glass-panel-light"
-          )}>
-
-            {/* Speed Controls */}
-            <div>
-              <h2 className={clsx("flex items-center gap-2 text-sm font-bold mb-3 uppercase tracking-wider", theme === 'dark' ? "text-slate-400" : "text-slate-500")}>
-                <Settings size={16} /> Conveyor Speed
-              </h2>
-              <div className={clsx("grid grid-cols-3 gap-2 p-1 rounded-xl", theme === 'dark' ? "bg-slate-900/50" : "bg-slate-200/50")}>
-                {['slow', 'medium', 'fast'].map((speed) => (
-                  <button
-                    key={speed}
-                    onClick={() => setSpeed(speed)}
-                    className={clsx(
-                      "py-2 rounded-lg text-sm font-medium transition-all duration-300 capitalize relative overflow-hidden",
-                      data.conveyorSpeed === speed
-                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
-                        : theme === 'dark' ? "text-slate-400 hover:text-white hover:bg-white/5" : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-                    )}
-                  >
-                    {speed}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Maintenance Mode */}
-            <div>
-              <h2 className={clsx("text-sm font-bold mb-3 uppercase tracking-wider", theme === 'dark' ? "text-slate-400" : "text-slate-500")}>Maintenance Mode</h2>
-              <button
-                onClick={() => toggleDirection(data.conveyorDirection === 'forward' ? 'reverse' : 'forward')}
-                className={clsx(
-                  "w-full py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 border font-semibold",
-                  data.conveyorDirection === 'reverse'
-                    ? "bg-amber-500/10 border-amber-500/50 text-amber-500"
-                    : theme === 'dark' ? "bg-slate-700/50 border-transparent hover:bg-slate-700 text-slate-300" : "bg-slate-100 border-transparent hover:bg-slate-200 text-slate-600"
-                )}
-              >
-                <Settings size={18} className={data.conveyorDirection === 'reverse' ? "animate-spin-slow" : ""} />
-                {data.conveyorDirection === 'reverse' ? "Reversing..." : "Reverse Direction"}
-              </button>
-            </div>
-
-            {/* Manual Servo Control */}
-            <div>
-              <h2 className={clsx("text-sm font-bold mb-3 uppercase tracking-wider", theme === 'dark' ? "text-slate-400" : "text-slate-500")}>Manual Servo Control</h2>
-              <div className="grid grid-cols-4 gap-4">
-                {[0, 1, 2, 3].map(id => (
-                  <div key={id} className="flex flex-col items-center gap-2">
-                    <div className="h-24 w-2 bg-slate-700/30 rounded-full relative">
-                      <div
-                        className="absolute bottom-0 left-0 w-full bg-blue-500 rounded-full transition-all duration-300"
-                        style={{ height: `${(data.manualServo[id] / 90) * 100}%` }}
-                      />
-                      <input
-                        type="range" min="0" max="90"
-                        value={data.manualServo[id]}
-                        onChange={(e) => setServo(id, parseInt(e.target.value))}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        orient="vertical"
-                      />
-                    </div>
-                    <span className={clsx("text-xs font-mono", theme === 'dark' ? "text-slate-500" : "text-slate-400")}>S{id + 1}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Metrics Summary */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Total Processed */}
-            <div className={clsx(
-              "p-6 rounded-3xl transition-all duration-500",
-              theme === 'dark' ? "glass-panel-dark" : "glass-panel-light hover-float"
-            )}>
-              <p className={clsx("text-xs uppercase tracking-wider mb-1", theme === 'dark' ? "text-slate-400" : "text-slate-500")}>Total Processed</p>
-              <p className={clsx("text-3xl font-black", theme === 'dark' ? "text-white" : "text-slate-800")}>1,245 <span className={clsx("text-sm font-normal", theme === 'dark' ? "text-slate-500" : "text-slate-400")}>Items</span></p>
-            </div>
-
-            {/* Revenue Card (New) */}
-            <div className="bg-gradient-to-br from-emerald-500 to-teal-700 p-6 rounded-3xl shadow-xl shadow-emerald-500/20 relative overflow-hidden border border-white/10 group">
-              <div className="relative z-10 transition-transform duration-500 group-hover:-translate-y-1">
-                <p className="text-emerald-100/90 text-xs uppercase tracking-wider mb-1 font-medium">Est. Revenue</p>
-                <p className="text-3xl font-black text-white">${data.revenue?.toFixed(2)}</p>
-              </div>
-              <Activity className="absolute -right-4 -bottom-4 text-white/10 w-28 h-28 rotate-12 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6" />
-            </div>
-          </div>
-
-
-
-        </div>
-      </div>
-
-      {/* Bottom Row: Bins */}
-      <div className="mt-8">
-        <h2 className={clsx("text-3xl font-black mb-6 flex items-center gap-3 tracking-tight", theme === 'dark' ? "text-white" : "text-slate-800")}>
-          <Activity size={28} className="text-purple-500" />
-          Bin Status
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {data.bins.map((bin) => {
-            const fillPercentage = Math.min(bin.volume, 100);
-
-            return (
-              <motion.div
-                layoutId={`bin-${bin.id}`}
-                key={bin.id}
-                onClick={() => {
-                  playClick();
-                  setSelectedBin(bin.id);
-                }}
-                whileHover={{ y: -5, scale: 1.02 }}
-                className={clsx(
-                  "p-6 rounded-3xl cursor-pointer relative overflow-hidden group transition-all duration-300 border",
-                  theme === 'dark'
-                    ? "glass-panel-dark hover:shadow-2xl hover:shadow-purple-500/20"
-                    : "glass-panel-light hover:shadow-xl hover:shadow-blue-500/20"
-                )}
-              >
-                {/* Progress Bar Background */}
+              {/* Bounding Box */}
+              {boxPos && (
                 <div
-                  className={clsx("absolute bottom-0 left-0 w-full transition-all duration-1000 opacity-20",
-                    bin.type === 'bio' ? "bg-green-500" :
-                      bin.type === 'hazard' ? "bg-red-500" :
-                        bin.type === 'wet' ? "bg-blue-500" : "bg-yellow-500"
-                  )}
-                  style={{ height: `${fillPercentage}%` }}
-                />
-
-                {/* Header */}
-                <div className="flex justify-between items-start mb-4 relative z-10">
-                  <div>
-                    <h3 className={clsx("text-lg font-bold leading-none", theme === 'dark' ? "text-white" : "text-slate-800")}>{bin.name}</h3>
+                  className="absolute border-4 border-yellow-400 rounded-lg shadow-[0_0_20px_rgba(250,204,21,0.5)] transition-all duration-100 z-20"
+                  style={{
+                    left: `${boxPos.x}%`,
+                    top: `${boxPos.y}%`,
+                    width: `${boxPos.w}%`,
+                    height: `${boxPos.h}%`,
+                  }}
+                >
+                  <div className="absolute -top-10 left-0 bg-yellow-400 text-black px-3 py-1 rounded-md text-sm font-bold shadow-lg flex items-center gap-2">
+                    {aiData.class} <span className="text-xs bg-black/20 px-1 rounded">{aiData.confidence.toFixed(1)}%</span>
                   </div>
-                  <div className={clsx("w-2 h-2 rounded-full", fillPercentage > 90 ? "bg-red-500 animate-ping" : "bg-slate-600/30")}></div>
                 </div>
+              )}
+            </div>
+          </div>
 
-                <div className="flex items-end gap-1 mb-2 relative z-10">
-                  <span className={clsx("text-4xl font-black", theme === 'dark' ? "text-white" : "text-slate-800")}>{fillPercentage.toFixed(1)}</span>
-                  <span className={clsx("text-sm font-medium mb-1", theme === 'dark' ? "text-slate-400" : "text-slate-500")}>%</span>
-                </div>
+          {/* AI Status & Connectivity Strip */}
+          <div className={clsx(
+            "p-4 rounded-2xl flex items-center justify-between",
+            theme === 'dark' ? "bg-slate-800/50 border border-slate-700" : "bg-white border border-slate-200"
+          )}>
+            <div className="flex items-center gap-4">
+              <div className={clsx("px-3 py-1 rounded-full text-xs font-bold border", isConnected ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400")}>
+                {isConnected ? "SOCKET CONNECTED" : "SOCKET DISCONNECTED"}
+              </div>
+              <div className={clsx("px-3 py-1 rounded-full text-xs font-bold border", model ? "bg-blue-500/10 border-blue-500/20 text-blue-400" : "bg-yellow-500/10 border-yellow-500/20 text-yellow-400")}>
+                {model ? "MODEL READY" : "LOADING MODEL..."}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono opacity-60">
+              <Activity size={14} /> Inference: {data.confidence ? `${(1000 / 10).toFixed(0)} FPS` : "Idle"}
+            </div>
+          </div>
 
-                {/* Gauge Bar */}
-                <div className={clsx("w-full h-2 rounded-full overflow-hidden mb-4 relative z-10", theme === 'dark' ? "bg-slate-700/50" : "bg-slate-200")}>
-                  <motion.div
-                    className={clsx("h-full rounded-full shadow-lg",
-                      fillPercentage >= 90 ? "bg-red-500 animate-pulse" :
-                        bin.type === 'bio' ? "bg-green-500" :
-                          bin.type === 'hazard' ? "bg-red-500" :
-                            bin.type === 'wet' ? "bg-blue-500" : "bg-yellow-500"
-                    )}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${fillPercentage}%` }}
-                    transition={{ type: "spring", stiffness: 50 }}
-                  />
-                </div>
-
-                <div className={clsx("flex justify-between text-xs font-mono relative z-10", theme === 'dark' ? "text-slate-500" : "text-slate-400")}>
-                  <span>{bin.weight.toFixed(2)} kg</span>
-                  <span>Max: 20kg</span>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Bin Detail Modal */}
-      <AnimatePresence>
-        {selectedBin !== null && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className={clsx("w-full max-w-4xl rounded-3xl overflow-hidden max-h-[90vh] flex flex-col", theme === 'dark' ? "glass-panel-dark" : "glass-panel-light")}
-            >
-              <div className={clsx("p-6 border-b flex justify-between items-center", theme === 'dark' ? "border-white/10 bg-white/5" : "border-black/5 bg-white/40")}>
-                <div>
-                  <h2 className={clsx("text-2xl font-bold", theme === 'dark' ? "text-white" : "text-slate-800")}>
-                    {data.bins.find(b => b.id === selectedBin)?.name} Analysis
-                  </h2>
-                  <p className={clsx("text-sm", theme === 'dark' ? "text-slate-400" : "text-slate-500")}>
-                    Real-time Volume & Item Processing Data
-                  </p>
+          {/* Control Panel Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Conveyor Controls */}
+            <div className={clsx("p-6 rounded-2xl border", theme === 'dark' ? "bg-slate-800/50 border-slate-700" : "bg-white border-slate-200")}>
+              <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2 opacity-70">
+                <Settings size={16} /> Conveyor Control
+              </h3>
+              <div className="space-y-4">
+                <div className="flex justify-between bg-black/20 p-1 rounded-xl">
+                  {['Slow', 'Medium', 'Fast'].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSpeed(s)}
+                      className={clsx(
+                        "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
+                        speed === s ? "bg-blue-600 text-white shadow-lg" : "hover:bg-white/5 text-slate-400"
+                      )}
+                    >
+                      {s}
+                    </button>
+                  ))}
                 </div>
                 <button
-                  onClick={() => setSelectedBin(null)}
-                  className="p-2 rounded-full hover:bg-red-500/20 hover:text-red-500 transition-colors"
+                  onClick={() => toggleDirection(direction === 'Forward' ? 'Backward' : 'Forward')}
+                  className={clsx(
+                    "w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all",
+                    direction === 'Forward'
+                      ? (theme === 'dark' ? "bg-slate-700 hover:bg-slate-600" : "bg-slate-200 hover:bg-slate-300")
+                      : "bg-orange-500 hover:bg-orange-600 text-white animate-pulse"
+                  )}
                 >
-                  <Trash2 className="rotate-45" size={24} />
+                  {direction === 'Forward' ? 'Forward Direction' : 'Reverse Mode Active'}
                 </button>
               </div>
+            </div>
 
-              <div className="p-6 overflow-y-auto grid grid-cols-1 gap-8">
-                {/* Chart 1: Volume vs Time (Cartesian Area) */}
-                <div>
-                  <h3 className={clsx("text-sm font-bold uppercase tracking-wider mb-4 border-l-4 pl-3", theme === 'dark' ? "border-slate-600 text-slate-400" : "border-slate-300 text-slate-500")}>Volume Analysis</h3>
-                  <div className={clsx("h-64 w-full rounded-xl p-2", theme === 'dark' ? "bg-black/10" : "bg-slate-100/50")}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={history}>
-                        <defs>
-                          <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={binColors[selectedBin]?.main} stopOpacity={0.4} />
-                            <stop offset="95%" stopColor={binColors[selectedBin]?.main} stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} vertical={false} />
-                        <XAxis dataKey="time" hide />
-                        <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                        <Tooltip content={<CustomTooltip theme={theme} binId={selectedBin} />} />
-                        <ReferenceLine y={90} label="CRITICAL" stroke="red" strokeDasharray="3 3" />
-                        <Area
-                          type="monotone"
-                          dataKey={`bin${selectedBin}_vol`}
-                          stroke={binColors[selectedBin]?.main}
-                          strokeWidth={3}
-                          fillOpacity={1}
-                          fill="url(#splitColor)"
-                          name="Volume"
-                          animationDuration={500}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Chart 2: Items vs Time (Bar Graph) */}
-                  <div>
-                    <h3 className={clsx("text-sm font-bold uppercase tracking-wider mb-4 border-l-4 pl-3", theme === 'dark' ? "border-slate-600 text-slate-400" : "border-slate-300 text-slate-500")}>Items Processed</h3>
-                    <div className={clsx("h-48 w-full rounded-xl p-2", theme === 'dark' ? "bg-black/10" : "bg-slate-100/50")}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={history}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
-                          <XAxis dataKey="time" hide />
-                          <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                          <Tooltip content={<CustomTooltip theme={theme} binId={selectedBin} />} />
-                          <Bar
-                            dataKey={`bin${selectedBin}_items`}
-                            fill={binColors[selectedBin]?.main}
-                            radius={[4, 4, 0, 0]}
-                            name="Items Count"
-                            animationDuration={500}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
+            {/* Servo Controls */}
+            <div className={clsx("p-6 rounded-2xl border", theme === 'dark' ? "bg-slate-800/50 border-slate-700" : "bg-white border-slate-200")}>
+              <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2 opacity-70">
+                <Sliders size={16} /> Manual Servo Override
+              </h3>
+              <div className="grid grid-cols-4 gap-2">
+                {servos.map(servo => (
+                  <div key={servo.id} className="flex flex-col items-center gap-2">
+                    <div className="h-24 w-full bg-black/20 rounded-full relative">
+                      <div
+                        className="absolute bottom-0 w-full bg-blue-500 rounded-full transition-all duration-300"
+                        style={{ height: `${(servo.angle / 180) * 100}%` }}
+                      />
                     </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="180"
+                      value={servo.angle}
+                      onChange={(e) => setServo(servo.id, parseInt(e.target.value))}
+                      className="w-full h-1 bg-transparent appearance-none cursor-pointer"
+                    />
+                    <span className="text-[10px] font-mono opacity-50">S{servo.id}</span>
                   </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
-                  {/* Chart 3: Bin Health (Radar) [NEW] */}
-                  <div>
-                    <h3 className={clsx("text-sm font-bold uppercase tracking-wider mb-4 border-l-4 pl-3", theme === 'dark' ? "border-slate-600 text-slate-400" : "border-slate-300 text-slate-500")}>System Health</h3>
-                    <div className={clsx("h-48 w-full rounded-xl p-2 flex items-center justify-center", theme === 'dark' ? "bg-black/10" : "bg-slate-100/50")}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
-                          { subject: 'Sensor', A: data.bins[selectedBin]?.health?.sensor || 100, fullMark: 100 },
-                          { subject: 'Battery', A: data.bins[selectedBin]?.health?.battery || 100, fullMark: 100 },
-                          { subject: 'Connect', A: data.bins[selectedBin]?.health?.signal || 100, fullMark: 100 },
-                          { subject: 'Motor', A: data.bins[selectedBin]?.health?.motor || 100, fullMark: 100 },
-                          { subject: 'Clean', A: data.bins[selectedBin]?.health?.clean || 100, fullMark: 100 },
-                        ]}>
-                          <PolarGrid stroke={theme === 'dark' ? '#334155' : '#cbd5e1'} />
-                          <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: theme === 'dark' ? '#94a3b8' : '#64748b' }} />
-                          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                          <Radar
-                            name="Status"
-                            dataKey="A"
-                            stroke={binColors[selectedBin]?.main}
-                            fill={binColors[selectedBin]?.main}
-                            fillOpacity={0.3}
-                          />
-                          <Tooltip content={<CustomTooltip theme={theme} binId={selectedBin} />} />
-                        </RadarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </div>
+        </div>
 
-                {/* Chart 4: AI Confidence (Scatter) [NEW] */}
+        {/* RIGHT COLUMN (Metrics, Bins, Quick Actions) - 33% width */}
+        <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+
+          {/* Main Power Button & Timer */}
+          <div className={clsx(
+            "p-6 rounded-3xl border flex flex-col gap-6",
+            theme === 'dark' ? "bg-indigo-900/20 border-indigo-500/30" : "bg-indigo-50 border-indigo-200"
+          )}>
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-black">System Control</h2>
+                <p className="text-sm opacity-60">Master Switch</p>
+              </div>
+              <button
+                onClick={togglePower}
+                className={clsx(
+                  "w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300",
+                  data.isOn ? "bg-red-500 hover:bg-red-600 shadow-red-500/40" : "bg-green-500 hover:bg-green-600 shadow-green-500/40"
+                )}
+              >
+                <Power size={32} className="text-white" />
+              </button>
+            </div>
+
+            <div className="bg-black/20 rounded-xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Clock size={20} className="text-indigo-400" />
                 <div>
-                  <h3 className={clsx("text-sm font-bold uppercase tracking-wider mb-4 border-l-4 pl-3", theme === 'dark' ? "border-slate-600 text-slate-400" : "border-slate-300 text-slate-500")}>AI Performance (Last 50 Scans)</h3>
-                  <div className={clsx("h-40 w-full rounded-xl p-2", theme === 'dark' ? "bg-black/10" : "bg-slate-100/50")}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
-                        <XAxis type="category" dataKey="time" name="Time" hide />
-                        <YAxis type="number" dataKey="ai_confidence" name="Confidence" unit="%" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                        <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip theme={theme} binId={selectedBin} />} />
-                        <Scatter name="AI Confidence" data={history} fill={binColors[selectedBin]?.main} line={{ stroke: binColors[selectedBin]?.main, strokeWidth: 1 }} />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <div className="text-[10px] uppercase font-bold opacity-50 tracking-wider">Session Time</div>
+                  <div className="text-2xl font-mono font-bold tracking-widest">{sessionDuration}</div>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Alert Overlay */}
-      <AnimatePresence>
-        {alert && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className={clsx(
-              "fixed bottom-8 right-8 p-6 rounded-2xl shadow-2xl flex items-center gap-4 max-w-sm z-50 border",
-              alert.type === 'critical' ? "bg-red-900/90 border-red-500 text-white" : "bg-amber-900/90 border-amber-500 text-white"
-            )}
-          >
-            <AlertTriangle size={32} className={alert.type === 'critical' ? "text-red-200" : "text-amber-200"} />
-            <div>
-              <h4 className="font-bold text-lg">{alert.type === 'critical' ? 'CRITICAL ALERT' : 'Warning'}</h4>
-              <p className="text-sm opacity-90">{alert.message}</p>
             </div>
-            {alert.type === 'critical' && (
-              <button
-                onClick={() => setAlert(null)}
-                className="ml-auto p-2 hover:bg-white/10 rounded-full"
-              >
-                ✕
-              </button>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+
+          {/* Key Metrics Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className={clsx("p-5 rounded-2xl border", theme === 'dark' ? "bg-slate-800/60 border-slate-700" : "bg-white border-slate-200")}>
+              <div className="text-xs font-bold uppercase opacity-50 mb-2">Processed</div>
+              <div className="text-3xl font-black mb-1">{processingCounts.total}</div>
+              <div className="text-xs text-green-400 font-bold flex items-center gap-1"><ArrowUpRight size={12} /> Items</div>
+            </div>
+            <div className={clsx("p-5 rounded-2xl border relative overflow-hidden", theme === 'dark' ? "bg-emerald-900/20 border-emerald-500/30" : "bg-emerald-50 border-emerald-200")}>
+              <div className="relative z-10">
+                <div className="text-xs font-bold uppercase opacity-60 mb-2 text-emerald-400">Revenue</div>
+                <div className="text-3xl font-black text-emerald-500">${(processingCounts.total * 0.05).toFixed(2)}</div>
+                <div className="text-xs text-emerald-600 font-bold opacity-80">Est. Value</div>
+              </div>
+              <TrendingUp className="absolute bottom-2 right-2 text-emerald-500/20" size={60} />
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={exportToCSV}
+              className={clsx(
+                "p-4 rounded-xl border flex flex-col items-center gap-2 hover:scale-[1.02] transition-transform",
+                theme === 'dark' ? "bg-slate-800 border-slate-700 hover:bg-slate-700" : "bg-white border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <Download size={20} className="text-blue-500" />
+              <span className="text-xs font-bold">Export Report</span>
+            </button>
+            <button
+              onClick={enableNotifications}
+              className={clsx(
+                "p-4 rounded-xl border flex flex-col items-center gap-2 hover:scale-[1.02] transition-transform",
+                notificationEnabled
+                  ? (theme === 'dark' ? "bg-yellow-900/20 border-yellow-700" : "bg-yellow-50 border-yellow-200")
+                  : (theme === 'dark' ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200")
+              )}
+            >
+              {notificationEnabled ? <BellRing size={20} className="text-yellow-500" /> : <BellOff size={20} className="text-slate-500" />}
+              <span className="text-xs font-bold">{notificationEnabled ? "Alerts On" : "Enable Alerts"}</span>
+            </button>
+          </div>
+
+          {/* Bin Status Stack */}
+          <div className={clsx("flex-1 p-6 rounded-3xl border flex flex-col", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}>
+            <h3 className="text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2 opacity-70">
+              <Database size={16} /> Bin Capacities
+            </h3>
+            <div className="flex-1 flex flex-col justify-between gap-4">
+              {data.bins.map((bin) => (
+                <div key={bin.id} className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold mb-1">
+                    <span className="capitalize">{bin.name}</span>
+                    <span className={bin.volume > 90 ? "text-red-500" : "opacity-60"}>{bin.volume}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-black/20 rounded-full overflow-hidden">
+                    <div
+                      className={clsx("h-full rounded-full transition-all duration-1000",
+                        bin.volume > 90 ? "bg-red-500 animate-pulse" :
+                          bin.type === 'bio' ? "bg-green-500" :
+                            bin.type === 'hazard' ? "bg-red-500" :
+                              bin.type === 'wet' ? "bg-blue-500" : "bg-amber-500"
+                      )}
+                      style={{ width: `${bin.volume}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+        {/* BOTTOM SECTION: ANALYTICS (Full Width) */}
+        <div className="col-span-12 mt-4">
+          <div className="flex items-center gap-4 mb-6">
+            <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
+              <BarChart2 className="text-blue-500" /> Real-Time Analytics
+            </h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-slate-700 to-transparent"></div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 1. Category Distribution (Pie) */}
+            <div
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              onClick={() => setExpandedGraph({
+                title: 'Category Distribution', chart: (
+                  <ResponsiveContainer width="100%" height="100%"><RechartsPie><Pie data={[{ name: 'Bio', value: processingCounts.bio }, { name: 'Haz', value: processingCounts.hazard }, { name: 'Wet', value: processingCounts.wet }, { name: 'Dry', value: processingCounts.dry }]} cx="50%" cy="50%" innerRadius={100} outerRadius={150} paddingAngle={2} dataKey="value" label><Cell fill="#10b981" /><Cell fill="#ef4444" /><Cell fill="#3b82f6" /><Cell fill="#f59e0b" /></Pie><Legend /><Tooltip /></RechartsPie></ResponsiveContainer>
+                )
+              })}
+            >
+              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">Category Distribution</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <RechartsPie>
+                  <Pie data={[{ name: 'Bio', value: processingCounts.bio }, { name: 'Haz', value: processingCounts.hazard }, { name: 'Wet', value: processingCounts.wet }, { name: 'Dry', value: processingCounts.dry }]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                    <Cell fill="#10b981" /><Cell fill="#ef4444" /><Cell fill="#3b82f6" /><Cell fill="#f59e0b" />
+                  </Pie>
+                  <Legend />
+                </RechartsPie>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 2. Items Processed (Bar) */}
+            <div
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              onClick={() => setExpandedGraph({
+                title: 'Items by Category', chart: (
+                  <ResponsiveContainer width="100%" height="100%"><BarChart data={[{ name: 'Bio', count: processingCounts.bio }, { name: 'Haz', count: processingCounts.hazard }, { name: 'Wet', count: processingCounts.wet }, { name: 'Dry', count: processingCounts.dry }]}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="count"><Cell fill="#10b981" /><Cell fill="#ef4444" /><Cell fill="#3b82f6" /><Cell fill="#f59e0b" /></Bar></BarChart></ResponsiveContainer>
+                )
+              })}
+            >
+              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">Items by Category</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={[{ name: 'Bio', count: processingCounts.bio }, { name: 'Haz', count: processingCounts.hazard }, { name: 'Wet', count: processingCounts.wet }, { name: 'Dry', count: processingCounts.dry }]}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} /><XAxis dataKey="name" fontSize={10} /><YAxis fontSize={10} /><Bar dataKey="count"><Cell fill="#10b981" /><Cell fill="#ef4444" /><Cell fill="#3b82f6" /><Cell fill="#f59e0b" /></Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 3. Detections Line */}
+            <div
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              onClick={() => setExpandedGraph({
+                title: 'Detections Trend', chart: (
+                  <ResponsiveContainer width="100%" height="100%"><LineChart data={timeSeriesData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="time" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="bio" stroke="#10b981" strokeWidth={3} /><Line type="monotone" dataKey="hazard" stroke="#ef4444" strokeWidth={3} /><Line type="monotone" dataKey="wet" stroke="#3b82f6" strokeWidth={3} /><Line type="monotone" dataKey="dry" stroke="#f59e0b" strokeWidth={3} /></LineChart></ResponsiveContainer>
+                )
+              })}
+            >
+              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">Latest Trends</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={timeSeriesData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} /><XAxis dataKey="time" fontSize={10} /><YAxis fontSize={10} /><Line type="monotone" dataKey="bio" stroke="#10b981" dot={false} /><Line type="monotone" dataKey="hazard" stroke="#ef4444" dot={false} /><Line type="monotone" dataKey="wet" stroke="#3b82f6" dot={false} /><Line type="monotone" dataKey="dry" stroke="#f59e0b" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 4. Area Chart (Span 2) */}
+            <div
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              onClick={() => setExpandedGraph({
+                title: 'Cumulative Processing', chart: (
+                  <ResponsiveContainer width="100%" height="100%"><AreaChart data={timeSeriesData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="time" /><YAxis /><Tooltip /><Legend /><Area type="monotone" dataKey="bio" stackId="1" fill="#10b981" /><Area type="monotone" dataKey="hazard" stackId="1" fill="#ef4444" /><Area type="monotone" dataKey="wet" stackId="1" fill="#3b82f6" /><Area type="monotone" dataKey="dry" stackId="1" fill="#f59e0b" /></AreaChart></ResponsiveContainer>
+                )
+              })}
+            >
+              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">Cumulative Processing</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={timeSeriesData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} /><XAxis dataKey="time" fontSize={10} /><YAxis fontSize={10} /><Area type="monotone" dataKey="bio" stackId="1" fill="#10b981" fillOpacity={0.5} stroke="#10b981" /><Area type="monotone" dataKey="hazard" stackId="1" fill="#ef4444" fillOpacity={0.5} stroke="#ef4444" /><Area type="monotone" dataKey="wet" stackId="1" fill="#3b82f6" fillOpacity={0.5} stroke="#3b82f6" /><Area type="monotone" dataKey="dry" stackId="1" fill="#f59e0b" fillOpacity={0.5} stroke="#f59e0b" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 5. Scatter Chart (AI Confidence) */}
+            <div
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              onClick={() => setExpandedGraph({
+                title: 'AI Confidence Distribution', chart: (
+                  <ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="time" name="Time" /><YAxis dataKey="confidence" name="Confidence" /><Tooltip /><Scatter data={confidenceHistory} fill="#8884d8" /></ScatterChart></ResponsiveContainer>
+                )
+              })}
+            >
+              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">AI Confidence</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <ScatterChart>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} /><XAxis dataKey="time" fontSize={10} /><YAxis dataKey="confidence" domain={[0, 100]} fontSize={10} />
+                  <Scatter data={confidenceHistory} fill="#8b5cf6" />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notifications overlay (if enabled) */}
+      {notificationEnabled && <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg text-xs font-bold animate-bounce hidden">
+        Notifications Active
+      </div>}
+
     </div>
   );
 }
