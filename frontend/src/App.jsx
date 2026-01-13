@@ -162,19 +162,16 @@ function App() {
   useEffect(() => {
     if (aiData.box) {
       // Use Real Coordinates from Python
-      // Python sends percentages (0-100), boxPos expects percentages.
       setBoxPos({
         x: aiData.box.x + (aiData.box.w / 2),
         y: aiData.box.y + (aiData.box.h / 2),
         w: aiData.box.w,
         h: aiData.box.h
       });
-    } else if (aiData.confidence > 80) {
-      // Fallback: Lock on center if no box data but high confidence
-      setBoxPos({ x: 50 + (Math.random() * 5 - 2.5), y: 50 + (Math.random() * 5 - 2.5) });
     } else {
-      // Fallback: Search mode
-      setBoxPos({ x: 50 + Math.sin(Date.now() / 500) * 30, y: 50 + Math.cos(Date.now() / 500) * 30 });
+      // If no box found, STAY STILL (No random movement)
+      // We essentially just reset to center or do nothing.
+      setBoxPos({ x: 50, y: 50 });
     }
   }, [aiData.confidence, aiData.box]);
 
@@ -303,7 +300,7 @@ function App() {
                     crossOrigin="anonymous"
                     src={`${camUrl}/video`}
                     alt="Live Feed"
-                    className="w-full h-full object-cover transition-transform duration-300"
+                    className="w-full h-full object-contain bg-black transition-transform duration-300"
                     style={{ transform: `rotate(${rotation}deg)` }}
                     onError={() => setCamUrl('')}
                   />
@@ -371,11 +368,12 @@ function App() {
                     animate={{
                       left: `${boxPos.x}%`,
                       top: `${boxPos.y}%`,
-                      scale: [1, 1.05, 1],
+                      width: `${boxPos.w}%`,
+                      height: `${boxPos.h}%`,
                       borderColor: aiData.confidence > 90 ? "#22c55e" : "#eab308"
                     }}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 rounded-lg flex flex-col justify-between shadow-[0_0_15px_rgba(0,0,0,0.3)]"
+                    transition={{ duration: 0.05, ease: "linear" }}
+                    className="absolute -translate-x-1/2 -translate-y-1/2 border-2 rounded-lg flex flex-col justify-between shadow-[0_0_15px_rgba(0,0,0,0.3)]"
                   >
                     <div className="bg-green-500/90 text-black text-xs font-bold px-2 py-1 self-start flex items-center gap-1">
                       <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
