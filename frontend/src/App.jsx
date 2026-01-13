@@ -140,28 +140,43 @@ function App() {
     };
   }, []);
 
-  // Simulate "Smart" Box Movement
+  // --- AI Logic (Driven by Python Backend) ---
+  const [model] = useState(null); // Keep to prevent ReferenceError
+
+  // Listen for Python AI Events (Including Real Box Data)
   useEffect(() => {
-    if (!camUrl) return;
-    const interval = setInterval(() => {
-      setBoxPos(prev => {
-        // If high confidence, "Lock On" (stay near center/target with small jitter)
-        if (aiData.confidence > 80) {
-          return {
-            x: 50 + (Math.random() * 10 - 5), // 45-55%
-            y: 50 + (Math.random() * 10 - 5)
-          };
-        } else {
-          // If low confidence, "Search" (move widely)
-          return {
-            x: 20 + Math.random() * 60, // 20-80%
-            y: 20 + Math.random() * 60
-          };
-        }
+    const handleInference = (data) => {
+      setAiData(prev => ({
+        ...prev,
+        class: data.class,
+        confidence: data.confidence,
+        box: data.box // New: Real coordinates from Python
+      }));
+    };
+
+    socket.on('ai_inference', handleInference);
+    return () => socket.off('ai_inference', handleInference);
+  }, []);
+
+  // Set Box Position (Prioritize Real Python Data > Hand-Tracking > Simulation)
+  useEffect(() => {
+    if (aiData.box) {
+      // Use Real Coordinates from Python
+      // Python sends percentages (0-100), boxPos expects percentages.
+      setBoxPos({
+        x: aiData.box.x + (aiData.box.w / 2),
+        y: aiData.box.y + (aiData.box.h / 2),
+        w: aiData.box.w,
+        h: aiData.box.h
       });
-    }, 800); // Move every 0.8s
-    return () => clearInterval(interval);
-  }, [camUrl, aiData.confidence]);
+    } else if (aiData.confidence > 80) {
+      // Fallback: Lock on center if no box data but high confidence
+      setBoxPos({ x: 50 + (Math.random() * 5 - 2.5), y: 50 + (Math.random() * 5 - 2.5) });
+    } else {
+      // Fallback: Search mode
+      setBoxPos({ x: 50 + Math.sin(Date.now() / 500) * 30, y: 50 + Math.cos(Date.now() / 500) * 30 });
+    }
+  }, [aiData.confidence, aiData.box]);
 
   const togglePower = () => {
     playClick();
@@ -206,10 +221,33 @@ function App() {
         </div>
 
         <div className="flex items-center gap-6">
+          {/* Debug Info (ALWAYS VISIBLE for troubleshooting) */}
+          <div className="text-right pr-4 border-r border-white/10 mr-4 flex flex-col items-end">
+            <p className="text-[10px] font-mono opacity-50 uppercase tracking-widest mb-1">AI DEBUG</p>
+
+            {/* Model Status */}
+            <div className="flex items-center gap-1 mb-1">
+              <div className={clsx("w-2 h-2 rounded-full", model ? "bg-green-500" : "bg-red-500 animate-pulse")} />
+              <span className="text-[10px] font-bold">{model ? "MODEL READY" : "LOADING..."}</span>
+            </div>
+
+            {/* Predictions */}
+            {model && aiData.allPredictions ? (
+              aiData.allPredictions.map((p, i) => (
+                <div key={i} className={clsx("text-xs font-mono flex gap-2 justify-end", p.className === aiData.class ? "text-green-400 font-bold" : "opacity-40")}>
+                  <span>{p.className}:</span>
+                  <span>{(p.probability * 100).toFixed(0)}%</span>
+                </div>
+              )).slice(0, 3)
+            ) : (
+              <span className="text-[10px] opacity-40">Waiting for data...</span>
+            )}
+          </div>
+
           {/* Status Indicator */}
           <div className={clsx(
             "flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md shadow-sm transition-all border",
-            theme === 'dark' ? "bg-black/20 border-white/10" : "bg-white/30 border-white/40"
+            data.isOn ? (theme === 'dark' ? "bg-green-500/10 border-green-500/30" : "bg-green-100 border-green-200") : (theme === 'dark' ? "bg-black/20 border-white/10" : "bg-white/30 border-white/40")
           )}>
             <div className={clsx("w-3 h-3 rounded-full animate-pulse", data.isOn ? "bg-green-500" : "bg-red-500")} />
             <span className={clsx("text-sm font-bold", theme === 'dark' ? "text-slate-300" : "text-slate-600")}>
@@ -261,6 +299,8 @@ function App() {
               {camUrl ? (
                 <>
                   <img
+                    id="live-feed-img"
+                    crossOrigin="anonymous"
                     src={`${camUrl}/video`}
                     alt="Live Feed"
                     className="w-full h-full object-cover transition-transform duration-300"
