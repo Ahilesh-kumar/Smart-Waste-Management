@@ -25,46 +25,55 @@ let systemState = {
     revenue: 125.50, // Fake accumulated revenue
     manualServo: { 0: 0, 1: 0, 2: 0, 3: 0 }, // Servo angles
     bins: [
-        { id: 0, name: "Wet Waste", type: "wet", weight: 0, volume: 0, isSimulated: false },
-        { id: 1, name: "Dry Waste", type: "dry", weight: 0, volume: 0, isSimulated: true },
-        { id: 2, name: "Bio-medical", type: "bio", weight: 0, volume: 0, isSimulated: false },
-        { id: 3, name: "Hazardous", type: "hazard", weight: 0, volume: 0, isSimulated: true },
-        { id: 4, name: "Metal/E-Waste", type: "metal", weight: 0, volume: 0, isSimulated: true } // New 5th Category
+        { id: 0, name: "Wet Waste", type: "wet", weight: 0, volume: 0, itemsCount: 0, isSimulated: false, health: { battery: 100, signal: 98, motor: 100, sensor: 100, clean: 100 } },
+        { id: 1, name: "Dry Waste", type: "dry", weight: 0, volume: 0, itemsCount: 0, isSimulated: true, health: { battery: 95, signal: 96, motor: 98, sensor: 99, clean: 95 } },
+        { id: 2, name: "Bio-medical", type: "bio", weight: 0, volume: 0, itemsCount: 0, isSimulated: false, health: { battery: 100, signal: 99, motor: 100, sensor: 100, clean: 100 } }, // Real bin starts perfect
+        { id: 3, name: "Hazardous", type: "hazard", weight: 0, volume: 0, itemsCount: 0, isSimulated: true, health: { battery: 88, signal: 92, motor: 95, sensor: 97, clean: 80 } }
     ]
 };
 
-// User mapping: 0=Wet, 1=Dry, 2=Bio, 3=Hazard.
-// So Bin Index 2 is the REAL one.
-
-// Constants for Limits
-const MAX_WEIGHT_KG = 20; // Example max weight
-const LIMIT_WARNING = 90; // %
-const LIMIT_STOP = 100; // %
+// ... (Constants)
 
 // Helper to broadcast state
 const broadcastState = () => {
     io.emit('system_state', systemState);
 };
 
-// Simulation Loop for Fake Bins (1, 3 - waiting for 0,1,3 mapping)
-// The user said: "All other 3 should have fake value but not reach 90%"
-// We will simulate gentle increases over time if System is ON.
 // Simulation Loop
 setInterval(() => {
     if (systemState.isOn) {
-        // Simulate Revenue Increase (Recyclables sourced)
+        // Simulate Revenue
         if (Math.random() > 0.5) {
-            systemState.revenue += (Math.random() * 2); // Add $0.5 - $2.5 randomly
+            systemState.revenue += (Math.random() * 2);
             systemState.revenue = parseFloat(systemState.revenue.toFixed(2));
         }
 
         systemState.bins.forEach((bin, index) => {
-            if (index !== 2) { // Skip Bio bin (Real)
-                // Simulate random increase for all others including Metal
+            // --- Smart Health Simulation (For all bins) ---
+            // 1. Battery Drain (Very slow)
+            if (Math.random() > 0.95) bin.health.battery = Math.max(0, bin.health.battery - 0.1);
+
+            // 2. Signal Fluctuation (90-100%)
+            bin.health.signal = 90 + Math.floor(Math.random() * 10);
+
+            // 3. Sensor Cleanliness (Drops slowly)
+            if (Math.random() > 0.98) bin.health.clean = Math.max(50, bin.health.clean - 0.1);
+
+            // Format values
+            bin.health.battery = parseFloat(bin.health.battery.toFixed(1));
+            bin.health.clean = parseFloat(bin.health.clean.toFixed(1));
+
+
+            if (index !== 2) { // Skip Bio bin (Real Volume/Weight)
+                // Simulate random increase for others
                 if (Math.random() > 0.7) {
                     const increase = Math.random() * 0.5;
                     let newVol = bin.volume + increase;
-                    if (newVol > 85) newVol = 85;
+                    if (newVol > 85) newVol = 85; // Cap at 85% for sim
+
+                    if (newVol > bin.volume) {
+                        bin.itemsCount += 1; // Increment items count on volume increase
+                    }
                     bin.volume = parseFloat(newVol.toFixed(1));
 
                     let newWeight = bin.weight + (increase * 0.2);
@@ -129,6 +138,10 @@ io.on('connection', (socket) => {
         const typeIdx = parseInt(data.type);
         if (typeIdx >= 0 && typeIdx < 4) {
             console.log(`Item sorted into Bin ${typeIdx}`);
+
+            // Increment Item Count for ALL bins (Real & Simulated)
+            systemState.bins[typeIdx].itemsCount += 1;
+
             // For simulated bins, we might give a "jump" in values here
             if (typeIdx !== 2) {
                 systemState.bins[typeIdx].volume += 2; // Jump 2%
