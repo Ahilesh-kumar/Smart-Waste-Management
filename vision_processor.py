@@ -93,6 +93,7 @@ last_sorted_time = 0
 frame_count = 0
 AI_INTERVAL = 5 # Run AI more frequently (every 5 frames) due to threading speedup
 prediction_history = deque(maxlen=3) 
+last_emit_time = 0 
 
 # Caching for frames between AI runs
 cached_class = "Scanning..."
@@ -223,18 +224,25 @@ while True:
         cached_label_id = int(index)
 
     # --- 3. EMIT DATA ---
-    try:
-        payload = {
-            'class': cached_class if not IS_MOVING else "Moving...",
-            'confidence': cached_conf if not IS_MOVING else 0,
-            'label_id': cached_label_id if not IS_MOVING else -1,
-            'box': box_data,
-            'is_moving': IS_MOVING,     # Flag for Frontend
-            'object_present': object_present # Flag for Frontend
-        }
-        sio.emit('ai_inference', payload)
-    except Exception:
-        pass     
+    current_time = time.time()
+    # Throttle: Max 15 updates per second to preventing frontend lag
+    if current_time - last_emit_time > 0.066: 
+        try:
+            payload = {
+                'class': cached_class if not IS_MOVING else "Moving...",
+                'confidence': cached_conf if not IS_MOVING else 0,
+                'label_id': cached_label_id if not IS_MOVING else -1,
+                'box': box_data,
+                'is_moving': IS_MOVING,     # Flag for Frontend
+                'object_present': object_present # Flag for Frontend
+            }
+            sio.emit('ai_inference', payload)
+            last_emit_time = current_time
+        except Exception:
+            pass     
+    
+    # Tiny sleep to yield CPU if loop is spinning too fast
+    time.sleep(0.001)     
 
     # --- 4. SORTING LOGIC ---
     if not IS_MOVING and cached_conf > 90:

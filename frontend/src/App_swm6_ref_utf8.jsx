@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { Power, Activity, AlertTriangle, Webcam, Settings, Trash2, Zap, Sun, Moon, TrendingUp, BarChart2, PieChart, Recycle, Clock, ArrowUpRight, Download, BellRing, BellOff, Database, Sliders, Volume2, VolumeX } from 'lucide-react';
+import { Power, Activity, AlertTriangle, Webcam, Settings, Trash2, Zap, Sun, Moon, TrendingUp, BarChart2, PieChart, Recycle, Clock, ArrowUpRight, Download, BellRing, BellOff, Database, Sliders } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ScatterChart, Scatter, ZAxis } from 'recharts';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -63,14 +63,6 @@ function App() {
     return saved ? JSON.parse(saved).camUrl : '192.168.1.3:8080';
   });
 
-  const [hourlyData, setHourlyData] = useState([]); // Hourly stacked bar data
-  const [showComparisonMode, setShowComparisonMode] = useState(false); // Toggle for comparison view
-  const [drillDownCategory, setDrillDownCategory] = useState(null); // For pie drill-down
-
-  // Voice Feedback State
-  const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
-  const [sensitivity, setSensitivity] = useState('High'); // Low, Medium, High
-  const [selectedHistorySession, setSelectedHistorySession] = useState(null); // For Detailed View Modal
   const [rotation, setRotation] = useState(0); // State for video rotation
   const [isTorchOn, setIsTorchOn] = useState(false); // State for Torch
   const [aiData, setAiData] = useState({ class: 'Scanning...', confidence: 0, label_id: -1 });
@@ -237,9 +229,7 @@ function App() {
         date: new Date().toLocaleDateString(),
         time: new Date().toLocaleTimeString(),
         counts: { ...processingCounts },
-        revenue: (processingCounts.total * 0.05).toFixed(2),
-        eventLog: [...eventLog], // Save logs for scatter plots
-        timeSeriesData: [...history] // Save trend data from live history
+        revenue: (processingCounts.total * 0.05).toFixed(2)
       };
 
       const updatedHistory = [newHistoryEntry, ...sessionHistory];
@@ -249,61 +239,21 @@ function App() {
       // Reset Current Session (per user request: "Current cycle alone")
       setProcessingCounts({ total: 0, bio: 0, hazard: 0, wet: 0, dry: 0 });
       setEventLog([]);
-      setHistory([]); // Reset live history
       localStorage.removeItem('waste_session_current');
     }
   }, [data.isOn]); // Runs when power state changes
 
   // Bin Full Alert - Auto turn off system if any bin reaches 100%
-  // Also warn at 90%
   useEffect(() => {
-    if (!data.isOn) return;
-
-    // 1. Critical (100%)
     const fullBin = data.bins?.find(bin => bin.volume >= 100);
-    if (fullBin) {
+    if (fullBin && data.isOn) {
       socket.emit('toggle_power', false);
-      const msg = `${fullBin.name} reached 100% capacity. System pausing.`;
-      setAlert({ type: 'critical', message: msg });
-
-      // Voice Alert (Ensure it speaks)
-      if (isVoiceEnabled && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(msg);
-        window.speechSynthesis.speak(utterance);
-      }
-
+      setAlert({ type: 'critical', message: `${fullBin.name} is FULL! System auto-paused.` });
       if (notificationEnabled && Notification.permission === 'granted') {
-        new Notification('🚨 Bin Full Alert!', { body: msg });
-      }
-      return; // Stop here if critical
-    }
-
-    // 2. Warning (90%) - Only speak once per crossing (debouncing would be ideal, but simple check here)
-    const almostFullBin = data.bins?.find(bin => bin.volume >= 90 && bin.volume < 100);
-    if (almostFullBin) {
-      // We can use a ref to track if we already warned for this bin session, 
-      // but for now, we'll just rely on the fact that volume changes slowly.
-      // A proper "spoken" state is better. 
-      // For this task, I'll rely on the dashboard alert mechanism which often has a timeout.
-
-      // Ideally we don't spam 90% warning. 
-      // Let's just create a toast/alert that auto-dismisses, and speak it.
-      // NOTE: This might spam if volume hovers at 90. 
-      // Adding a simple "lastSpokenTime" check could help but requires more state refactoring.
-      // User requested: "say 90% of bio waste in bin reached"
-
-      // I'll add a check: only speak if not currently speaking?
-      if (!window.speechSynthesis.speaking) {
-        const warningMsg = `Warning: ${almostFullBin.name} reached 90% capacity.`;
-        if (isVoiceEnabled) {
-          const utterance = new SpeechSynthesisUtterance(warningMsg);
-          window.speechSynthesis.speak(utterance);
-        }
+        new Notification('≡ƒÜ¿ Bin Full Alert!', { body: `${fullBin.name} is full. System paused.` });
       }
     }
-
-  }, [data.bins, data.isOn, notificationEnabled, isVoiceEnabled]);
+  }, [data.bins, data.isOn, notificationEnabled]);
 
   // Export Event Log to CSV
   const exportToCSV = () => {
@@ -328,7 +278,7 @@ function App() {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         setNotificationEnabled(true);
-        new Notification('🔔 Notifications Enabled!', { body: 'You will receive alerts for bin status.' });
+        new Notification('≡ƒöö Notifications Enabled!', { body: 'You will receive alerts for bin status.' });
       }
     }
   };
@@ -362,96 +312,20 @@ function App() {
   // Listen for Python AI Events (Including Real Box Data)
   useEffect(() => {
     // Helper used above
-    // Voice Feedback Helper
-    const speak = (text) => {
-      if (!isVoiceEnabled || !window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      window.speechSynthesis.speak(utterance);
+    const getCategory = (cls) => {
+      if (cls.includes('Bio')) return 'Bio-medical';
+      if (cls.includes('Haz')) return 'Hazardous';
+      if (cls.includes('Wet') || cls.includes('Org')) return 'Wet Waste';
+      return 'Dry Waste';
     };
 
     const handleInference = (inferenceData) => {
-      try {
-        if (!inferenceData) return;
-        if (!data.isOn) return; // Ignore if system matches "Off"
-
-        setAiData(inferenceData);
-        const { is_moving, object_present, class: detectedClass, confidence } = inferenceData;
-
-        // 1. Reset if clear
-        if (!object_present) {
-          if (itemProcessedRef.current) itemProcessedRef.current = false;
-          return;
-        }
-
-        // 2. Ignore Moving
-        if (is_moving) return;
-
-        // 3. Thresholds
-        let threshold = 80;
-        if (sensitivity === 'Medium') threshold = 70;
-        if (sensitivity === 'Low') threshold = 60;
-
-        // 4. Low Confidence (Transparency)
-        // If stable but low confidence, and NOT yet handled
-        if (!itemProcessedRef.current && confidence > 40 && confidence < threshold) {
-          const now = new Date().toLocaleTimeString('en-US', { hour12: false });
-          setEventLog(prev => {
-            // Prevent spam: Don't log if the last entry was also "Low Confidence" for the same item
-            if (prev.length > 0 && prev[0].category === 'Low Confidence' && prev[0].rawClass === detectedClass) {
-              return prev;
-            }
-            return [{
-              id: Date.now(),
-              time: now,
-              rawClass: detectedClass,
-              category: 'Low Confidence',
-              confidence: confidence.toFixed(1)
-            }, ...prev].slice(0, 50);
-          });
-        }
-
-        // 5. Valid Detection
-        if (!itemProcessedRef.current && confidence >= threshold && detectedClass !== 'Unknown' && detectedClass !== 'Scanning...') {
-          itemProcessedRef.current = true;
-
-          // Voice removed per user request (only system state/errors)
-          // speak(`${detectedClass} detected.`);
-
-          // Categorize
-          let cat = 'Dry Waste';
-          const lower = detectedClass.toLowerCase();
-          if (lower.includes('bio')) cat = 'Bio-medical';
-          else if (lower.includes('haz')) cat = 'Hazardous';
-          else if (lower.includes('wet') || lower.includes('org')) cat = 'Wet Waste';
-
-          // Log
-          const logEntry = {
-            id: Date.now(),
-            time: new Date().toLocaleTimeString('en-US', { hour12: false }),
-            rawClass: detectedClass,
-            category: cat,
-            confidence: confidence.toFixed(1)
-          };
-          setEventLog(prev => [logEntry, ...prev].slice(0, 50));
-
-          // Update Counts
-          setProcessingCounts(prev => {
-            const next = { ...prev, total: prev.total + 1 };
-            if (cat === 'Bio-medical') next.bio++;
-            else if (cat === 'Hazardous') next.hazard++;
-            else if (cat === 'Wet Waste') next.wet++;
-            else next.dry++;
-            return next;
-          });
-        }
-      } catch (e) { console.error(e); }
+      // ...Logic...
     };
 
     socket.on('ai_inference', handleInference);
     return () => socket.off('ai_inference', handleInference);
-  }, [data.isOn, sensitivity]);
+  }, [data.isOn]);
 
   // Set Box Position with 4-Second Persistence
   useEffect(() => {
@@ -481,16 +355,7 @@ function App() {
 
   const togglePower = () => {
     playClick();
-    const newState = !data.isOn;
-    socket.emit('toggle_power', newState);
-
-    // Voice Feedback for System State
-    if (isVoiceEnabled && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      const text = newState ? "System Online" : "System Offline";
-      const utterance = new SpeechSynthesisUtterance(text);
-      window.speechSynthesis.speak(utterance);
-    }
+    socket.emit('toggle_power', !data.isOn);
   };
 
   const setSpeed = (speed) => {
@@ -577,7 +442,7 @@ function App() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               className={clsx(
-                "w-[90vw] max-w-4xl p-8 rounded-3xl shadow-2xl border flex flex-col max-h-[90vh]",
+                "w-[90vw] max-w-4xl p-8 rounded-3xl shadow-2xl border",
                 theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
               )}
               onClick={(e) => e.stopPropagation()}
@@ -597,7 +462,7 @@ function App() {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="max-h-[60vh] overflow-y-auto">
                 {sessionHistory.length === 0 ? (
                   <div className="text-center p-12 opacity-50">No history available yet.</div>
                 ) : (
@@ -608,178 +473,24 @@ function App() {
                         <th className="p-3">Time</th>
                         <th className="p-3">Items</th>
                         <th className="p-3">Revenue</th>
-                        <th className="p-3 text-right">Actions</th>
+                        <th className="p-3 text-right">Details (Bio/Haz/Wet/Dry)</th>
                       </tr>
                     </thead>
                     <tbody>
                       {sessionHistory.map(session => (
-                        <tr key={session.id} className="border-b border-slate-800/50 hover:bg-white/5 transition-colors">
+                        <tr key={session.id} className="border-b border-slate-800/50 hover:bg-white/5">
                           <td className="p-3">{session.date}</td>
                           <td className="p-3 font-mono">{session.time}</td>
                           <td className="p-3 font-bold">{session.counts.total}</td>
                           <td className="p-3 text-green-400">${session.revenue}</td>
-                          <td className="p-3 text-right">
-                            <button
-                              onClick={() => setSelectedHistorySession(session)}
-                              className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all text-xs font-bold flex items-center gap-1 ml-auto"
-                            >
-                              <BarChart2 size={12} /> View Analysis
-                            </button>
+                          <td className="p-3 text-right font-mono opacity-70">
+                            {session.counts.bio}/{session.counts.hazard}/{session.counts.wet}/{session.counts.dry}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Detailed Analysis Modal for Past Session */}
-      <AnimatePresence>
-        {selectedHistorySession && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 backdrop-blur-sm"
-            onClick={() => setSelectedHistorySession(null)}
-          >
-            <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-              className={clsx(
-                "w-[95vw] h-[90vh] max-w-6xl p-8 rounded-3xl shadow-2xl border flex flex-col overflow-hidden",
-                theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
-              )}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex justify-between items-center mb-6 border-b pb-4 border-slate-700/50">
-                <div>
-                  <h2 className="text-3xl font-black flex items-center gap-3">
-                    <Clock size={28} className="text-blue-500" />
-                    Session Analysis
-                  </h2>
-                  <div className="flex gap-4 text-sm opacity-60 font-mono mt-1">
-                    <span>{selectedHistorySession.date}</span>
-                    <span>•</span>
-                    <span>{selectedHistorySession.time}</span>
-                    <span>•</span>
-                    <span className="text-green-400">${selectedHistorySession.revenue} Revenue</span>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedHistorySession(null)} className="p-2 rounded-full hover:bg-white/10">
-                  <AlertTriangle size={32} className="rotate-45 text-slate-400" />
-                </button>
-              </div>
-
-              {/* Content Grid */}
-              <div className="flex-1 overflow-y-auto grid grid-cols-12 gap-6 p-2">
-
-                {/* 1. Composition Chart (Pie) */}
-                <div className="col-span-12 lg:col-span-4 p-6 rounded-2xl border border-dashed border-slate-700 flex flex-col items-center justify-center bg-black/20">
-                  <h3 className="text-sm font-bold uppercase tracking-wider mb-6 opacity-70">Waste Composition</h3>
-                  <div className="w-full h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsPie>
-                        <Pie
-                          data={[
-                            { name: 'Wet', value: selectedHistorySession.counts.wet, fill: binColors[0].main },
-                            { name: 'Dry', value: selectedHistorySession.counts.dry, fill: binColors[1].main },
-                            { name: 'Bio', value: selectedHistorySession.counts.bio, fill: binColors[2].main },
-                            { name: 'Hazard', value: selectedHistorySession.counts.hazard, fill: binColors[3].main },
-                          ].filter(d => d.value > 0)}
-                          dataKey="value"
-                          nameKey="name"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={5}
-                        >
-                          <Cell />
-                        </Pie>
-                        <Tooltip content={<CustomTooltip theme={theme} />} />
-                        <Legend />
-                      </RechartsPie>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* 2. Timeline Graph (Area) */}
-                <div className="col-span-12 lg:col-span-8 p-6 rounded-2xl border border-dashed border-slate-700 bg-black/20">
-                  <h3 className="text-sm font-bold uppercase tracking-wider mb-6 opacity-70">Fill Rate Timeline</h3>
-                  <div className="w-full h-64">
-                    {selectedHistorySession.timeSeriesData && selectedHistorySession.timeSeriesData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={selectedHistorySession.timeSeriesData}>
-                          <defs>
-                            <linearGradient id="colorBio" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={binColors[2].main} stopOpacity={0.8} />
-                              <stop offset="95%" stopColor={binColors[2].main} stopOpacity={0} />
-                            </linearGradient>
-                            <linearGradient id="colorWet" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={binColors[0].main} stopOpacity={0.8} />
-                              <stop offset="95%" stopColor={binColors[0].main} stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#444" vertical={false} />
-                          <XAxis dataKey="time" stroke="#666" fontSize={10} tickMargin={10} />
-                          <YAxis stroke="#666" fontSize={10} />
-                          <Tooltip content={<CustomTooltip theme={theme} />} />
-                          <Area type="monotone" dataKey="wet" stackId="1" stroke={binColors[0].main} fill="url(#colorWet)" />
-                          <Area type="monotone" dataKey="dry" stackId="1" stroke={binColors[1].main} fill={binColors[1].main} fillOpacity={0.3} />
-                          <Area type="monotone" dataKey="bio" stackId="1" stroke={binColors[2].main} fill="url(#colorBio)" />
-                          <Area type="monotone" dataKey="hazard" stackId="1" stroke={binColors[3].main} fill={binColors[3].main} fillOpacity={0.3} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-full flex items-center justify-center opacity-30 text-sm">No timeline data recorded for this session.</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* 3. Event Log (Table) */}
-                <div className="col-span-12 p-6 rounded-2xl border border-dashed border-slate-700 bg-black/20 max-h-64 overflow-y-auto">
-                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4 opacity-70 sticky top-0 bg-transparent">Detailed Event Log</h3>
-                  {selectedHistorySession.eventLog && selectedHistorySession.eventLog.length > 0 ? (
-                    <table className="w-full text-xs text-left">
-                      <thead className="opacity-50 border-b border-slate-600 sticky top-0 bg-slate-900/90 backdrop-blur-sm z-10">
-                        <tr>
-                          <th className="p-2">Time</th>
-                          <th className="p-2">Class</th>
-                          <th className="p-2">Category</th>
-                          <th className="p-2">Confidence</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedHistorySession.eventLog.map((log, i) => (
-                          <tr key={i} className="border-b border-white/5 hover:bg-white/5">
-                            <td className="p-2 font-mono opacity-70">{log.time}</td>
-                            <td className="p-2 font-bold">{log.rawClass}</td>
-                            <td className="p-2">
-                              <span className={clsx("px-2 py-0.5 rounded text-[10px]",
-                                log.category === 'Bio-medical' ? 'bg-red-500/20 text-red-300' :
-                                  log.category === 'Hazardous' ? 'bg-orange-500/20 text-orange-300' :
-                                    log.category === 'Wet Waste' ? 'bg-cyan-500/20 text-cyan-300' :
-                                      log.category === 'Low Confidence' ? 'bg-yellow-500/20 text-yellow-300' :
-                                        'bg-slate-500/20 text-slate-300'
-                              )}>
-                                {log.category}
-                              </span>
-                            </td>
-                            <td className="p-2 font-mono">{log.confidence}%</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <div className="text-center p-4 opacity-30">No individual events logged.</div>
-                  )}
-                </div>
-
               </div>
             </motion.div>
           </motion.div>
@@ -811,10 +522,6 @@ function App() {
               {data.isOn ? "System Online" : "System Offline"}
             </span>
           </div>
-
-          <button onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} className="p-3 rounded-full hover:bg-slate-500/10 transition">
-            {isVoiceEnabled ? <Volume2 size={20} className={theme === 'dark' ? "text-slate-300" : "text-slate-600"} /> : <VolumeX size={20} className="text-slate-500" />}
-          </button>
 
           <button onClick={toggleTheme} className="p-3 rounded-full hover:bg-slate-500/10 transition">
             {theme === 'dark' ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-slate-600" />}
