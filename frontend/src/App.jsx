@@ -228,9 +228,9 @@ function App() {
     localStorage.setItem('waste_settings', JSON.stringify({ camUrl, theme }));
   }, [camUrl, theme]);
 
-  // Session Management (Archive to History when turned OFF)
+  // Session Management (Archive to History when turned OFF, Reset when turned ON)
   useEffect(() => {
-    // If system turns OFF and we have processed items -> Archive it
+    // If system turns OFF and we have processed items -> Archive it (but keep displaying)
     if (!data.isOn && processingCounts.total > 0) {
       const newHistoryEntry = {
         id: Date.now(),
@@ -245,11 +245,17 @@ function App() {
       const updatedHistory = [newHistoryEntry, ...sessionHistory];
       setSessionHistory(updatedHistory);
       localStorage.setItem('waste_history', JSON.stringify(updatedHistory));
+      // DON'T reset here - keep data visible when OFF
+    }
 
-      // Reset Current Session (per user request: "Current cycle alone")
+    // If system turns ON -> Reset for fresh cycle
+    if (data.isOn) {
       setProcessingCounts({ total: 0, bio: 0, hazard: 0, wet: 0, dry: 0 });
       setEventLog([]);
       setHistory([]); // Reset live history
+      setTimeSeriesData([]); // Reset time-series charts
+      setConfidenceHistory([]); // Reset confidence scatter
+      setActiveSeconds(0); // Reset session timer
       localStorage.removeItem('waste_session_current');
     }
   }, [data.isOn]); // Runs when power state changes
@@ -443,6 +449,36 @@ function App() {
             else if (cat === 'Hazardous') next.hazard++;
             else if (cat === 'Wet Waste') next.wet++;
             else next.dry++;
+
+            // Update Time Series Data for charts
+            const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            setTimeSeriesData(prev => {
+              const newPoint = {
+                time: now,
+                bio: cat === 'Bio-medical' ? 1 : 0,
+                hazard: cat === 'Hazardous' ? 1 : 0,
+                wet: cat === 'Wet Waste' ? 1 : 0,
+                dry: cat === 'Dry Waste' ? 1 : 0
+              };
+              // Merge with last point if same time, otherwise add new
+              if (prev.length > 0 && prev[prev.length - 1].time === now) {
+                const last = { ...prev[prev.length - 1] };
+                last.bio += newPoint.bio;
+                last.hazard += newPoint.hazard;
+                last.wet += newPoint.wet;
+                last.dry += newPoint.dry;
+                return [...prev.slice(0, -1), last].slice(-30);
+              }
+              return [...prev, newPoint].slice(-30);
+            });
+
+            // Update Confidence History for scatter chart
+            setConfidenceHistory(prev => [...prev, {
+              time: now,
+              confidence: parseFloat(confidence.toFixed(1)),
+              category: cat
+            }].slice(-50));
+
             return next;
           });
         }
