@@ -42,11 +42,11 @@ const broadcastState = () => {
 // Simulation Loop
 setInterval(() => {
     if (systemState.isOn) {
-        // Simulate Revenue
-        if (Math.random() > 0.5) {
-            systemState.revenue += (Math.random() * 2);
-            systemState.revenue = parseFloat(systemState.revenue.toFixed(2));
-        }
+        // Simulate Revenue - DISABLED (User request: rely on frontend counts)
+        // if (Math.random() > 0.5) {
+        //     systemState.revenue += (Math.random() * 2);
+        //     systemState.revenue = parseFloat(systemState.revenue.toFixed(2));
+        // }
 
         systemState.bins.forEach((bin, index) => {
             // --- Smart Health Simulation (For all bins) ---
@@ -69,7 +69,7 @@ setInterval(() => {
                 if (Math.random() > 0.7) {
                     const increase = Math.random() * 0.5;
                     let newVol = bin.volume + increase;
-                    if (newVol > 85) newVol = 85; // Cap at 85% for sim
+                    if (newVol > 89) newVol = 89; // Cap at 89% per user request
 
                     if (newVol > bin.volume) {
                         bin.itemsCount += 1; // Increment items count on volume increase

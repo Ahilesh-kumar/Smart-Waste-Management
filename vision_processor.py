@@ -55,52 +55,81 @@ model = load_model(MODEL_PATH, custom_objects={'DepthwiseConv2D': CustomDepthwis
 class_names = open(LABELS_PATH, "r").readlines()
 
 # 3. Start Video Capture
-# 3. Start Video Capture
+# 3. Threaded Video Capture
 import time
+import threading
 from collections import deque, Counter
+
+class VideoStream:
+    """Reading frames in a separate thread to prevent I/O blocking"""
+    def __init__(self, src=0):
+        self.stream = cv2.VideoCapture(src)
+        if not self.stream.isOpened():
+            print("❌ ERROR: Could not open camera stream!")
+            self.stop()
+            exit()
+        (self.grabbed, self.frame) = self.stream.read()
+        self.stopped = False
+
+    def start(self):
+        threading.Thread(target=self.update, args=()).start()
+        return self
+
+    def update(self):
+        while not self.stopped:
+            if not self.stream.isOpened():
+                self.stop()
+                return
+            (self.grabbed, self.frame) = self.stream.read()
+
+    def read(self):
+        return self.frame
+
+    def stop(self):
+        self.stopped = True
+        self.stream.release()
 
 last_sorted_time = 0
 frame_count = 0
-AI_INTERVAL = 10 # Run AI every 10 frames (smooth video, prediction every ~0.3s)
-prediction_history = deque(maxlen=3) # Reduced from 10 for faster switching
+AI_INTERVAL = 5 # Run AI more frequently (every 5 frames) due to threading speedup
+prediction_history = deque(maxlen=3) 
 
 # Caching for frames between AI runs
-cached_class = "Waiting..."
+cached_class = "Scanning..."
 cached_conf = 0.0
 cached_label_id = -1
 
-# Box Smoothing (to stop jitter)
+# Box Smoothing
 prev_box = None
-SMOOTHING_FACTOR = 0.6 # 0 = no smoothing, 1 = full smoothing (higher = more stable but slower)
+SMOOTHING_FACTOR = 0.5 
 
 print(f"Connecting to Camera at: {IP_CAM_URL} ...")
-cap = cv2.VideoCapture(IP_CAM_URL)
-
-if not cap.isOpened():
-    print("❌ ERROR: Could not open camera stream!")
-    print(f"    -> Check if your phone is ON and IP Webcam is running.")
-    print(f"    -> Check if the IP is correct: {IP_CAM_URL}")
-    exit()
-
+vs = VideoStream(IP_CAM_URL).start()
 print("✅ Camera Connected! Starting Video Feed...")
+time.sleep(2.0) # Warmup
+
+# Centroid Tracking for Motion Detection
+last_centroid = None
+frames_stationary = 0
+IS_MOVING = False
+STATIONARY_THRESHOLD = 5 # Frames to wait before declaring stationary
+MOVEMENT_THRESHOLD = 2.0 # Pixels (in % or relative units) to consider "moving"
 
 while True:
-    ret, frame = cap.read()
-    if not ret:
-        print("Failed to grab frame")
+    frame = vs.read()
+    if frame is None:
         break
 
-    # Show the Feed
+    # Show the Feed (Optional - comment out for speed)
     cv2.imshow("Waste Classifier", frame)
     frame_count += 1
     
-    # --- 1. FAST OBJECT TRACKING (Run EVERY Frame for smooth box) ---
-    # Focus on the CENTER of the frame (where waste items are placed)
-    small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+    # --- 1. FAST OBJECT TRACKING (Run EVERY Frame) ---
+    small_frame = cv2.resize(frame, (0, 0), fx=0.4, fy=0.4) 
     height, width, _ = small_frame.shape
     
-    # Define Detection Zone (Center 60% of frame)
-    margin_x = int(width * 0.2)  # 20% margin on each side
+    # Define Detection Zone
+    margin_x = int(width * 0.2)
     margin_y = int(height * 0.2)
     roi = small_frame[margin_y:height-margin_y, margin_x:width-margin_x]
     
@@ -110,16 +139,39 @@ while True:
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     box_data = None
+    object_present = False
+    
     if contours:
         largest_contour = max(contours, key=cv2.contourArea)
-        if cv2.contourArea(largest_contour) > 2000:
+        if cv2.contourArea(largest_contour) > 1500:
+            object_present = True
             x, y, w, h = cv2.boundingRect(largest_contour)
             
-            # Offset x,y back to full frame coordinates
+            # Centroid Calculation (Relative to ROI)
+            cx = x + w / 2
+            cy = y + h / 2
+            
+            # Check Motion
+            if last_centroid:
+                # Euclidean distance
+                dist = np.sqrt((cx - last_centroid[0])**2 + (cy - last_centroid[1])**2)
+                if dist > MOVEMENT_THRESHOLD:
+                    frames_stationary = 0
+                    IS_MOVING = True
+                    cached_class = "Moving..." # Generic label
+                    cached_conf = 0.0
+                else:
+                    frames_stationary += 1
+                    if frames_stationary > STATIONARY_THRESHOLD:
+                        IS_MOVING = False
+            
+            last_centroid = (cx, cy)
+
+            # Offset coordinates
             x += margin_x
             y += margin_y
             
-            # Convert to percentage of FULL frame
+            # Convert to percentage
             pct_x = (x / width) * 100
             pct_y = (y / height) * 100
             pct_w = (w / width) * 100
@@ -127,7 +179,6 @@ while True:
             
             new_box = {'x': pct_x, 'y': pct_y, 'w': pct_w, 'h': pct_h}
             
-            # --- SMOOTHING: Blend with previous box to reduce jitter ---
             if prev_box:
                 box_data = {
                     'x': prev_box['x'] * SMOOTHING_FACTOR + new_box['x'] * (1 - SMOOTHING_FACTOR),
@@ -137,11 +188,18 @@ while True:
                 }
             else:
                 box_data = new_box
-            
-            prev_box = box_data # Store for next frame
+            prev_box = box_data
+    else:
+        # No object found
+        frames_stationary = 0
+        IS_MOVING = False
+        last_centroid = None
+        cached_class = "Scanning..."
 
-    # --- 2. HEAVY AI CLASSIFICATION (Run EVERY Nth Frame) ---
-    if frame_count % AI_INTERVAL == 0:
+
+    # --- 2. AI CLASSIFICATION (Only if STATIONARY) ---
+    # We obey user rule: "if sliding, ai should not detect"
+    if object_present and not IS_MOVING and frame_count % AI_INTERVAL == 0:
         # Preprocess
         image = cv2.resize(frame, (224, 224), interpolation=cv2.INTER_AREA)
         image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
@@ -153,8 +211,7 @@ while True:
         raw_class_name = class_names[index].strip()
         confidence_score = prediction[0][index]
         
-        # Smooth
-        if confidence_score > 0.5:
+        if confidence_score > 0.4:
             prediction_history.append(raw_class_name)
         
         if prediction_history:
@@ -165,25 +222,24 @@ while True:
         cached_conf = float(confidence_score) * 100
         cached_label_id = int(index)
 
-    # --- 3. EMIT DATA (Every Frame) ---
-    # We send the NEW box position + the OLD/CACHED AI label
+    # --- 3. EMIT DATA ---
     try:
         payload = {
-            'class': cached_class,
-            'confidence': cached_conf,
-            'label_id': cached_label_id,
-            'box': box_data # Real-time box!
+            'class': cached_class if not IS_MOVING else "Moving...",
+            'confidence': cached_conf if not IS_MOVING else 0,
+            'label_id': cached_label_id if not IS_MOVING else -1,
+            'box': box_data,
+            'is_moving': IS_MOVING,     # Flag for Frontend
+            'object_present': object_present # Flag for Frontend
         }
         sio.emit('ai_inference', payload)
-    except Exception as e:
+    except Exception:
         pass     
 
-    # --- 4. SORTING LOGIC (Using Cached Data) ---
-    # Only trigger sort if we are confident and debounce time passed
-    if cached_conf > 90:
+    # --- 4. SORTING LOGIC ---
+    if not IS_MOVING and cached_conf > 90:
         dashboard_bin_id = -1
         name_lower = cached_class.lower()
-        
         if "bio" in name_lower: dashboard_bin_id = 2
         elif "haz" in name_lower: dashboard_bin_id = 3
         elif "rec" in name_lower or "dry" in name_lower: dashboard_bin_id = 1
@@ -197,11 +253,9 @@ while True:
                 sio.emit('item_sorted', {'type': dashboard_bin_id}) 
                 last_sorted_time = current_time
 
-    # Listen to the keyboard for presses.
-    keyboard_input = cv2.waitKey(1)
-    if keyboard_input == 27: # ESC key
+    if cv2.waitKey(1) == 27:
         break
 
-cap.release()
+vs.stop()
 cv2.destroyAllWindows()
 sio.disconnect()

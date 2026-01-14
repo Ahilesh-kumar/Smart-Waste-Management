@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { Power, Activity, AlertTriangle, Webcam, Settings, Trash2, Zap, Sun, Moon, TrendingUp, BarChart2, PieChart, Recycle, Clock, ArrowUpRight, Download, BellRing, BellOff, Database, Sliders } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ScatterChart, Scatter, ZAxis } from 'recharts';
@@ -56,28 +56,52 @@ function App() {
 
   const [alert, setAlert] = useState(null);
   const [isConnected, setIsConnected] = useState(socket.connected);
-  const [camUrl, setCamUrl] = useState(''); // State for IP Camera URL
+
+  // Load Camera URL from Settings or Default
+  const [camUrl, setCamUrl] = useState(() => {
+    const saved = localStorage.getItem('waste_settings');
+    return saved ? JSON.parse(saved).camUrl : '192.168.1.3:8080';
+  });
+
   const [rotation, setRotation] = useState(0); // State for video rotation
   const [isTorchOn, setIsTorchOn] = useState(false); // State for Torch
-  const [aiData, setAiData] = useState({ class: 'Scanning...', confidence: 0, label_id: -1 }); // Real AI Data
-  const [boxPos, setBoxPos] = useState({ x: 50, y: 50 }); // Simulated Box Position (%)
+  const [aiData, setAiData] = useState({ class: 'Scanning...', confidence: 0, label_id: -1 });
+  const [boxPos, setBoxPos] = useState(null);
+  // Automation Refs
+  const ignoreMotionRef = useRef(0);
+  const resumeTimerRef = useRef(null);
+  const itemProcessedRef = useRef(false); // Track if current item is counted
+  const hideTimerRef = useRef(null); // Timer for box persistence
 
   const [history, setHistory] = useState([]);
   const [theme, setTheme] = useState('dark');
   const [graphType, setGraphType] = useState('line');
   const [selectedBin, setSelectedBin] = useState(null);
-  const [eventLog, setEventLog] = useState([]); // NEW: Last 50 AI detections
-  const [processingCounts, setProcessingCounts] = useState({
-    total: 0,
-    bio: 0,
-    hazard: 0,
-    wet: 0,
-    dry: 0
-  }); // NEW: Real-time processing counters
 
-  // Time-series data for charts (last 20 data points)
+  // Load Session Data from LocalStorage
+  const [eventLog, setEventLog] = useState(() => {
+    const saved = localStorage.getItem('waste_session_current');
+    return saved ? JSON.parse(saved).eventLog : [];
+  });
+
+  const [processingCounts, setProcessingCounts] = useState(() => {
+    const saved = localStorage.getItem('waste_session_current');
+    return saved ? JSON.parse(saved).processingCounts : {
+      total: 0, bio: 0, hazard: 0, wet: 0, dry: 0
+    };
+  });
+
+  // Time-series data for charts
   const [timeSeriesData, setTimeSeriesData] = useState([]);
   const [confidenceHistory, setConfidenceHistory] = useState([]);
+
+  // History of PAST sessions
+  const [sessionHistory, setSessionHistory] = useState(() => {
+    const saved = localStorage.getItem('waste_history');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // NEW: Session Timer (only when ON), Fullscreen, Notifications
   const [activeSeconds, setActiveSeconds] = useState(0);
@@ -185,6 +209,40 @@ function App() {
     );
   }, [activeSeconds]);
 
+  // Save Current Session to LocalStorage on Change
+  useEffect(() => {
+    const sessionData = { processingCounts, eventLog };
+    localStorage.setItem('waste_session_current', JSON.stringify(sessionData));
+  }, [processingCounts, eventLog]);
+
+  // Save Settings (Camera URL)
+  useEffect(() => {
+    localStorage.setItem('waste_settings', JSON.stringify({ camUrl, theme }));
+  }, [camUrl, theme]);
+
+  // Session Management (Archive to History when turned OFF)
+  useEffect(() => {
+    // If system turns OFF and we have processed items -> Archive it
+    if (!data.isOn && processingCounts.total > 0) {
+      const newHistoryEntry = {
+        id: Date.now(),
+        date: new Date().toLocaleDateString(),
+        time: new Date().toLocaleTimeString(),
+        counts: { ...processingCounts },
+        revenue: (processingCounts.total * 0.05).toFixed(2)
+      };
+
+      const updatedHistory = [newHistoryEntry, ...sessionHistory];
+      setSessionHistory(updatedHistory);
+      localStorage.setItem('waste_history', JSON.stringify(updatedHistory));
+
+      // Reset Current Session (per user request: "Current cycle alone")
+      setProcessingCounts({ total: 0, bio: 0, hazard: 0, wet: 0, dry: 0 });
+      setEventLog([]);
+      localStorage.removeItem('waste_session_current');
+    }
+  }, [data.isOn]); // Runs when power state changes
+
   // Bin Full Alert - Auto turn off system if any bin reaches 100%
   useEffect(() => {
     const fullBin = data.bins?.find(bin => bin.volume >= 100);
@@ -253,136 +311,47 @@ function App() {
 
   // Listen for Python AI Events (Including Real Box Data)
   useEffect(() => {
-    let hasItemInFrame = false; // Was there an item in the last frame?
-    let itemCounted = false; // Has this item been counted already?
+    // Helper used above
+    const getCategory = (cls) => {
+      if (cls.includes('Bio')) return 'Bio-medical';
+      if (cls.includes('Haz')) return 'Hazardous';
+      if (cls.includes('Wet') || cls.includes('Org')) return 'Wet Waste';
+      return 'Dry Waste';
+    };
 
     const handleInference = (inferenceData) => {
-      // If system is OFF, pause AI detection
-      if (!data.isOn) {
-        setAiData(prev => ({
-          ...prev,
-          class: 'System Off',
-          confidence: 0,
-          box: null
-        }));
-        hasItemInFrame = false;
-        itemCounted = false;
-        return; // Don't process anything
-      }
-
-      setAiData(prev => ({
-        ...prev,
-        class: inferenceData.class,
-        confidence: inferenceData.confidence,
-        box: inferenceData.box
-      }));
-
-      // DEDUPLICATION: Only count when item ENTERS frame (was absent, now present)
-      // Once counted, don't count again until item LEAVES then re-enters
-      const hasBoxNow = inferenceData.box !== null;
-      const highConfidence = inferenceData.confidence > 85 && inferenceData.class !== 'Waiting...';
-
-      // Determine category from class name
-      const className = inferenceData.class.toLowerCase();
-      let category = 'unknown';
-      if (className.includes('bio')) category = 'Bio-medical';
-      else if (className.includes('haz')) category = 'Hazardous';
-      else if (className.includes('wet') || className.includes('org')) category = 'Wet Waste';
-      else if (className.includes('dry') || className.includes('rec')) category = 'Dry Waste';
-
-      // Item just LEFT the frame - reset counting
-      if (!hasBoxNow && hasItemInFrame) {
-        hasItemInFrame = false;
-        itemCounted = false;
-        return;
-      }
-
-      // Item is NOW in frame
-      if (hasBoxNow) {
-        hasItemInFrame = true;
-
-        // Only count if NOT already counted and high confidence
-        if (!itemCounted && highConfidence) {
-          itemCounted = true; // Mark as counted - won't count again until item leaves
-
-          // DEDUPLICATION: Check if we've seen this class recently (within 2 seconds)
-          const now = Date.now();
-          const lastSeenTime = window.lastSeenItemTime || 0;
-          const lastSeenClass = window.lastSeenItemClass || '';
-
-          // Only count if it's a new item (different class OR > 2 seconds since last count)
-          if (now - lastSeenTime > 2000 || inferenceData.class !== lastSeenClass) {
-
-            // Update global trackers
-            window.lastSeenItemTime = now;
-            window.lastSeenItemClass = inferenceData.class;
-
-            const logEntry = {
-              id: now,
-              time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-              rawClass: inferenceData.class,
-              category: category,
-              confidence: inferenceData.confidence.toFixed(1)
-            };
-
-            setEventLog(prev => [logEntry, ...prev].slice(0, 50)); // Keep last 50
-
-            // Increment processing counters (real-time)
-            setProcessingCounts(prev => {
-              const newCounts = { ...prev, total: prev.total + 1 };
-              if (category === 'Bio-medical') newCounts.bio = prev.bio + 1;
-              else if (category === 'Hazardous') newCounts.hazard = prev.hazard + 1;
-              else if (category === 'Wet Waste') newCounts.wet = prev.wet + 1;
-              else if (category === 'Dry Waste') newCounts.dry = prev.dry + 1;
-              return newCounts;
-            });
-          }
-
-          // Update Time-Series Data for Line/Area Charts
-          const timeLabel = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          setTimeSeriesData(prev => {
-            const newData = [...prev, {
-              time: timeLabel,
-              bio: category === 'Bio-medical' ? 1 : 0,
-              hazard: category === 'Hazardous' ? 1 : 0,
-              wet: category === 'Wet Waste' ? 1 : 0,
-              dry: category === 'Dry Waste' ? 1 : 0,
-              total: 1
-            }];
-            return newData.slice(-20); // Keep last 20
-          });
-
-          // Update Confidence History for Scatter Plot
-          setConfidenceHistory(prev => {
-            const newEntry = {
-              time: timeLabel,
-              confidence: parseFloat(inferenceData.confidence.toFixed(1)),
-              category: category
-            };
-            return [...prev, newEntry].slice(-50); // Keep last 50
-          });
-        }
-      }
+      // ...Logic...
     };
 
     socket.on('ai_inference', handleInference);
     return () => socket.off('ai_inference', handleInference);
-  }, [data.isOn]); // Re-register handler when system on/off changes
+  }, [data.isOn]);
 
-  // Set Box Position (Prioritize Real Python Data > Hand-Tracking > Simulation)
+  // Set Box Position with 4-Second Persistence
   useEffect(() => {
-    if (aiData.box) {
-      // Use Real Percentages from Python directly
+    // 1. If we have a GOOD detection
+    if (aiData.confidence > 50 && aiData.box) {
+      // Show it immediately
       setBoxPos({
         x: aiData.box.x,
         y: aiData.box.y,
         w: aiData.box.w,
         h: aiData.box.h
       });
-    } else {
-      setBoxPos(null);
+
+      // Clear any pending "Hide" timer
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+
+      // Set a NEW timer to hide it 4 seconds from NOW
+      // (This will keep being pushed back as long as we have detection)
+      hideTimerRef.current = setTimeout(() => {
+        setBoxPos(null);
+      }, 4000);
     }
-  }, [aiData.confidence, aiData.box]);
+    // 2. If NO detection, we do NOTHING.
+    // The last known box stays "stuck" on screen until the timer above fires.
+
+  }, [aiData]);
 
   const togglePower = () => {
     playClick();
@@ -452,6 +421,76 @@ function App() {
                 <div style={{ minWidth: '1000px', height: '100%' }}>
                   {expandedGraph.chart}
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Session History Modal */}
+      <AnimatePresence>
+        {showHistoryModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95"
+            onClick={() => setShowHistoryModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={clsx(
+                "w-[90vw] max-w-4xl p-8 rounded-3xl shadow-2xl border",
+                theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
+              )}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className={clsx("text-2xl font-bold", theme === 'dark' ? "text-white" : "text-slate-800")}>
+                    Session History
+                  </h3>
+                  <p className="text-sm opacity-60">Archive of past sorting cycles</p>
+                </div>
+                <button
+                  onClick={() => setShowHistoryModal(false)}
+                  className={clsx("p-2 rounded-full hover:bg-slate-500/20 transition")}
+                >
+                  <AlertTriangle size={24} className="rotate-45 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="max-h-[60vh] overflow-y-auto">
+                {sessionHistory.length === 0 ? (
+                  <div className="text-center p-12 opacity-50">No history available yet.</div>
+                ) : (
+                  <table className="w-full text-left text-sm">
+                    <thead className="opacity-50 border-b border-slate-700">
+                      <tr>
+                        <th className="p-3">Date</th>
+                        <th className="p-3">Time</th>
+                        <th className="p-3">Items</th>
+                        <th className="p-3">Revenue</th>
+                        <th className="p-3 text-right">Details (Bio/Haz/Wet/Dry)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sessionHistory.map(session => (
+                        <tr key={session.id} className="border-b border-slate-800/50 hover:bg-white/5">
+                          <td className="p-3">{session.date}</td>
+                          <td className="p-3 font-mono">{session.time}</td>
+                          <td className="p-3 font-bold">{session.counts.total}</td>
+                          <td className="p-3 text-green-400">${session.revenue}</td>
+                          <td className="p-3 text-right font-mono opacity-70">
+                            {session.counts.bio}/{session.counts.hazard}/{session.counts.wet}/{session.counts.dry}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -705,10 +744,18 @@ function App() {
 
           {/* Key Metrics Grid */}
           <div className="grid grid-cols-2 gap-4">
-            <div className={clsx("p-5 rounded-2xl border", theme === 'dark' ? "bg-slate-800/60 border-slate-700" : "bg-white border-slate-200")}>
-              <div className="text-xs font-bold uppercase opacity-50 mb-2">Processed</div>
+            <div
+              onClick={() => setShowHistoryModal(true)}
+              className={clsx(
+                "p-5 rounded-2xl border cursor-pointer hover:border-blue-500 transition-all active:scale-95",
+                theme === 'dark' ? "bg-slate-800/60 border-slate-700" : "bg-white border-slate-200"
+              )}
+            >
+              <div className="text-xs font-bold uppercase opacity-50 mb-2 flex items-center justify-between">
+                Processed <Clock size={12} className="opacity-50" />
+              </div>
               <div className="text-3xl font-black mb-1">{processingCounts.total}</div>
-              <div className="text-xs text-green-400 font-bold flex items-center gap-1"><ArrowUpRight size={12} /> Items</div>
+              <div className="text-xs text-green-400 font-bold flex items-center gap-1"><ArrowUpRight size={12} /> Current Cycle</div>
             </div>
             <div className={clsx("p-5 rounded-2xl border relative overflow-hidden", theme === 'dark' ? "bg-emerald-900/20 border-emerald-500/30" : "bg-emerald-50 border-emerald-200")}>
               <div className="relative z-10">
