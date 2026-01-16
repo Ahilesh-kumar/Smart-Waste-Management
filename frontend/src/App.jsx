@@ -162,6 +162,22 @@ function App() {
     return saved ? JSON.parse(saved) : Array(24).fill(0);
   });
 
+  // Toast notifications
+  const [toasts, setToasts] = useState([]);
+
+  // Keyboard shortcuts help modal
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+
+  // Settings modal
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Add toast helper
+  const addToast = (message, type = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+  };
+
   // Theme with persistence
   const toggleTheme = () => {
     playClick();
@@ -520,21 +536,31 @@ function App() {
     }
   };
 
-  // Keyboard shortcuts (ESC=close, Space=power, R=reset)
+  // Keyboard shortcuts (ESC=close, Space=power, R=reset, ?=help, S=settings)
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Ignore if typing in input
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-      if (e.key === 'Escape') setExpandedGraph(null);
+      if (e.key === 'Escape') {
+        setExpandedGraph(null);
+        setShowKeyboardHelp(false);
+        setShowSettings(false);
+      }
       if (e.key === ' ' && !e.repeat) { // Space = toggle power
         e.preventDefault();
         togglePower();
       }
-      if (e.key === 'r' || e.key === 'R') { // R = reset session
-        if (e.ctrlKey) return; // Don't interfere with Ctrl+R
+      if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey) { // R = reset session
         setProcessingCounts({ total: 0, bio: 0, hazard: 0, wet: 0, dry: 0 });
         setEventLog([]);
+        addToast('Session reset', 'success');
+      }
+      if (e.key === '?' || (e.key === '/' && e.shiftKey)) { // ? = show keyboard help
+        setShowKeyboardHelp(true);
+      }
+      if ((e.key === 's' || e.key === 'S') && !e.ctrlKey) { // S = settings
+        setShowSettings(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -776,6 +802,139 @@ function App() {
       "min-h-screen font-sans p-6 transition-all duration-700",
       theme === 'dark' ? "animate-mesh-dark text-slate-100" : "animate-mesh-light text-slate-800"
     )}>
+      {/* Toast Notifications Container */}
+      <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2">
+        <AnimatePresence>
+          {toasts.map(toast => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, x: 100, scale: 0.8 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 100, scale: 0.8 }}
+              className={clsx(
+                "px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border flex items-center gap-2 text-sm font-medium",
+                toast.type === 'success' && "bg-green-500/90 border-green-400 text-white",
+                toast.type === 'error' && "bg-red-500/90 border-red-400 text-white",
+                toast.type === 'warning' && "bg-amber-500/90 border-amber-400 text-white",
+                toast.type === 'info' && "bg-blue-500/90 border-blue-400 text-white"
+              )}
+            >
+              {toast.type === 'success' && '✓'}
+              {toast.type === 'error' && '✕'}
+              {toast.type === 'warning' && '⚠'}
+              {toast.type === 'info' && 'ℹ'}
+              {toast.message}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Keyboard Shortcuts Help Modal */}
+      <AnimatePresence>
+        {showKeyboardHelp && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80"
+            onClick={() => setShowKeyboardHelp(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={clsx("p-6 rounded-2xl border shadow-2xl max-w-md", theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200")}
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold mb-4">⌨️ Keyboard Shortcuts</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span>Toggle Power</span>
+                  <kbd className="px-2 py-1 bg-slate-700 rounded text-xs font-mono">Space</kbd>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Reset Session</span>
+                  <kbd className="px-2 py-1 bg-slate-700 rounded text-xs font-mono">R</kbd>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Settings</span>
+                  <kbd className="px-2 py-1 bg-slate-700 rounded text-xs font-mono">S</kbd>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Close Modal</span>
+                  <kbd className="px-2 py-1 bg-slate-700 rounded text-xs font-mono">Esc</kbd>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>This Help</span>
+                  <kbd className="px-2 py-1 bg-slate-700 rounded text-xs font-mono">?</kbd>
+                </div>
+              </div>
+              <button onClick={() => setShowKeyboardHelp(false)} className="mt-4 w-full py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition">
+                Got it!
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80"
+            onClick={() => setShowSettings(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={clsx("p-6 rounded-2xl border shadow-2xl w-full max-w-md", theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200")}
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold mb-4">⚙️ Settings</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span>Sound Effects</span>
+                  <button
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className={clsx("w-12 h-6 rounded-full transition", soundEnabled ? "bg-green-500" : "bg-slate-600")}
+                  >
+                    <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", soundEnabled ? "translate-x-6" : "translate-x-0.5")} />
+                  </button>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Sensitivity</span>
+                  <select
+                    value={sensitivity}
+                    onChange={(e) => setSensitivity(e.target.value)}
+                    className="px-3 py-1 rounded-lg bg-slate-700 border border-slate-600 text-sm"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Voice Feedback</span>
+                  <button
+                    onClick={() => setIsVoiceEnabled(!isVoiceEnabled)}
+                    className={clsx("w-12 h-6 rounded-full transition", isVoiceEnabled ? "bg-green-500" : "bg-slate-600")}
+                  >
+                    <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", isVoiceEnabled ? "translate-x-6" : "translate-x-0.5")} />
+                  </button>
+                </div>
+              </div>
+              <button onClick={() => { setShowSettings(false); addToast('Settings saved', 'success'); }} className="mt-6 w-full py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition">
+                Save & Close
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Expanded Graph Modal */}
       <AnimatePresence>
         {expandedGraph && (
@@ -1472,21 +1631,21 @@ function App() {
 
           {/* Individual Category Counts - Separate Row */}
           <div className="grid grid-cols-4 gap-3">
-            <div className={clsx("p-4 rounded-2xl border text-center", theme === 'dark' ? "bg-emerald-900/20 border-emerald-500/30" : "bg-emerald-50 border-emerald-200")}>
+            <div className={clsx("p-4 rounded-2xl border text-center card-hover", theme === 'dark' ? "bg-emerald-900/20 border-emerald-500/30 hover:glow-emerald" : "bg-emerald-50 border-emerald-200")}>
               <div className="text-xs font-bold uppercase opacity-60 mb-1 text-emerald-400">Bio</div>
-              <div className="text-2xl font-black text-emerald-500">{processingCounts.bio}</div>
+              <div className={clsx("text-2xl font-black text-emerald-500", processingCounts.bio > 0 && "count-animate")}>{processingCounts.bio}</div>
             </div>
-            <div className={clsx("p-4 rounded-2xl border text-center", theme === 'dark' ? "bg-rose-900/20 border-rose-500/30" : "bg-rose-50 border-rose-200")}>
+            <div className={clsx("p-4 rounded-2xl border text-center card-hover", theme === 'dark' ? "bg-rose-900/20 border-rose-500/30 hover:glow-rose" : "bg-rose-50 border-rose-200")}>
               <div className="text-xs font-bold uppercase opacity-60 mb-1 text-rose-400">Hazard</div>
-              <div className="text-2xl font-black text-rose-500">{processingCounts.hazard}</div>
+              <div className={clsx("text-2xl font-black text-rose-500", processingCounts.hazard > 0 && "count-animate")}>{processingCounts.hazard}</div>
             </div>
-            <div className={clsx("p-4 rounded-2xl border text-center", theme === 'dark' ? "bg-cyan-900/20 border-cyan-500/30" : "bg-cyan-50 border-cyan-200")}>
+            <div className={clsx("p-4 rounded-2xl border text-center card-hover", theme === 'dark' ? "bg-cyan-900/20 border-cyan-500/30 hover:glow-cyan" : "bg-cyan-50 border-cyan-200")}>
               <div className="text-xs font-bold uppercase opacity-60 mb-1 text-cyan-400">Wet</div>
-              <div className="text-2xl font-black text-cyan-500">{processingCounts.wet}</div>
+              <div className={clsx("text-2xl font-black text-cyan-500", processingCounts.wet > 0 && "count-animate")}>{processingCounts.wet}</div>
             </div>
-            <div className={clsx("p-4 rounded-2xl border text-center", theme === 'dark' ? "bg-amber-900/20 border-amber-500/30" : "bg-amber-50 border-amber-200")}>
+            <div className={clsx("p-4 rounded-2xl border text-center card-hover", theme === 'dark' ? "bg-amber-900/20 border-amber-500/30 hover:glow-amber" : "bg-amber-50 border-amber-200")}>
               <div className="text-xs font-bold uppercase opacity-60 mb-1 text-amber-400">Dry</div>
-              <div className="text-2xl font-black text-amber-500">{processingCounts.dry}</div>
+              <div className={clsx("text-2xl font-black text-amber-500", processingCounts.dry > 0 && "count-animate")}>{processingCounts.dry}</div>
             </div>
           </div>
 
@@ -1661,6 +1820,24 @@ function App() {
                   <CartesianGrid strokeDasharray="3 3" opacity={0.1} /><XAxis dataKey="time" fontSize={10} /><YAxis dataKey="confidence" domain={[0, 100]} fontSize={10} />
                   <Scatter data={confidenceHistory} fill="#8b5cf6" />
                 </ScatterChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 6. Detection Heatmap by Hour */}
+            <div
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+            >
+              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase flex items-center gap-2">
+                Detection Heatmap
+                <span className="text-xs font-normal opacity-50">(Peak: {detectionHours.indexOf(Math.max(...detectionHours))}:00)</span>
+              </h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={detectionHours.map((count, hour) => ({ hour: `${hour}:00`, count }))}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                  <XAxis dataKey="hour" fontSize={9} interval={2} />
+                  <YAxis fontSize={10} />
+                  <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
