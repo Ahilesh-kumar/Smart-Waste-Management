@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { Power, Activity, AlertTriangle, Webcam, Settings, Trash2, Zap, Sun, Moon, TrendingUp, BarChart2, PieChart, Recycle, Clock, ArrowUpRight, Download, BellRing, BellOff, Database, Sliders, Volume2, VolumeX } from 'lucide-react';
+import { Power, Activity, AlertTriangle, Webcam, Settings, Trash2, Zap, Sun, Moon, TrendingUp, BarChart2, PieChart, Recycle, Clock, ArrowUpRight, Download, BellRing, BellOff, Database, Sliders, Volume2, VolumeX, Pause, Play } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ScatterChart, Scatter, ZAxis } from 'recharts';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -171,12 +171,33 @@ function App() {
   // Settings modal
   const [showSettings, setShowSettings] = useState(false);
 
+  // Pause mode - camera on, counting paused
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Display modes: 'full' | 'kiosk' | 'split' | 'compact' | 'widget'
+  const [displayMode, setDisplayMode] = useState('full');
+
+  // Event log search
+  const [logSearchQuery, setLogSearchQuery] = useState('');
+
+  // Auto night mode (torch)
+  const [autoTorch, setAutoTorch] = useState(false);
+
   // Add toast helper
   const addToast = (message, type = 'info') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
   };
+
+  // Filtered event log based on search
+  const filteredEventLog = logSearchQuery
+    ? eventLog.filter(e =>
+      e.rawClass.toLowerCase().includes(logSearchQuery.toLowerCase()) ||
+      e.category.toLowerCase().includes(logSearchQuery.toLowerCase()) ||
+      e.time.includes(logSearchQuery)
+    )
+    : eventLog;
 
   // Theme with persistence
   const toggleTheme = () => {
@@ -567,6 +588,86 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+
+  // Auto-Torch: Detect brightness with HYSTERESIS to prevent feedback loop
+  // Uses different thresholds for ON vs OFF to account for torch's own light
+  const autoTorchCooldownRef = useRef(0); // Timestamp of last toggle
+
+  useEffect(() => {
+    if (!autoTorch || !camUrl || !data.isOn) return;
+
+    // Hysteresis thresholds (0-255 scale)
+    const DARK_THRESHOLD = 40;    // Turn ON when below this
+    const BRIGHT_THRESHOLD = 120; // Turn OFF only when ABOVE this (much higher to account for torch light)
+    const CHECK_INTERVAL_MS = 3000; // Check every 3 seconds
+    const COOLDOWN_MS = 15000; // Minimum 15 seconds between toggles
+
+    const checkBrightness = () => {
+      const img = document.getElementById('live-feed-img');
+      if (!img || img.tagName !== 'IMG') return;
+
+      // Respect cooldown to prevent rapid toggling
+      const now = Date.now();
+      if (now - autoTorchCooldownRef.current < COOLDOWN_MS) return;
+
+      try {
+        // Create a small canvas to analyze image brightness
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const sampleSize = 50; // Small sample for performance
+        canvas.width = sampleSize;
+        canvas.height = sampleSize;
+
+        // Draw image to canvas (scaled down for speed)
+        ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+        const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize);
+        const pixels = imageData.data;
+
+        // Calculate average brightness (luminance)
+        let totalBrightness = 0;
+        let pixelCount = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          // Luminance formula: 0.299*R + 0.587*G + 0.114*B
+          const brightness = 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+          totalBrightness += brightness;
+          pixelCount++;
+        }
+        const avgBrightness = totalBrightness / pixelCount;
+
+        // HYSTERESIS logic:
+        // Turn ON only when very dark (< 40)
+        // Turn OFF only when very bright (> 120) - torch light alone won't reach this
+        if (avgBrightness < DARK_THRESHOLD && !isTorchOn) {
+          // Too dark - turn on torch
+          fetch(`${camUrl}/enabletorch`, { mode: 'no-cors' })
+            .then(() => {
+              setIsTorchOn(true);
+              autoTorchCooldownRef.current = Date.now();
+              addToast('🔦 Auto-torch ON (low light detected)', 'info');
+            })
+            .catch(err => console.error('Auto-torch error:', err));
+        } else if (avgBrightness > BRIGHT_THRESHOLD && isTorchOn) {
+          // Very bright (external light source) - safe to turn off torch
+          fetch(`${camUrl}/disabletorch`, { mode: 'no-cors' })
+            .then(() => {
+              setIsTorchOn(false);
+              autoTorchCooldownRef.current = Date.now();
+              addToast('🔦 Auto-torch OFF (sufficient ambient light)', 'info');
+            })
+            .catch(err => console.error('Auto-torch error:', err));
+        }
+      } catch (e) {
+        // Cross-origin or other error - can't analyze image
+        console.log('Auto-torch: Cannot analyze image (CORS or not loaded)');
+      }
+    };
+
+    const interval = setInterval(checkBrightness, CHECK_INTERVAL_MS);
+    checkBrightness(); // Initial check
+
+    return () => clearInterval(interval);
+  }, [autoTorch, camUrl, data.isOn, isTorchOn]);
+
   // Toggle Fullscreen Camera
   const toggleFullscreen = () => {
     const camElement = document.getElementById('live-feed-img');
@@ -602,6 +703,18 @@ function App() {
         if (!data.isOn) return; // Ignore if system matches "Off"
 
         setAiData(inferenceData);
+
+        // Auto-torch logic (Simulated brightness check)
+        if (autoTorch && inferenceData.brightness !== undefined) {
+          const BRIGHTNESS_THRESHOLD = 30; // 0-100
+          if (inferenceData.brightness < BRIGHTNESS_THRESHOLD) {
+            // Low light - turn on torch (mock)
+            // socket.emit('toggle_torch', true);
+          }
+        }
+
+        // If Paused, show visualization but DO NOT COUNT
+        if (isPaused) return; // Skip all counting/logging logic below
         const { is_moving, object_present, class: detectedClass, confidence, box } = inferenceData;
 
         // 1. Object left camera view - RESET for next detection
@@ -797,6 +910,54 @@ function App() {
   const direction = data.conveyorDirection;
   const servos = [0, 1, 2, 3].map(id => ({ id, angle: data.manualServo[id] }));
 
+  // Widget Mode Return
+  if (displayMode === 'widget') {
+    return (
+      <div className={clsx("min-h-screen flex items-center justify-center bg-transparent", theme === 'dark' ? "text-white" : "text-slate-800")}>
+        <div className={clsx("w-80 p-6 rounded-3xl border shadow-2xl backdrop-blur-xl flex flex-col gap-4", theme === 'dark' ? "bg-slate-900/80 border-slate-700" : "bg-white/80 border-slate-200")}>
+          <div className="flex justify-between items-center">
+            <h2 className="font-black text-lg flex items-center gap-2"><Recycle size={20} className="text-green-500" /> Waste AI</h2>
+            <button onClick={() => setDisplayMode('full')} className="p-1 hover:bg-white/10 rounded"><ArrowUpRight size={16} /></button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-emerald-500/20 p-3 rounded-xl border border-emerald-500/30 text-center">
+              <div className="text-[10px] uppercase font-bold text-emerald-400">Total</div>
+              <div className="text-2xl font-black">{processingCounts.total}</div>
+            </div>
+            <div className="bg-blue-500/20 p-3 rounded-xl border border-blue-500/30 text-center">
+              <div className="text-[10px] uppercase font-bold text-blue-400">Revenue</div>
+              <div className="text-xl font-black">${(processingCounts.total * 0.05).toFixed(2)}</div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {['Bio', 'Hazard', 'Wet', 'Dry'].map(cat => {
+              const val = cat === 'Bio' ? processingCounts.bio : cat === 'Hazard' ? processingCounts.hazard : cat === 'Wet' ? processingCounts.wet : processingCounts.dry;
+              const color = cat === 'Bio' ? 'bg-emerald-500' : cat === 'Hazard' ? 'bg-rose-500' : cat === 'Wet' ? 'bg-blue-500' : 'bg-amber-500';
+              return (
+                <div key={cat} className="flex justify-between text-xs font-bold items-center">
+                  <span className="opacity-70">{cat}</span>
+                  <div className="flex items-center gap-2">
+                    <div className={clsx("w-24 h-2 bg-black/20 rounded-full overflow-hidden")}>
+                      <div className={clsx("h-full", color)} style={{ width: `${Math.min(val * 5, 100)}%` }} />
+                    </div>
+                    <span className="w-4 text-right">{val}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <div className="flex justify-between items-center pt-2 border-t border-white/10">
+            <div className="flex items-center gap-2">
+              <div className={clsx("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-red-500")} />
+              <span className="text-[10px] opacity-50 uppercase font-bold">{isConnected ? "Online" : "Offline"}</span>
+            </div>
+            <button onClick={() => setDisplayMode('full')} className="text-xs text-blue-400 hover:underline">Expand</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={clsx(
       "min-h-screen font-sans p-6 transition-all duration-700",
@@ -925,6 +1086,29 @@ function App() {
                   >
                     <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", isVoiceEnabled ? "translate-x-6" : "translate-x-0.5")} />
                   </button>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Auto Torch (Night Mode)</span>
+                  <button
+                    onClick={() => setAutoTorch(!autoTorch)}
+                    className={clsx("w-12 h-6 rounded-full transition", autoTorch ? "bg-green-500" : "bg-slate-600")}
+                  >
+                    <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", autoTorch ? "translate-x-6" : "translate-x-0.5")} />
+                  </button>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Display Mode</span>
+                  <select
+                    value={displayMode}
+                    onChange={(e) => setDisplayMode(e.target.value)}
+                    className="px-3 py-1 rounded-lg bg-slate-700 border border-slate-600 text-sm capitalize"
+                  >
+                    <option value="full">Full Dashboard</option>
+                    <option value="kiosk">Kiosk Mode</option>
+                    <option value="split">Split View</option>
+                    <option value="compact">Compact Mode</option>
+                    <option value="widget">Widget Mode</option>
+                  </select>
                 </div>
               </div>
               <button onClick={() => { setShowSettings(false); addToast('Settings saved', 'success'); }} className="mt-6 w-full py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition">
@@ -1333,10 +1517,18 @@ function App() {
       </header>
 
       {/* NEW LAYOUT GRID */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className={clsx(
+        "grid grid-cols-12 gap-6",
+        displayMode === 'compact' && "gap-4"
+      )}>
 
-        {/* LEFT COLUMN (Camera & Controls) - 66% width */}
-        <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
+        {/* LEFT COLUMN (Camera & Controls) */}
+        <div className={clsx(
+          "col-span-12 flex flex-col gap-6",
+          displayMode === 'split' ? "lg:col-span-6" :
+            displayMode === 'kiosk' ? "lg:col-span-9" :
+              "lg:col-span-8"
+        )}>
 
           {/* Main Camera Feed */}
           <div className={clsx(
@@ -1484,75 +1676,138 @@ function App() {
             )}
           </div>
 
-          {/* Control Panel Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Conveyor Controls */}
-            <div className={clsx("p-6 rounded-2xl border", theme === 'dark' ? "bg-slate-800/50 border-slate-700" : "bg-white border-slate-200")}>
-              <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2 opacity-70">
-                <Settings size={16} /> Conveyor Control
-              </h3>
-              <div className="space-y-4">
-                <div className="flex justify-between bg-black/20 p-1 rounded-xl">
-                  {['Slow', 'Medium', 'Fast'].map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setSpeed(s)}
-                      className={clsx(
-                        "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
-                        speed === s ? "bg-blue-600 text-white shadow-lg" : "hover:bg-white/5 text-slate-400"
-                      )}
-                    >
-                      {s}
-                    </button>
+          {/* Control Panel Grid (Hidden in Kiosk Mode) */}
+          {displayMode !== 'kiosk' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Conveyor Controls */}
+              <div className={clsx("p-6 rounded-2xl border", theme === 'dark' ? "bg-slate-800/50 border-slate-700" : "bg-white border-slate-200")}>
+                <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2 opacity-70">
+                  <Settings size={16} /> Conveyor Control
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between bg-black/20 p-1 rounded-xl">
+                    {['Slow', 'Medium', 'Fast'].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setSpeed(s)}
+                        className={clsx(
+                          "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
+                          speed === s ? "bg-blue-600 text-white shadow-lg" : "hover:bg-white/5 text-slate-400"
+                        )}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => toggleDirection(direction === 'Forward' ? 'Backward' : 'Forward')}
+                    className={clsx(
+                      "w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all",
+                      direction === 'Forward'
+                        ? (theme === 'dark' ? "bg-slate-700 hover:bg-slate-600" : "bg-slate-200 hover:bg-slate-300")
+                        : "bg-orange-500 hover:bg-orange-600 text-white animate-pulse"
+                    )}
+                  >
+                    {direction === 'Forward' ? 'Forward Direction' : 'Reverse Mode Active'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Servo Controls */}
+              <div className={clsx("p-6 rounded-2xl border", theme === 'dark' ? "bg-slate-800/50 border-slate-700" : "bg-white border-slate-200")}>
+                <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2 opacity-70">
+                  <Sliders size={16} /> Manual Servo Override
+                </h3>
+                <div className="grid grid-cols-4 gap-2">
+                  {servos.map(servo => (
+                    <div key={servo.id} className="flex flex-col items-center gap-2">
+                      <div className="h-24 w-full bg-black/20 rounded-full relative">
+                        <div
+                          className="absolute bottom-0 w-full bg-blue-500 rounded-full transition-all duration-300"
+                          style={{ height: `${(servo.angle / 180) * 100}%` }}
+                        />
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="180"
+                        value={servo.angle}
+                        onChange={(e) => setServo(servo.id, parseInt(e.target.value))}
+                        className="w-full h-1 bg-transparent appearance-none cursor-pointer"
+                      />
+                      <span className="text-[10px] font-mono opacity-50">S{servo.id}</span>
+                    </div>
                   ))}
                 </div>
-                <button
-                  onClick={() => toggleDirection(direction === 'Forward' ? 'Backward' : 'Forward')}
-                  className={clsx(
-                    "w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all",
-                    direction === 'Forward'
-                      ? (theme === 'dark' ? "bg-slate-700 hover:bg-slate-600" : "bg-slate-200 hover:bg-slate-300")
-                      : "bg-orange-500 hover:bg-orange-600 text-white animate-pulse"
-                  )}
-                >
-                  {direction === 'Forward' ? 'Forward Direction' : 'Reverse Mode Active'}
-                </button>
+              </div>
+
+              {/* Event Log with Search */}
+              <div className={clsx("p-6 rounded-2xl border flex flex-col gap-4", theme === 'dark' ? "bg-slate-800/50 border-slate-700" : "bg-white border-slate-200")}>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 opacity-70">
+                    <Database size={16} /> Recent Detections
+                  </h3>
+                  <input
+                    type="text"
+                    placeholder="Search logs..."
+                    value={logSearchQuery}
+                    onChange={(e) => setLogSearchQuery(e.target.value)}
+                    className="px-3 py-1 text-xs rounded-lg bg-black/20 border border-white/10 focus:outline-none focus:border-blue-500 transition-all w-48"
+                    autoFocus={displayMode === 'kiosk'}
+                  />
+                </div>
+                <div className="h-64 overflow-y-auto pr-2 custom-scrollbar">
+                  <table className="w-full text-sm text-left border-collapse">
+                    <thead className="text-xs uppercase opacity-50 sticky top-0 backdrop-blur-md z-10">
+                      <tr>
+                        <th className="pb-2">Time</th>
+                        <th className="pb-2">Class</th>
+                        <th className="pb-2">Category</th>
+                        <th className="pb-2 text-right">Conf</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {filteredEventLog.length > 0 ? (
+                        filteredEventLog.slice().reverse().map((event) => (
+                          <tr key={event.id} className="hover:bg-white/5 transition-colors group">
+                            <td className="py-2 font-mono opacity-70 text-xs">{event.time}</td>
+                            <td className="py-2 font-bold">{event.rawClass}</td>
+                            <td className="py-2">
+                              <span className={clsx("px-2 py-0.5 rounded text-[10px] font-bold uppercase border",
+                                event.category === 'Bio-medical' && "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+                                event.category === 'Hazardous' && "bg-rose-500/20 text-rose-400 border-rose-500/30",
+                                event.category === 'Wet Waste' && "bg-blue-500/20 text-blue-400 border-blue-500/30",
+                                event.category === 'Dry Waste' && "bg-amber-500/20 text-amber-400 border-amber-500/30",
+                                event.category === 'Low Confidence' && "bg-slate-500/20 text-slate-400 border-slate-500/30"
+                              )}>
+                                {event.category}
+                              </span>
+                            </td>
+                            <td className="py-2 text-right font-mono opacity-70">{event.confidence}%</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="py-8 text-center opacity-50 italic">
+                            {logSearchQuery ? 'No matching records' : 'No detections yet'}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-
-            {/* Servo Controls */}
-            <div className={clsx("p-6 rounded-2xl border", theme === 'dark' ? "bg-slate-800/50 border-slate-700" : "bg-white border-slate-200")}>
-              <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2 opacity-70">
-                <Sliders size={16} /> Manual Servo Override
-              </h3>
-              <div className="grid grid-cols-4 gap-2">
-                {servos.map(servo => (
-                  <div key={servo.id} className="flex flex-col items-center gap-2">
-                    <div className="h-24 w-full bg-black/20 rounded-full relative">
-                      <div
-                        className="absolute bottom-0 w-full bg-blue-500 rounded-full transition-all duration-300"
-                        style={{ height: `${(servo.angle / 180) * 100}%` }}
-                      />
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="180"
-                      value={servo.angle}
-                      onChange={(e) => setServo(servo.id, parseInt(e.target.value))}
-                      className="w-full h-1 bg-transparent appearance-none cursor-pointer"
-                    />
-                    <span className="text-[10px] font-mono opacity-50">S{servo.id}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
+          )}
         </div>
 
-        {/* RIGHT COLUMN (Metrics, Bins, Quick Actions) - 33% width */}
-        <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+        {/* RIGHT COLUMN (Metrics, Bins, Quick Actions) */}
+        <div className={clsx(
+          "col-span-12 flex flex-col gap-6",
+          displayMode === 'split' ? "lg:col-span-6" :
+            displayMode === 'kiosk' ? "lg:col-span-3" :
+              "lg:col-span-4"
+        )}>
 
           {/* Main Power Button & Timer */}
           <div className={clsx(
@@ -1564,23 +1819,37 @@ function App() {
                 <h2 className="text-xl font-black">System Control</h2>
                 <p className="text-sm opacity-60">Master Switch</p>
               </div>
-              <button
-                onClick={togglePower}
-                className={clsx(
-                  "w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300",
-                  data.isOn ? "bg-red-500 hover:bg-red-600 shadow-red-500/40" : "bg-green-500 hover:bg-green-600 shadow-green-500/40"
-                )}
-              >
-                <Power size={32} className="text-white" />
-              </button>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setIsPaused(!isPaused)}
+                  className={clsx(
+                    "w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
+                    isPaused ? "bg-yellow-500 hover:bg-yellow-600 shadow-yellow-500/40" : "bg-slate-700 hover:bg-slate-600 shadow-lg"
+                  )}
+                  title={isPaused ? "Resume" : "Pause"}
+                >
+                  {isPaused ? <Play size={32} className="text-white fill-current" /> : <Pause size={32} className="text-white fill-current" />}
+                </button>
+                <button
+                  onClick={togglePower}
+                  className={clsx(
+                    "w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
+                    data.isOn ? "bg-red-500 hover:bg-red-600 shadow-red-500/40" : "bg-green-500 hover:bg-green-600 shadow-green-500/40"
+                  )}
+                >
+                  <Power size={32} className="text-white" />
+                </button>
+              </div>
             </div>
 
             <div className="bg-black/20 rounded-xl p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Clock size={20} className="text-indigo-400" />
+                <Clock size={20} className={clsx("transition-colors", isPaused ? "text-yellow-500" : "text-indigo-400")} />
                 <div>
                   <div className="text-[10px] uppercase font-bold opacity-50 tracking-wider">Session Time</div>
-                  <div className="text-2xl font-mono font-bold tracking-widest">{sessionDuration}</div>
+                  <div className={clsx("text-2xl font-mono font-bold tracking-widest", isPaused && "text-yellow-500")}>
+                    {isPaused ? "PAUSED" : sessionDuration}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1842,14 +2111,16 @@ function App() {
             </div>
           </div>
         </div>
-      </div>
+      </div >
 
       {/* Notifications overlay (if enabled) */}
-      {notificationEnabled && <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg text-xs font-bold animate-bounce hidden">
-        Notifications Active
-      </div>}
+      {
+        notificationEnabled && <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg text-xs font-bold animate-bounce hidden">
+          Notifications Active
+        </div>
+      }
 
-    </div>
+    </div >
   );
 }
 
