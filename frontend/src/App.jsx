@@ -4,6 +4,8 @@ import { Power, Activity, AlertTriangle, Webcam, Settings, Trash2, Zap, Sun, Moo
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ScatterChart, Scatter, ZAxis } from 'recharts';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatedCounter, ProgressRing, Sparkline, LiveIndicator, TiltCard } from './UIComponents';
+import { LiveActivityFeed, useSwipeGesture, PullRefreshIndicator } from './AdvancedComponents';
 
 const socket = io('http://localhost:3001');
 
@@ -183,6 +185,10 @@ function App() {
   // Auto night mode (torch)
   const [autoTorch, setAutoTorch] = useState(false);
 
+  // Live activity feed state
+  const [showLiveFeed, setShowLiveFeed] = useState(true);
+  const [recentDetections, setRecentDetections] = useState([]);
+
   // Add toast helper
   const addToast = (message, type = 'info') => {
     const id = Date.now();
@@ -198,6 +204,31 @@ function App() {
       e.time.includes(logSearchQuery)
     )
     : eventLog;
+
+  // Swipe gesture support for mobile
+  const displayModes = ['full', 'compact', 'split', 'kiosk'];
+  const { swipeProps, isPulling, pullDistance } = useSwipeGesture({
+    onSwipeLeft: () => {
+      const currentIndex = displayModes.indexOf(displayMode);
+      if (currentIndex < displayModes.length - 1) {
+        setDisplayMode(displayModes[currentIndex + 1]);
+        addToast(`Switched to ${displayModes[currentIndex + 1]} mode`, 'info');
+      }
+    },
+    onSwipeRight: () => {
+      const currentIndex = displayModes.indexOf(displayMode);
+      if (currentIndex > 0) {
+        setDisplayMode(displayModes[currentIndex - 1]);
+        addToast(`Switched to ${displayModes[currentIndex - 1]} mode`, 'info');
+      }
+    },
+    onPullRefresh: () => {
+      addToast('Refreshing data...', 'info');
+      // Trigger data refresh
+      socket.emit('request_refresh');
+    },
+    threshold: 80
+  });
 
   // Theme with persistence
   const toggleTheme = () => {
@@ -990,6 +1021,14 @@ function App() {
         </AnimatePresence>
       </div>
 
+      {/* Live Activity Feed - Slide in from right */}
+      {showLiveFeed && displayMode !== 'widget' && displayMode !== 'compact' && (
+        <LiveActivityFeed
+          events={filteredEventLog.slice(-5)}
+          maxItems={5}
+        />
+      )}
+
       {/* Keyboard Shortcuts Help Modal */}
       <AnimatePresence>
         {showKeyboardHelp && (
@@ -1483,57 +1522,62 @@ function App() {
       {/* Header */}
       <header className={clsx(
         "flex justify-between items-center mb-8 pb-4 border-b transition-all duration-300",
-        theme === 'dark' ? "border-slate-700" : "border-slate-300"
+        theme === 'dark' ? "border-slate-700/50" : "border-slate-200"
       )}>
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl shadow-lg shadow-green-500/20">
-            <Recycle size={24} className="text-white" />
+        <div className="flex items-center gap-4">
+          <div className="icon-container-primary shadow-lg shadow-teal-500/20">
+            <Recycle size={22} className="text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tight">Smart Waste Management</h1>
-            <p className="text-xs font-medium opacity-60">AI-Powered Sorting System</p>
+            <h1 className="font-display text-2xl font-extrabold tracking-tight">
+              <span className="gradient-text-primary">Smart</span>
+              <span className={theme === 'dark' ? 'text-white' : 'text-slate-800'}> Waste AI</span>
+            </h1>
+            <p className="text-xs font-medium opacity-50 mt-0.5">AI-Powered Classification System</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className={clsx(
-            "flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md shadow-sm border",
-            data.isOn ? (theme === 'dark' ? "bg-green-500/10 border-green-500/30" : "bg-green-100 border-green-200") : (theme === 'dark' ? "bg-red-500/10 border-red-500/30" : "bg-red-100 border-red-200")
+            "flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md border",
+            data.isOn
+              ? (theme === 'dark' ? "bg-teal-500/15 border-teal-500/30" : "bg-teal-50 border-teal-200")
+              : (theme === 'dark' ? "bg-red-500/15 border-red-500/30" : "bg-red-50 border-red-200")
           )}>
-            <div className={clsx("w-2 h-2 rounded-full animate-pulse", data.isOn ? "bg-green-500" : "bg-red-500")} />
-            <span className={clsx("text-xs font-bold uppercase", theme === 'dark' ? "text-slate-300" : "text-slate-600")}>
-              {data.isOn ? "System Online" : "System Offline"}
+            <div className={clsx("w-2 h-2 rounded-full", data.isOn ? "bg-teal-500 animate-pulse" : "bg-red-500")} />
+            <span className={clsx("text-xs font-semibold uppercase tracking-wide", theme === 'dark' ? "text-slate-300" : "text-slate-600")}>
+              {data.isOn ? "Online" : "Offline"}
             </span>
           </div>
 
-          <button onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} className="p-3 rounded-full hover:bg-slate-500/10 transition">
-            {isVoiceEnabled ? <Volume2 size={20} className={theme === 'dark' ? "text-slate-300" : "text-slate-600"} /> : <VolumeX size={20} className="text-slate-500" />}
+          <button onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} className="p-2.5 rounded-xl hover:bg-slate-500/10 transition">
+            {isVoiceEnabled ? <Volume2 size={18} className={theme === 'dark' ? "text-slate-300" : "text-slate-600"} /> : <VolumeX size={18} className="text-slate-500" />}
           </button>
 
-          <button onClick={toggleTheme} className="p-3 rounded-full hover:bg-slate-500/10 transition">
-            {theme === 'dark' ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-slate-600" />}
+          <button onClick={toggleTheme} className="p-2.5 rounded-xl hover:bg-slate-500/10 transition">
+            {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-600" />}
           </button>
         </div>
       </header>
 
-      {/* NEW LAYOUT GRID */}
+      {/* BENTO GRID LAYOUT */}
       <div className={clsx(
-        "grid grid-cols-12 gap-6",
-        displayMode === 'compact' && "gap-4"
+        "bento-grid",
+        displayMode === 'compact' && "gap-3"
       )}>
 
-        {/* LEFT COLUMN (Camera & Controls) */}
+        {/* LEFT COLUMN (Camera & Controls) - spans 8 columns */}
         <div className={clsx(
-          "col-span-12 flex flex-col gap-6",
+          "col-span-12 flex flex-col gap-4",
           displayMode === 'split' ? "lg:col-span-6" :
             displayMode === 'kiosk' ? "lg:col-span-9" :
               "lg:col-span-8"
         )}>
 
-          {/* Main Camera Feed */}
+          {/* Main Camera Feed Card */}
           <div className={clsx(
-            "rounded-3xl p-1 relative overflow-hidden h-[500px] xl:h-[600px] shadow-2xl transition-all duration-500 group",
-            theme === 'dark' ? "bg-slate-900 border border-slate-700" : "bg-white border border-slate-200"
+            "card-modern relative overflow-hidden h-[500px] xl:h-[600px] group",
+            theme === 'dark' ? "card-modern-dark" : "card-modern-light"
           )}>
             <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2 border border-white/10">
               <Webcam size={16} className="text-red-500 animate-pulse" />
@@ -1678,53 +1722,74 @@ function App() {
 
           {/* Control Panel Grid (Hidden in Kiosk Mode) */}
           {displayMode !== 'kiosk' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Conveyor Controls */}
-              <div className={clsx("p-6 rounded-2xl border", theme === 'dark' ? "bg-slate-800/50 border-slate-700" : "bg-white border-slate-200")}>
-                <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2 opacity-70">
+              <div className={clsx(
+                "card-modern",
+                theme === 'dark' ? "card-modern-dark" : "card-modern-light"
+              )}>
+                <h3 className="chart-title opacity-70">
                   <Settings size={16} /> Conveyor Control
                 </h3>
                 <div className="space-y-4">
-                  <div className="flex justify-between bg-black/20 p-1 rounded-xl">
+                  {/* Speed Segmented Control */}
+                  <div className="segmented-control">
                     {['Slow', 'Medium', 'Fast'].map((s) => (
                       <button
                         key={s}
                         onClick={() => setSpeed(s)}
                         className={clsx(
-                          "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
-                          speed === s ? "bg-blue-600 text-white shadow-lg" : "hover:bg-white/5 text-slate-400"
+                          "segmented-btn",
+                          speed === s && "segmented-btn-active"
                         )}
                       >
                         {s}
                       </button>
                     ))}
                   </div>
-                  <button
-                    onClick={() => toggleDirection(direction === 'Forward' ? 'Backward' : 'Forward')}
-                    className={clsx(
-                      "w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all",
-                      direction === 'Forward'
-                        ? (theme === 'dark' ? "bg-slate-700 hover:bg-slate-600" : "bg-slate-200 hover:bg-slate-300")
-                        : "bg-orange-500 hover:bg-orange-600 text-white animate-pulse"
-                    )}
-                  >
-                    {direction === 'Forward' ? 'Forward Direction' : 'Reverse Mode Active'}
-                  </button>
+
+                  {/* Direction Toggle */}
+                  <div className="direction-toggle">
+                    <button
+                      onClick={() => toggleDirection('Forward')}
+                      className={clsx(
+                        "direction-toggle-btn",
+                        direction === 'Forward' && "direction-toggle-btn-active"
+                      )}
+                    >
+                      → Forward
+                    </button>
+                    <button
+                      onClick={() => toggleDirection('Backward')}
+                      className={clsx(
+                        "direction-toggle-btn",
+                        direction !== 'Forward' && "direction-toggle-btn-reverse"
+                      )}
+                    >
+                      ← Reverse
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Servo Controls */}
-              <div className={clsx("p-6 rounded-2xl border", theme === 'dark' ? "bg-slate-800/50 border-slate-700" : "bg-white border-slate-200")}>
-                <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2 opacity-70">
-                  <Sliders size={16} /> Manual Servo Override
+              <div className={clsx(
+                "card-modern",
+                theme === 'dark' ? "card-modern-dark" : "card-modern-light"
+              )}>
+                <h3 className="chart-title opacity-70">
+                  <Sliders size={16} /> Servo Override
                 </h3>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-3">
                   {servos.map(servo => (
                     <div key={servo.id} className="flex flex-col items-center gap-2">
-                      <div className="h-24 w-full bg-black/20 rounded-full relative">
+                      <div className="h-20 w-full bg-black/10 dark:bg-white/5 rounded-xl relative overflow-hidden">
                         <div
-                          className="absolute bottom-0 w-full bg-blue-500 rounded-full transition-all duration-300"
-                          style={{ height: `${(servo.angle / 180) * 100}%` }}
+                          className="absolute bottom-0 w-full rounded-xl transition-all duration-300"
+                          style={{
+                            height: `${(servo.angle / 180) * 100}%`,
+                            background: 'linear-gradient(to top, var(--primary-500), var(--primary-400))'
+                          }}
                         />
                       </div>
                       <input
@@ -1733,18 +1798,22 @@ function App() {
                         max="180"
                         value={servo.angle}
                         onChange={(e) => setServo(servo.id, parseInt(e.target.value))}
-                        className="w-full h-1 bg-transparent appearance-none cursor-pointer"
+                        className="slider-modern w-full"
                       />
-                      <span className="text-[10px] font-mono opacity-50">S{servo.id}</span>
+                      <span className="stat-label">S{servo.id} • {servo.angle}°</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Event Log with Search */}
-              <div className={clsx("p-6 rounded-2xl border flex flex-col gap-4", theme === 'dark' ? "bg-slate-800/50 border-slate-700" : "bg-white border-slate-200")}>
-                <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 opacity-70">
+              <div className={clsx(
+                "card-modern md:col-span-2",
+                theme === 'dark' ? "card-modern-dark" : "card-modern-light"
+              )}>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="chart-title opacity-70">
+                    <div className="live-dot mr-2" />
                     <Database size={16} /> Recent Detections
                   </h3>
                   <input
@@ -1752,43 +1821,43 @@ function App() {
                     placeholder="Search logs..."
                     value={logSearchQuery}
                     onChange={(e) => setLogSearchQuery(e.target.value)}
-                    className="px-3 py-1 text-xs rounded-lg bg-black/20 border border-white/10 focus:outline-none focus:border-blue-500 transition-all w-48"
+                    className="px-4 py-2 text-sm rounded-xl bg-black/10 dark:bg-white/5 border border-white/10 focus:outline-none focus:border-teal-500 transition-all w-48"
                     autoFocus={displayMode === 'kiosk'}
                   />
                 </div>
-                <div className="h-64 overflow-y-auto pr-2 custom-scrollbar">
-                  <table className="w-full text-sm text-left border-collapse">
-                    <thead className="text-xs uppercase opacity-50 sticky top-0 backdrop-blur-md z-10">
+                <div className="h-56 overflow-y-auto">
+                  <table className="table-modern">
+                    <thead>
                       <tr>
-                        <th className="pb-2">Time</th>
-                        <th className="pb-2">Class</th>
-                        <th className="pb-2">Category</th>
-                        <th className="pb-2 text-right">Conf</th>
+                        <th>Time</th>
+                        <th>Class</th>
+                        <th>Category</th>
+                        <th className="text-right">Conf</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody>
                       {filteredEventLog.length > 0 ? (
                         filteredEventLog.slice().reverse().map((event) => (
-                          <tr key={event.id} className="hover:bg-white/5 transition-colors group">
-                            <td className="py-2 font-mono opacity-70 text-xs">{event.time}</td>
-                            <td className="py-2 font-bold">{event.rawClass}</td>
-                            <td className="py-2">
-                              <span className={clsx("px-2 py-0.5 rounded text-[10px] font-bold uppercase border",
-                                event.category === 'Bio-medical' && "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-                                event.category === 'Hazardous' && "bg-rose-500/20 text-rose-400 border-rose-500/30",
-                                event.category === 'Wet Waste' && "bg-blue-500/20 text-blue-400 border-blue-500/30",
-                                event.category === 'Dry Waste' && "bg-amber-500/20 text-amber-400 border-amber-500/30",
-                                event.category === 'Low Confidence' && "bg-slate-500/20 text-slate-400 border-slate-500/30"
+                          <tr key={event.id}>
+                            <td className="font-mono text-xs opacity-60">{event.time}</td>
+                            <td className="font-semibold">{event.rawClass}</td>
+                            <td>
+                              <span className={clsx("badge-category",
+                                event.category === 'Bio-medical' && "badge-bio",
+                                event.category === 'Hazardous' && "badge-hazard",
+                                event.category === 'Wet Waste' && "badge-wet",
+                                event.category === 'Dry Waste' && "badge-dry",
+                                event.category === 'Low Confidence' && "bg-slate-500/15 text-slate-400 border border-slate-500/30"
                               )}>
                                 {event.category}
                               </span>
                             </td>
-                            <td className="py-2 text-right font-mono opacity-70">{event.confidence}%</td>
+                            <td className="text-right font-mono text-xs opacity-60">{event.confidence}%</td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="4" className="py-8 text-center opacity-50 italic">
+                          <td colSpan="4" className="py-8 text-center opacity-40 italic">
                             {logSearchQuery ? 'No matching records' : 'No detections yet'}
                           </td>
                         </tr>
@@ -1811,43 +1880,46 @@ function App() {
 
           {/* Main Power Button & Timer */}
           <div className={clsx(
-            "p-6 rounded-3xl border flex flex-col gap-6",
-            theme === 'dark' ? "bg-indigo-900/20 border-indigo-500/30" : "bg-indigo-50 border-indigo-200"
+            "card-modern",
+            theme === 'dark' ? "card-modern-dark" : "card-modern-light"
           )}>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mb-6">
               <div>
-                <h2 className="text-xl font-black">System Control</h2>
-                <p className="text-sm opacity-60">Master Switch</p>
+                <h2 className="font-display text-xl font-bold">System Control</h2>
+                <p className="stat-label mt-1">Master Switch</p>
               </div>
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <button
                   onClick={() => setIsPaused(!isPaused)}
                   className={clsx(
-                    "w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
-                    isPaused ? "bg-yellow-500 hover:bg-yellow-600 shadow-yellow-500/40" : "bg-slate-700 hover:bg-slate-600 shadow-lg"
+                    "w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
+                    isPaused ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30" : "bg-slate-700 hover:bg-slate-600"
                   )}
                   title={isPaused ? "Resume" : "Pause"}
                 >
-                  {isPaused ? <Play size={32} className="text-white fill-current" /> : <Pause size={32} className="text-white fill-current" />}
+                  {isPaused ? <Play size={28} className="text-white fill-current" /> : <Pause size={28} className="text-white" />}
                 </button>
                 <button
                   onClick={togglePower}
                   className={clsx(
-                    "w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
-                    data.isOn ? "bg-red-500 hover:bg-red-600 shadow-red-500/40" : "bg-green-500 hover:bg-green-600 shadow-green-500/40"
+                    "w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
+                    data.isOn ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/30" : "bg-teal-500 hover:bg-teal-600 shadow-teal-500/30"
                   )}
                 >
-                  <Power size={32} className="text-white" />
+                  <Power size={28} className="text-white" />
                 </button>
               </div>
             </div>
 
-            <div className="bg-black/20 rounded-xl p-4 flex items-center justify-between">
+            <div className={clsx(
+              "rounded-xl p-4 flex items-center justify-between",
+              theme === 'dark' ? "bg-white/5" : "bg-slate-100"
+            )}>
               <div className="flex items-center gap-3">
-                <Clock size={20} className={clsx("transition-colors", isPaused ? "text-yellow-500" : "text-indigo-400")} />
+                <Clock size={18} className={isPaused ? "text-amber-400" : "text-teal-400"} />
                 <div>
-                  <div className="text-[10px] uppercase font-bold opacity-50 tracking-wider">Session Time</div>
-                  <div className={clsx("text-2xl font-mono font-bold tracking-widest", isPaused && "text-yellow-500")}>
+                  <div className="stat-label">Session Time</div>
+                  <div className={clsx("stat-number-sm", isPaused && "text-amber-400")}>
                     {isPaused ? "PAUSED" : sessionDuration}
                   </div>
                 </div>
@@ -1877,44 +1949,77 @@ function App() {
               )}
             </AnimatePresence>
 
-            <div
-              onClick={() => setShowHistoryModal(true)}
+            {/* Total Items Card */}
+            <TiltCard
               className={clsx(
-                "p-5 rounded-2xl border cursor-pointer hover:border-blue-500 transition-all active:scale-95",
-                theme === 'dark' ? "bg-slate-800/60 border-slate-700" : "bg-white border-slate-200"
+                "card-modern cursor-pointer hover-lift",
+                theme === 'dark' ? "card-modern-dark" : "card-modern-light"
               )}
             >
-              <div className="text-xs font-bold uppercase opacity-50 mb-2 flex items-center justify-between">
-                Total <Clock size={12} className="opacity-50" />
+              <div onClick={() => setShowHistoryModal(true)}>
+                <div className="stat-label mb-2 flex items-center justify-between">
+                  Total <Database size={12} className="opacity-50" />
+                </div>
+                <AnimatedCounter value={processingCounts.total} className="stat-number gradient-text-primary" />
               </div>
-              <div className="text-3xl font-black">{processingCounts.total}</div>
-            </div>
-            <div className={clsx("p-5 rounded-2xl border relative overflow-hidden", theme === 'dark' ? "bg-emerald-900/20 border-emerald-500/30" : "bg-emerald-50 border-emerald-200")}>
-              <div className="relative z-10">
-                <div className="text-xs font-bold uppercase opacity-60 mb-2 text-emerald-400">Revenue</div>
-                <div className="text-3xl font-black text-emerald-500">${(processingCounts.total * 0.05).toFixed(2)}</div>
-              </div>
-              <TrendingUp className="absolute bottom-2 right-2 text-emerald-500/20" size={60} />
+            </TiltCard>
+
+            {/* Revenue Card - Featured */}
+            <div className="card-modern card-featured glow-primary">
+              <div className="stat-label mb-2 text-white/70">Revenue</div>
+              <div className="stat-number">${(processingCounts.total * 0.05).toFixed(2)}</div>
+              <TrendingUp className="absolute bottom-3 right-3 text-white/20" size={48} />
             </div>
           </div>
 
-          {/* Individual Category Counts - Separate Row */}
-          <div className="grid grid-cols-4 gap-3">
-            <div className={clsx("p-4 rounded-2xl border text-center card-hover", theme === 'dark' ? "bg-emerald-900/20 border-emerald-500/30 hover:glow-emerald" : "bg-emerald-50 border-emerald-200")}>
-              <div className="text-xs font-bold uppercase opacity-60 mb-1 text-emerald-400">Bio</div>
-              <div className={clsx("text-2xl font-black text-emerald-500", processingCounts.bio > 0 && "count-animate")}>{processingCounts.bio}</div>
+          {/* Category Cards with Icons - Staggered Entrance */}
+          <div className="grid grid-cols-4 gap-3 stagger-enter">
+            {/* Bio Card */}
+            <div className={clsx(
+              "category-card category-card-bio card-animate",
+              theme === 'dark' ? "bg-slate-800/60 border border-slate-700/50" : "bg-white/80 border border-slate-200"
+            )}>
+              <div className="category-icon category-icon-bio">
+                <Recycle size={18} className="text-white" />
+              </div>
+              <div className="stat-label text-emerald-400">Bio-medical</div>
+              <AnimatedCounter value={processingCounts.bio} className="stat-number-sm text-emerald-500" />
             </div>
-            <div className={clsx("p-4 rounded-2xl border text-center card-hover", theme === 'dark' ? "bg-rose-900/20 border-rose-500/30 hover:glow-rose" : "bg-rose-50 border-rose-200")}>
-              <div className="text-xs font-bold uppercase opacity-60 mb-1 text-rose-400">Hazard</div>
-              <div className={clsx("text-2xl font-black text-rose-500", processingCounts.hazard > 0 && "count-animate")}>{processingCounts.hazard}</div>
+
+            {/* Hazard Card */}
+            <div className={clsx(
+              "category-card category-card-hazard card-animate",
+              theme === 'dark' ? "bg-slate-800/60 border border-slate-700/50" : "bg-white/80 border border-slate-200"
+            )}>
+              <div className="category-icon category-icon-hazard">
+                <AlertTriangle size={18} className="text-white" />
+              </div>
+              <div className="stat-label text-rose-400">Hazardous</div>
+              <AnimatedCounter value={processingCounts.hazard} className="stat-number-sm text-rose-500" />
             </div>
-            <div className={clsx("p-4 rounded-2xl border text-center card-hover", theme === 'dark' ? "bg-cyan-900/20 border-cyan-500/30 hover:glow-cyan" : "bg-cyan-50 border-cyan-200")}>
-              <div className="text-xs font-bold uppercase opacity-60 mb-1 text-cyan-400">Wet</div>
-              <div className={clsx("text-2xl font-black text-cyan-500", processingCounts.wet > 0 && "count-animate")}>{processingCounts.wet}</div>
+
+            {/* Wet Card */}
+            <div className={clsx(
+              "category-card category-card-wet card-animate",
+              theme === 'dark' ? "bg-slate-800/60 border border-slate-700/50" : "bg-white/80 border border-slate-200"
+            )}>
+              <div className="category-icon category-icon-wet">
+                <Activity size={18} className="text-white" />
+              </div>
+              <div className="stat-label text-cyan-400">Wet Waste</div>
+              <AnimatedCounter value={processingCounts.wet} className="stat-number-sm text-cyan-500" />
             </div>
-            <div className={clsx("p-4 rounded-2xl border text-center card-hover", theme === 'dark' ? "bg-amber-900/20 border-amber-500/30 hover:glow-amber" : "bg-amber-50 border-amber-200")}>
-              <div className="text-xs font-bold uppercase opacity-60 mb-1 text-amber-400">Dry</div>
-              <div className={clsx("text-2xl font-black text-amber-500", processingCounts.dry > 0 && "count-animate")}>{processingCounts.dry}</div>
+
+            {/* Dry Card */}
+            <div className={clsx(
+              "category-card category-card-dry card-animate",
+              theme === 'dark' ? "bg-slate-800/60 border border-slate-700/50" : "bg-white/80 border border-slate-200"
+            )}>
+              <div className="category-icon category-icon-dry">
+                <Trash2 size={18} className="text-white" />
+              </div>
+              <div className="stat-label text-amber-400">Dry Waste</div>
+              <AnimatedCounter value={processingCounts.dry} className="stat-number-sm text-amber-500" />
             </div>
           </div>
 
