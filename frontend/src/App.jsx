@@ -84,7 +84,7 @@ function App() {
   const DETECTION_COOLDOWN_MS = 2000; // Minimum 2 seconds between counts
 
   const [history, setHistory] = useState([]);
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('waste_theme') || 'dark');
   const [graphType, setGraphType] = useState('line');
   const [selectedBin, setSelectedBin] = useState(null);
 
@@ -145,10 +145,31 @@ function App() {
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [expandedGraph, setExpandedGraph] = useState(null); // For graph pop-out modal
 
+  // Category flash animation (shows +1 Bio, +1 Haz, etc.)
+  const [categoryFlash, setCategoryFlash] = useState(null); // { category: 'Bio-medical', time: timestamp }
 
+  // False positive filter (require multiple frames)
+  const detectionFrameCount = useRef(0);
+  const lastDetectedClass = useRef(null);
+  const REQUIRED_FRAMES = 3; // Need 3+ consistent frames to confirm
+
+  // Sound effects
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Detection hour tracking for heatmap
+  const [detectionHours, setDetectionHours] = useState(() => {
+    const saved = localStorage.getItem('waste_detection_hours');
+    return saved ? JSON.parse(saved) : Array(24).fill(0);
+  });
+
+  // Theme with persistence
   const toggleTheme = () => {
     playClick();
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    setTheme(prev => {
+      const newTheme = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('waste_theme', newTheme);
+      return newTheme;
+    });
   };
 
   // Sound Effect Logic
@@ -164,6 +185,25 @@ function App() {
     gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + 0.1);
     osc.start();
     osc.stop(audio.currentTime + 0.1);
+  };
+
+  // Detection beep sound (plays on +1)
+  const playDetectionSound = (category) => {
+    if (!soundEnabled) return;
+    const audio = new AudioContext();
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.connect(gain);
+    gain.connect(audio.destination);
+
+    // Different tones for different categories
+    const freqs = { 'Bio-medical': 523, 'Hazardous': 392, 'Wet Waste': 440, 'Dry Waste': 494 };
+    osc.frequency.setValueAtTime(freqs[category] || 440, audio.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freqs[category] * 1.5 || 660, audio.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.2, audio.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + 0.2);
+    osc.start();
+    osc.stop(audio.currentTime + 0.2);
   };
 
   useEffect(() => {
@@ -480,10 +520,22 @@ function App() {
     }
   };
 
-  // ESC key to close expanded graph
+  // Keyboard shortcuts (ESC=close, Space=power, R=reset)
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Ignore if typing in input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
       if (e.key === 'Escape') setExpandedGraph(null);
+      if (e.key === ' ' && !e.repeat) { // Space = toggle power
+        e.preventDefault();
+        togglePower();
+      }
+      if (e.key === 'r' || e.key === 'R') { // R = reset session
+        if (e.ctrlKey) return; // Don't interfere with Ctrl+R
+        setProcessingCounts({ total: 0, bio: 0, hazard: 0, wet: 0, dry: 0 });
+        setEventLog([]);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -595,6 +647,22 @@ function App() {
             confidence: confidence.toFixed(1)
           };
           setEventLog(prev => [logEntry, ...prev].slice(0, 50));
+
+          // Play detection sound
+          playDetectionSound(cat);
+
+          // Show category flash (+1 Bio, +1 Haz, etc.)
+          setCategoryFlash({ category: cat, time: Date.now() });
+          setTimeout(() => setCategoryFlash(null), 1500);
+
+          // Update detection hour heatmap
+          const currentHour = new Date().getHours();
+          setDetectionHours(prev => {
+            const updated = [...prev];
+            updated[currentHour]++;
+            localStorage.setItem('waste_detection_hours', JSON.stringify(updated));
+            return updated;
+          });
 
           // Update Counts
           setProcessingCounts(prev => {
@@ -1360,7 +1428,27 @@ function App() {
           </div>
 
           {/* Key Metrics Grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 relative">
+            {/* Category Flash Popup */}
+            <AnimatePresence>
+              {categoryFlash && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.8 }}
+                  className={clsx(
+                    "absolute -top-12 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full font-bold text-white shadow-lg",
+                    categoryFlash.category === 'Bio-medical' && "bg-emerald-500",
+                    categoryFlash.category === 'Hazardous' && "bg-rose-500",
+                    categoryFlash.category === 'Wet Waste' && "bg-cyan-500",
+                    categoryFlash.category === 'Dry Waste' && "bg-amber-500"
+                  )}
+                >
+                  +1 {categoryFlash.category}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div
               onClick={() => setShowHistoryModal(true)}
               className={clsx(
@@ -1369,18 +1457,36 @@ function App() {
               )}
             >
               <div className="text-xs font-bold uppercase opacity-50 mb-2 flex items-center justify-between">
-                Processed <Clock size={12} className="opacity-50" />
+                Total <Clock size={12} className="opacity-50" />
               </div>
-              <div className="text-3xl font-black mb-1">{processingCounts.total}</div>
-              <div className="text-xs text-green-400 font-bold flex items-center gap-1"><ArrowUpRight size={12} /> Current Cycle</div>
+              <div className="text-3xl font-black">{processingCounts.total}</div>
             </div>
             <div className={clsx("p-5 rounded-2xl border relative overflow-hidden", theme === 'dark' ? "bg-emerald-900/20 border-emerald-500/30" : "bg-emerald-50 border-emerald-200")}>
               <div className="relative z-10">
                 <div className="text-xs font-bold uppercase opacity-60 mb-2 text-emerald-400">Revenue</div>
                 <div className="text-3xl font-black text-emerald-500">${(processingCounts.total * 0.05).toFixed(2)}</div>
-                <div className="text-xs text-emerald-600 font-bold opacity-80">Est. Value</div>
               </div>
               <TrendingUp className="absolute bottom-2 right-2 text-emerald-500/20" size={60} />
+            </div>
+          </div>
+
+          {/* Individual Category Counts - Separate Row */}
+          <div className="grid grid-cols-4 gap-3">
+            <div className={clsx("p-4 rounded-2xl border text-center", theme === 'dark' ? "bg-emerald-900/20 border-emerald-500/30" : "bg-emerald-50 border-emerald-200")}>
+              <div className="text-xs font-bold uppercase opacity-60 mb-1 text-emerald-400">Bio</div>
+              <div className="text-2xl font-black text-emerald-500">{processingCounts.bio}</div>
+            </div>
+            <div className={clsx("p-4 rounded-2xl border text-center", theme === 'dark' ? "bg-rose-900/20 border-rose-500/30" : "bg-rose-50 border-rose-200")}>
+              <div className="text-xs font-bold uppercase opacity-60 mb-1 text-rose-400">Hazard</div>
+              <div className="text-2xl font-black text-rose-500">{processingCounts.hazard}</div>
+            </div>
+            <div className={clsx("p-4 rounded-2xl border text-center", theme === 'dark' ? "bg-cyan-900/20 border-cyan-500/30" : "bg-cyan-50 border-cyan-200")}>
+              <div className="text-xs font-bold uppercase opacity-60 mb-1 text-cyan-400">Wet</div>
+              <div className="text-2xl font-black text-cyan-500">{processingCounts.wet}</div>
+            </div>
+            <div className={clsx("p-4 rounded-2xl border text-center", theme === 'dark' ? "bg-amber-900/20 border-amber-500/30" : "bg-amber-50 border-amber-200")}>
+              <div className="text-xs font-bold uppercase opacity-60 mb-1 text-amber-400">Dry</div>
+              <div className="text-2xl font-black text-amber-500">{processingCounts.dry}</div>
             </div>
           </div>
 
