@@ -111,12 +111,38 @@ function App() {
 
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
+  // Session History Enhancements
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedForCompare, setSelectedForCompare] = useState([]);
+  const [historyFilter, setHistoryFilter] = useState('all'); // all, today, week, month
+
+  // Camera Controls
+  const [cameraZoom, setCameraZoom] = useState(1);
+  const [cameraBrightness, setCameraBrightness] = useState(100);
+  const [pipMode, setPipMode] = useState(false);
+
+  // AI Confidence Enhancement
+  const [confidenceThreshold, setConfidenceThreshold] = useState(80);
+  const [lowConfidenceCount, setLowConfidenceCount] = useState(0);
+
+  // Alerts System
+  const [alertHistory, setAlertHistory] = useState([]);
+
+  // Connection Tracking
+  const [reconnectCount, setReconnectCount] = useState(0);
+  const [lastConnected, setLastConnected] = useState(null);
+
+  // Bin Fill Rate Tracking (for time prediction)
+  const [binFillRates, setBinFillRates] = useState({ 0: 0, 1: 0, 2: 0, 3: 0 });
+  const prevBinVolumes = useRef({ 0: 0, 1: 0, 2: 0, 3: 0 });
+
   // NEW: Session Timer (only when ON), Fullscreen, Notifications
   const [activeSeconds, setActiveSeconds] = useState(0);
   const [sessionDuration, setSessionDuration] = useState('00:00:00');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [expandedGraph, setExpandedGraph] = useState(null); // For graph pop-out modal
+
 
   const toggleTheme = () => {
     playClick();
@@ -142,9 +168,20 @@ function App() {
     socket.on('connect', () => {
       console.log('Connected to backend');
       setIsConnected(true);
+      setLastConnected(new Date().toLocaleTimeString());
+      if (reconnectCount > 0) {
+        // Add to alert history on successful reconnect
+        setAlertHistory(prev => [{
+          id: Date.now(),
+          time: new Date().toLocaleTimeString(),
+          type: 'info',
+          message: `Reconnected after ${reconnectCount} attempts`
+        }, ...prev].slice(0, 50));
+      }
     });
     socket.on('disconnect', () => {
       setIsConnected(false);
+      setReconnectCount(prev => prev + 1);
     });
 
     socket.on('system_state', (newState) => {
@@ -326,6 +363,108 @@ function App() {
     a.download = `waste_log_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // === SESSION HISTORY HELPERS ===
+
+  // Filter sessions by date range
+  const getFilteredHistory = () => {
+    const now = new Date();
+    return sessionHistory.filter(session => {
+      if (historyFilter === 'all') return true;
+      const sessionDate = new Date(session.date);
+      if (historyFilter === 'today') {
+        return sessionDate.toDateString() === now.toDateString();
+      }
+      if (historyFilter === 'week') {
+        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        return sessionDate >= weekAgo;
+      }
+      if (historyFilter === 'month') {
+        const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+        return sessionDate >= monthAgo;
+      }
+      return true;
+    });
+  };
+
+  // Delete a single session
+  const deleteSession = (id) => {
+    const updated = sessionHistory.filter(s => s.id !== id);
+    setSessionHistory(updated);
+    localStorage.setItem('waste_history', JSON.stringify(updated));
+  };
+
+  // Export ALL history to CSV
+  const exportAllHistory = () => {
+    if (sessionHistory.length === 0) return;
+    const headers = ['Date', 'Time', 'Total Items', 'Bio', 'Hazard', 'Wet', 'Dry', 'Revenue'];
+    const csv = [
+      headers.join(','),
+      ...sessionHistory.map(s => [
+        s.date, s.time, s.counts.total,
+        s.counts.bio, s.counts.hazard, s.counts.wet, s.counts.dry,
+        s.revenue
+      ].join(','))
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `waste_history_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Toggle session for comparison
+  const toggleCompareSession = (session) => {
+    setSelectedForCompare(prev => {
+      if (prev.find(s => s.id === session.id)) {
+        return prev.filter(s => s.id !== session.id);
+      }
+      if (prev.length >= 2) return prev; // Max 2 for comparison
+      return [...prev, session];
+    });
+  };
+
+  // === BIN VISUALIZATION HELPERS ===
+
+  // Get gradient color based on volume
+  const getBinGradient = (volume) => {
+    if (volume < 50) return 'from-green-500 to-emerald-400';
+    if (volume < 75) return 'from-yellow-500 to-amber-400';
+    if (volume < 90) return 'from-orange-500 to-orange-400';
+    return 'from-red-500 to-rose-400';
+  };
+
+  // Get time until full prediction (in minutes)
+  const getTimeUntilFull = (binId, currentVolume) => {
+    const rate = binFillRates[binId];
+    if (rate <= 0 || currentVolume >= 100) return null;
+    const remaining = 100 - currentVolume;
+    const minutes = Math.round(remaining / rate);
+    if (minutes > 1440) return `${Math.round(minutes / 1440)}d`;
+    if (minutes > 60) return `${Math.round(minutes / 60)}h`;
+    return `${minutes}m`;
+  };
+
+  // === CAMERA CONTROL HELPERS ===
+
+  // Toggle Picture-in-Picture
+  const togglePiP = async () => {
+    const video = document.getElementById('live-feed-img');
+    if (!video) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        setPipMode(false);
+      } else if (video.tagName === 'VIDEO') {
+        await video.requestPictureInPicture();
+        setPipMode(true);
+      }
+    } catch (e) {
+      console.log('PiP not supported for images');
+    }
   };
 
   // Request Notification Permission
@@ -613,17 +752,18 @@ function App() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               className={clsx(
-                "w-[90vw] max-w-4xl p-8 rounded-3xl shadow-2xl border flex flex-col max-h-[90vh]",
+                "w-[95vw] max-w-5xl p-8 rounded-3xl shadow-2xl border flex flex-col max-h-[90vh]",
                 theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
               )}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex justify-between items-center mb-6">
+              {/* Header with title and close */}
+              <div className="flex justify-between items-center mb-4">
                 <div>
                   <h3 className={clsx("text-2xl font-bold", theme === 'dark' ? "text-white" : "text-slate-800")}>
                     Session History
                   </h3>
-                  <p className="text-sm opacity-60">Archive of past sorting cycles</p>
+                  <p className="text-sm opacity-60">Archive of past sorting cycles • {getFilteredHistory().length} sessions</p>
                 </div>
                 <button
                   onClick={() => setShowHistoryModal(false)}
@@ -633,33 +773,125 @@ function App() {
                 </button>
               </div>
 
+              {/* Filter Bar */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {['all', 'today', 'week', 'month'].map(filter => (
+                  <button
+                    key={filter}
+                    onClick={() => setHistoryFilter(filter)}
+                    className={clsx(
+                      "px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all",
+                      historyFilter === filter
+                        ? "bg-blue-500 text-white"
+                        : theme === 'dark' ? "bg-slate-800 text-slate-400 hover:bg-slate-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    )}
+                  >
+                    {filter === 'all' ? 'All Time' : filter}
+                  </button>
+                ))}
+                <div className="flex-1" />
+                <button
+                  onClick={() => setCompareMode(!compareMode)}
+                  className={clsx(
+                    "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
+                    compareMode
+                      ? "bg-purple-500 text-white"
+                      : theme === 'dark' ? "bg-slate-800 text-slate-400 hover:bg-slate-700" : "bg-slate-100 text-slate-600"
+                  )}
+                >
+                  <BarChart2 size={14} /> Compare {compareMode && `(${selectedForCompare.length}/2)`}
+                </button>
+                <button
+                  onClick={exportAllHistory}
+                  className={clsx(
+                    "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
+                    theme === 'dark' ? "bg-slate-800 text-slate-400 hover:bg-slate-700" : "bg-slate-100 text-slate-600"
+                  )}
+                >
+                  <Download size={14} /> Export All
+                </button>
+              </div>
+
+              {/* Comparison View */}
+              {compareMode && selectedForCompare.length === 2 && (
+                <div className="mb-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/30">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-sm font-bold text-purple-400">Comparison View</h4>
+                    <button onClick={() => setSelectedForCompare([])} className="text-xs text-purple-400 hover:underline">Clear</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    {selectedForCompare.map((s, i) => (
+                      <div key={s.id} className="p-3 rounded-lg bg-black/20">
+                        <div className="text-xs opacity-60 mb-1">{s.date} • {s.time}</div>
+                        <div className="text-2xl font-bold">{s.counts.total}</div>
+                        <div className="text-xs text-green-400">${s.revenue}</div>
+                        <div className="mt-2 text-xs grid grid-cols-4 gap-1">
+                          <span className="text-emerald-400">Bio: {s.counts.bio}</span>
+                          <span className="text-rose-400">Haz: {s.counts.hazard}</span>
+                          <span className="text-cyan-400">Wet: {s.counts.wet}</span>
+                          <span className="text-amber-400">Dry: {s.counts.dry}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Session Table */}
               <div className="flex-1 overflow-y-auto">
-                {sessionHistory.length === 0 ? (
-                  <div className="text-center p-12 opacity-50">No history available yet.</div>
+                {getFilteredHistory().length === 0 ? (
+                  <div className="text-center p-12 opacity-50">No sessions found for this filter.</div>
                 ) : (
                   <table className="w-full text-left text-sm">
-                    <thead className="opacity-50 border-b border-slate-700">
+                    <thead className="opacity-50 border-b border-slate-700 sticky top-0 bg-slate-900">
                       <tr>
+                        {compareMode && <th className="p-3 w-10">Select</th>}
                         <th className="p-3">Date</th>
                         <th className="p-3">Time</th>
                         <th className="p-3">Items</th>
+                        <th className="p-3">Bio/Haz/Wet/Dry</th>
                         <th className="p-3">Revenue</th>
                         <th className="p-3 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {sessionHistory.map(session => (
-                        <tr key={session.id} className="border-b border-slate-800/50 hover:bg-white/5 transition-colors">
+                      {getFilteredHistory().map(session => (
+                        <tr key={session.id} className={clsx(
+                          "border-b border-slate-800/50 hover:bg-white/5 transition-colors",
+                          selectedForCompare.find(s => s.id === session.id) && "bg-purple-500/10"
+                        )}>
+                          {compareMode && (
+                            <td className="p-3">
+                              <input
+                                type="checkbox"
+                                checked={!!selectedForCompare.find(s => s.id === session.id)}
+                                onChange={() => toggleCompareSession(session)}
+                                className="w-4 h-4 rounded"
+                              />
+                            </td>
+                          )}
                           <td className="p-3">{session.date}</td>
                           <td className="p-3 font-mono">{session.time}</td>
                           <td className="p-3 font-bold">{session.counts.total}</td>
+                          <td className="p-3 text-xs font-mono">
+                            <span className="text-emerald-400">{session.counts.bio}</span>/
+                            <span className="text-rose-400">{session.counts.hazard}</span>/
+                            <span className="text-cyan-400">{session.counts.wet}</span>/
+                            <span className="text-amber-400">{session.counts.dry}</span>
+                          </td>
                           <td className="p-3 text-green-400">${session.revenue}</td>
-                          <td className="p-3 text-right">
+                          <td className="p-3 text-right flex gap-2 justify-end">
                             <button
                               onClick={() => setSelectedHistorySession(session)}
-                              className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all text-xs font-bold flex items-center gap-1 ml-auto"
+                              className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all text-xs font-bold"
                             >
-                              <BarChart2 size={12} /> View Analysis
+                              View
+                            </button>
+                            <button
+                              onClick={() => deleteSession(session.id)}
+                              className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all text-xs font-bold"
+                            >
+                              Delete
                             </button>
                           </td>
                         </tr>
@@ -882,12 +1114,13 @@ function App() {
                     crossOrigin="anonymous"
                     src={camUrl.startsWith('http') ? `${camUrl}/video` : `http://${camUrl}/video`}
                     alt="Live Feed - Check Console for Errors"
-                    className="w-full h-full object-contain transition-transform duration-300"
-                    style={{ transform: `rotate(${rotation}deg)` }}
+                    className="w-full h-full object-contain transition-all duration-300"
+                    style={{
+                      transform: `rotate(${rotation}deg) scale(${cameraZoom})`,
+                      filter: `brightness(${cameraBrightness}%)`
+                    }}
                     onError={(e) => {
                       console.error("Camera Feed Error:", e);
-                      // Don't clear URL immediately so user can see it failed
-                      // setCamUrl(''); 
                     }}
                   />
                   {/* Camera Controls Overlay */}
@@ -953,20 +1186,60 @@ function App() {
 
           {/* AI Status & Connectivity Strip */}
           <div className={clsx(
-            "p-4 rounded-2xl flex items-center justify-between",
+            "p-4 rounded-2xl flex flex-col gap-3",
             theme === 'dark' ? "bg-slate-800/50 border border-slate-700" : "bg-white border border-slate-200"
           )}>
-            <div className="flex items-center gap-4">
-              <div className={clsx("px-3 py-1 rounded-full text-xs font-bold border", isConnected ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400")}>
-                {isConnected ? "SOCKET CONNECTED" : "SOCKET DISCONNECTED"}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className={clsx("px-3 py-1 rounded-full text-xs font-bold border", isConnected ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400")}>
+                  {isConnected ? "SOCKET CONNECTED" : "SOCKET DISCONNECTED"}
+                </div>
+                {!isConnected && reconnectCount > 0 && (
+                  <span className="text-xs text-red-400 font-mono">Retry #{reconnectCount}</span>
+                )}
+                {lastConnected && (
+                  <span className="text-xs opacity-50 font-mono">Last: {lastConnected}</span>
+                )}
+                <div className={clsx("px-3 py-1 rounded-full text-xs font-bold border", model ? "bg-blue-500/10 border-blue-500/20 text-blue-400" : "bg-yellow-500/10 border-yellow-500/20 text-yellow-400")}>
+                  {model ? "MODEL READY" : "LOADING MODEL..."}
+                </div>
               </div>
-              <div className={clsx("px-3 py-1 rounded-full text-xs font-bold border", model ? "bg-blue-500/10 border-blue-500/20 text-blue-400" : "bg-yellow-500/10 border-yellow-500/20 text-yellow-400")}>
-                {model ? "MODEL READY" : "LOADING MODEL..."}
+              <div className="flex items-center gap-2 text-xs font-mono opacity-60">
+                <Activity size={14} /> Inference: {aiData.confidence > 0 ? "Active" : "Idle"}
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs font-mono opacity-60">
-              <Activity size={14} /> Inference: {data.confidence ? `${(1000 / 10).toFixed(0)} FPS` : "Idle"}
-            </div>
+
+            {/* Camera Controls Row */}
+            {camUrl && (
+              <div className="flex items-center gap-4 pt-2 border-t border-slate-700/50">
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-xs opacity-50 w-12">Zoom</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="0.1"
+                    value={cameraZoom}
+                    onChange={(e) => setCameraZoom(parseFloat(e.target.value))}
+                    className="flex-1 h-1 appearance-none bg-slate-700 rounded-full cursor-pointer"
+                  />
+                  <span className="text-xs font-mono w-8">{cameraZoom.toFixed(1)}x</span>
+                </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-xs opacity-50 w-12">Bright</span>
+                  <input
+                    type="range"
+                    min="50"
+                    max="150"
+                    step="5"
+                    value={cameraBrightness}
+                    onChange={(e) => setCameraBrightness(parseInt(e.target.value))}
+                    className="flex-1 h-1 appearance-none bg-slate-700 rounded-full cursor-pointer"
+                  />
+                  <span className="text-xs font-mono w-8">{cameraBrightness}%</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Control Panel Grid */}
@@ -1128,25 +1401,44 @@ function App() {
               <Database size={16} /> Bin Capacities
             </h3>
             <div className="flex-1 flex flex-col justify-between gap-4">
-              {data.bins.map((bin) => (
-                <div key={bin.id} className="space-y-2">
-                  <div className="flex justify-between text-xs font-bold mb-1">
-                    <span className="capitalize">{bin.name}</span>
-                    <span className={bin.volume > 90 ? "text-red-500" : "opacity-60"}>{bin.volume}%</span>
+              {data.bins.map((bin) => {
+                const timeLeft = getTimeUntilFull(bin.id, bin.volume);
+                return (
+                  <div key={bin.id} className="space-y-2 group cursor-pointer hover:bg-white/5 p-2 rounded-lg -m-2 transition-all">
+                    <div className="flex justify-between text-xs font-bold mb-1">
+                      <span className="capitalize flex items-center gap-2">
+                        {bin.name}
+                        {timeLeft && (
+                          <span className={clsx(
+                            "text-[10px] px-1.5 py-0.5 rounded-full font-mono",
+                            bin.volume > 80 ? "bg-red-500/20 text-red-400" : "bg-slate-500/20 text-slate-400"
+                          )}>
+                            ~{timeLeft} left
+                          </span>
+                        )}
+                      </span>
+                      <span className={clsx(
+                        "font-mono",
+                        bin.volume >= 90 ? "text-red-500 animate-pulse" :
+                          bin.volume >= 75 ? "text-orange-500" :
+                            bin.volume >= 50 ? "text-yellow-500" : "text-green-500"
+                      )}>
+                        {bin.volume.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="h-3 w-full bg-black/30 rounded-full overflow-hidden shadow-inner">
+                      <div
+                        className={clsx(
+                          "h-full rounded-full transition-all duration-1000 bg-gradient-to-r",
+                          getBinGradient(bin.volume),
+                          bin.volume >= 90 && "animate-pulse shadow-lg"
+                        )}
+                        style={{ width: `${Math.min(bin.volume, 100)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 w-full bg-black/20 rounded-full overflow-hidden">
-                    <div
-                      className={clsx("h-full rounded-full transition-all duration-1000",
-                        bin.volume > 90 ? "bg-red-500 animate-pulse" :
-                          bin.type === 'bio' ? "bg-green-500" :
-                            bin.type === 'hazard' ? "bg-red-500" :
-                              bin.type === 'wet' ? "bg-blue-500" : "bg-amber-500"
-                      )}
-                      style={{ width: `${bin.volume}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
