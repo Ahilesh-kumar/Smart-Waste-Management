@@ -522,16 +522,24 @@ function App() {
         if (!data.isOn) return; // Ignore if system matches "Off"
 
         setAiData(inferenceData);
-        const { is_moving, object_present, class: detectedClass, confidence } = inferenceData;
+        const { is_moving, object_present, class: detectedClass, confidence, box } = inferenceData;
 
-        // 1. Reset if clear
+        // 1. Object left camera view - RESET for next detection
         if (!object_present) {
-          if (itemProcessedRef.current) itemProcessedRef.current = false;
+          // Only log if we had processed an object (shows it left)
+          if (itemProcessedRef.current) {
+            console.log('[AI] Object left camera view - ready for next detection');
+          }
+          itemProcessedRef.current = false; // Reset so next object can be counted
           return;
         }
 
-        // 2. Ignore Moving
-        if (is_moving) return;
+        // 2. Object is moving through frame - track it but don't re-count
+        if (is_moving) {
+          // Keep showing bounding box while moving (handled by boxPos state)
+          // Don't reset itemProcessedRef - same object is still in frame
+          return;
+        }
 
         // 3. Thresholds
         let threshold = 80;
