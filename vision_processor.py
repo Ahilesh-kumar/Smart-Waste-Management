@@ -116,6 +116,63 @@ IS_MOVING = False
 STATIONARY_THRESHOLD = 5 # Frames to wait before declaring stationary
 MOVEMENT_THRESHOLD = 2.0 # Pixels (in % or relative units) to consider "moving"
 
+# ===== WEIGHT ESTIMATION CONFIG =====
+# Category-based density factors (grams per pixel² area)
+# These are calibrated estimates based on typical waste item sizes
+WEIGHT_DENSITY_FACTORS = {
+    'bio': 0.025,      # Bio-medical (gloves, masks) - light
+    'hazard': 0.08,    # Hazardous (batteries, chemicals) - heavy
+    'haz': 0.08,       # Alternative name
+    'dry': 0.015,      # Dry recyclables (paper, plastic) - very light
+    'rec': 0.015,      # Recyclables
+    'wet': 0.05,       # Wet organic waste - medium density
+    'org': 0.05,       # Organics
+    'met': 0.12,       # Metal items - very heavy
+    'e-waste': 0.10,   # Electronics - heavy
+    'default': 0.03    # Unknown items
+}
+
+# Reference frame area (assumes 640x480 camera resolution scaled)
+REFERENCE_AREA = 640 * 480 * 0.4 * 0.4  # Scaled frame size
+MIN_WEIGHT = 1.0    # Minimum weight in grams
+MAX_WEIGHT = 500.0  # Maximum weight cap in grams
+
+def estimate_weight(class_name: str, box_width_pct: float, box_height_pct: float) -> float:
+    """
+    Estimate object weight based on bounding box size and category density.
+    
+    Args:
+        class_name: Detected class name (e.g., 'bio medical', 'hazardous')
+        box_width_pct: Bounding box width as percentage of frame (0-100)
+        box_height_pct: Bounding box height as percentage of frame (0-100)
+    
+    Returns:
+        Estimated weight in grams (capped between MIN_WEIGHT and MAX_WEIGHT)
+    """
+    # Calculate approximate pixel area from percentages
+    pixel_width = (box_width_pct / 100) * 640 * 0.4  # Scaled width
+    pixel_height = (box_height_pct / 100) * 480 * 0.4  # Scaled height
+    area = pixel_width * pixel_height
+    
+    # Find the appropriate density factor based on class name
+    class_lower = class_name.lower()
+    density = WEIGHT_DENSITY_FACTORS.get('default')
+    
+    for key, factor in WEIGHT_DENSITY_FACTORS.items():
+        if key in class_lower:
+            density = factor
+            break
+    
+    # Calculate weight = area * density
+    raw_weight = area * density
+    
+    # Apply min/max caps and round to 1 decimal place
+    estimated_weight = max(MIN_WEIGHT, min(MAX_WEIGHT, raw_weight))
+    return round(estimated_weight, 1)
+
+# Track estimated weight for emission
+cached_weight = 0.0
+
 while True:
     frame = vs.read()
     if frame is None:
@@ -222,6 +279,12 @@ while True:
             
         cached_conf = float(confidence_score) * 100
         cached_label_id = int(index)
+        
+        # Estimate weight based on bounding box size and category
+        if box_data:
+            cached_weight = estimate_weight(cached_class, box_data['w'], box_data['h'])
+        else:
+            cached_weight = 0.0
 
     # --- 3. EMIT DATA ---
     current_time = time.time()
@@ -234,7 +297,8 @@ while True:
                 'label_id': cached_label_id if not IS_MOVING else -1,
                 'box': box_data,
                 'is_moving': IS_MOVING,     # Flag for Frontend
-                'object_present': object_present # Flag for Frontend
+                'object_present': object_present, # Flag for Frontend
+                'estimated_weight': cached_weight if not IS_MOVING else 0  # Weight in grams
             }
             sio.emit('ai_inference', payload)
             last_emit_time = current_time
