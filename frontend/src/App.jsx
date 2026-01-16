@@ -80,6 +80,8 @@ function App() {
   const resumeTimerRef = useRef(null);
   const itemProcessedRef = useRef(false); // Track if current item is counted
   const hideTimerRef = useRef(null); // Timer for box persistence
+  const lastCountTimeRef = useRef(0); // Cooldown to prevent rapid counting
+  const DETECTION_COOLDOWN_MS = 2000; // Minimum 2 seconds between counts
 
   const [history, setHistory] = useState([]);
   const [theme, setTheme] = useState('dark');
@@ -565,9 +567,14 @@ function App() {
           });
         }
 
-        // 5. Valid Detection
-        if (!itemProcessedRef.current && confidence >= threshold && detectedClass !== 'Unknown' && detectedClass !== 'Scanning...') {
+        // 5. Valid Detection - with cooldown to prevent rapid counting
+        const now = Date.now();
+        const timeSinceLastCount = now - lastCountTimeRef.current;
+        const cooldownPassed = timeSinceLastCount >= DETECTION_COOLDOWN_MS;
+
+        if (!itemProcessedRef.current && cooldownPassed && confidence >= threshold && detectedClass !== 'Unknown' && detectedClass !== 'Scanning...') {
           itemProcessedRef.current = true;
+          lastCountTimeRef.current = now; // Record this count time
 
           // Voice removed per user request (only system state/errors)
           // speak(`${detectedClass} detected.`);
