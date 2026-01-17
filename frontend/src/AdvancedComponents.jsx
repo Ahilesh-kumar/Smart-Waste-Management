@@ -38,8 +38,28 @@ export const DraggableWidget = ({
 };
 
 // ===== LIVE ACTIVITY FEED =====
-// Real-time scrolling detection feed
-export const LiveActivityFeed = ({ events = [], maxItems = 5, onClose }) => {
+// Real-time scrolling detection feed with auto-dismiss
+export const LiveActivityFeed = ({ events = [], maxItems = 5, onClose, onDismiss }) => {
+    const [visibleEvents, setVisibleEvents] = useState([]);
+
+    // Auto-dismiss notifications after 5 seconds
+    useEffect(() => {
+        // Add new events to visible list
+        if (events.length > 0) {
+            const latestEvents = events.slice(-maxItems);
+            setVisibleEvents(latestEvents);
+
+            // Set timer to remove each event after 5 seconds
+            const timers = latestEvents.map((event, index) => {
+                return setTimeout(() => {
+                    setVisibleEvents(prev => prev.filter(e => e.id !== event.id));
+                }, 5000 + (index * 500)); // Stagger dismissal slightly
+            });
+
+            return () => timers.forEach(timer => clearTimeout(timer));
+        }
+    }, [events, maxItems]);
+
     const getCategoryStyle = (category) => {
         switch (category) {
             case 'Bio-medical':
@@ -58,7 +78,7 @@ export const LiveActivityFeed = ({ events = [], maxItems = 5, onClose }) => {
     return (
         <div className="fixed right-4 top-24 z-40 w-72 space-y-2">
             <AnimatePresence mode="popLayout">
-                {events.slice(-maxItems).map((event, index) => {
+                {visibleEvents.map((event, index) => {
                     const style = getCategoryStyle(event.category);
                     const Icon = style.icon;
 
@@ -232,8 +252,8 @@ export const SwipeableTabs = ({ tabs, activeTab, onTabChange, children }) => {
                         key={tab}
                         onClick={() => onTabChange(tab)}
                         className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === tab
-                                ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'
-                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                             }`}
                     >
                         {tab}

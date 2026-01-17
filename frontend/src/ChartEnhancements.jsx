@@ -357,7 +357,7 @@ export const AnimatedBackground = () => {
     }, []);
 
     return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-black">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
             {/* The Liquid Orb */}
             <div
                 ref={orbRef}

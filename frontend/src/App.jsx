@@ -1042,7 +1042,7 @@ function App() {
 
   return (
     <div className={clsx(
-      "min-h-screen font-sans p-6 transition-all duration-700 relative overflow-hidden",
+      "min-h-screen font-sans p-6 transition-all duration-700 relative z-10",
       theme === 'dark' ? "animate-mesh-dark text-slate-100" : "animate-mesh-light text-slate-800"
     )}>
       {/* Animated Aurora Background */}
@@ -1575,8 +1575,8 @@ function App() {
 
       {/* Header */}
       <header className={clsx(
-        "flex justify-between items-center mb-8 pb-4 border-b transition-all duration-300",
-        theme === 'dark' ? "border-slate-700/50" : "border-slate-200"
+        "sticky top-0 z-50 flex justify-between items-center mb-8 py-4 px-6 -mx-6 border-b transition-all duration-300 backdrop-blur-xl",
+        theme === 'dark' ? "border-slate-700/50 bg-slate-900/80" : "border-slate-200 bg-white/80"
       )}>
         <div className="flex items-center gap-4">
           <div className="icon-container-primary shadow-lg shadow-teal-500/20">
@@ -1585,9 +1585,9 @@ function App() {
           <div>
             <h1 className="font-display text-2xl font-extrabold tracking-tight">
               <span className="gradient-text-primary">Smart</span>
-              <span className={theme === 'dark' ? 'text-white' : 'text-slate-800'}> Waste AI</span>
+              <span className={theme === 'dark' ? 'text-white' : 'text-slate-800'}> Waste Management</span>
             </h1>
-            <p className="text-xs font-medium opacity-50 mt-0.5">AI-Powered Classification System</p>
+            <p className="text-xs font-medium opacity-50 mt-0.5">Intelligent Classification System</p>
           </div>
         </div>
 
