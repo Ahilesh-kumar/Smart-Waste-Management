@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { Power, Activity, AlertTriangle, Webcam, Settings, Trash2, Zap, Sun, Moon, TrendingUp, BarChart2, PieChart, Recycle, Clock, ArrowUpRight, Download, BellRing, BellOff, Database, Sliders, Volume2, VolumeX, Pause, Play } from 'lucide-react';
+import { Power, Activity, AlertTriangle, Webcam, Settings, Trash2, Zap, Sun, Moon, TrendingUp, BarChart2, PieChart, Recycle, Clock, ArrowUpRight, Download, BellRing, BellOff, Database, Sliders, Volume2, VolumeX, Pause, Play, Leaf, Droplets } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ScatterChart, Scatter, ZAxis } from 'recharts';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -193,6 +193,12 @@ function App() {
   const [showLiveFeed, setShowLiveFeed] = useState(true);
   const [recentDetections, setRecentDetections] = useState([]);
 
+  // Loading screen state
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStatus, setLoadingStatus] = useState('Initializing...');
+  const [loadingExpanding, setLoadingExpanding] = useState(false);
+
 
   // Chart enhancement state (Phase 1 & 3)
   const [chartTimeRange, setChartTimeRange] = useState('all');
@@ -209,6 +215,37 @@ function App() {
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
   };
+
+  // Loading screen sequence
+  useEffect(() => {
+    const loadingSequence = [
+      { progress: 20, status: 'Connecting to backend...', delay: 600 },
+      { progress: 40, status: 'Fetching sensor data...', delay: 700 },
+      { progress: 60, status: 'Preparing charts...', delay: 600 },
+      { progress: 80, status: 'Loading AI models...', delay: 500 },
+      { progress: 100, status: 'Almost ready...', delay: 400 },
+    ];
+
+    let currentStep = 0;
+    const runStep = () => {
+      if (currentStep < loadingSequence.length) {
+        const step = loadingSequence[currentStep];
+        setLoadingProgress(step.progress);
+        setLoadingStatus(step.status);
+        currentStep++;
+        setTimeout(runStep, step.delay);
+      } else {
+        // Trigger expand animation
+        setLoadingExpanding(true);
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 600); // Match the CSS animation duration
+      }
+    };
+
+    // Start the loading sequence
+    setTimeout(runStep, 500);
+  }, []);
 
   // Filtered event log based on search
   const filteredEventLog = logSearchQuery
@@ -1048,6 +1085,49 @@ function App() {
       {/* Animated Aurora Background */}
       <AnimatedBackground />
 
+      {/* Cinematic Reveal Loading Screen */}
+      {isLoading && (
+        <div className={`cinematic-screen ${loadingExpanding ? 'fade-out' : ''} ${theme === 'light' ? 'light-mode' : ''}`}>
+          {/* Background with gradient */}
+          <div className="cinematic-bg"></div>
+
+          {/* Center content */}
+          <div className="cinematic-center">
+            {/* Logo with ripple rings emanating from center */}
+            <div className={`cinematic-logo ${loadingProgress > 10 ? 'visible' : ''} ${loadingProgress > 80 ? 'expanded' : ''}`}>
+              {/* Ripple rings - inside logo for exact centering */}
+              <div className={`ripple-ring ripple-1 ${loadingProgress > 10 ? 'active' : ''}`}></div>
+              <div className={`ripple-ring ripple-2 ${loadingProgress > 10 ? 'active' : ''}`}></div>
+              <div className={`ripple-ring ripple-3 ${loadingProgress > 10 ? 'active' : ''}`}></div>
+
+              <div className="cinematic-logo-bg"></div>
+              <Recycle size={56} className="cinematic-logo-icon" />
+            </div>
+
+            {/* Title reveals after logo */}
+            <div className={`cinematic-title-wrap ${loadingProgress > 50 ? 'visible' : ''}`}>
+              <h1 className="cinematic-title">Smart Waste AI</h1>
+              <p className={`cinematic-subtitle ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                Intelligent Classification System
+              </p>
+            </div>
+
+            {/* Progress indicator */}
+            <div className={`cinematic-progress ${loadingProgress > 30 ? 'visible' : ''}`}>
+              <div className="cinematic-progress-track">
+                <div
+                  className="cinematic-progress-fill"
+                  style={{ width: `${loadingProgress}%` }}
+                ></div>
+              </div>
+              <span className={`cinematic-status ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                {loadingStatus}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notifications Container */}
       <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2">
         <AnimatePresence>
@@ -1076,12 +1156,14 @@ function App() {
       </div>
 
       {/* Live Activity Feed - Slide in from right */}
-      {showLiveFeed && displayMode !== 'widget' && displayMode !== 'compact' && (
-        <LiveActivityFeed
-          events={filteredEventLog.slice(-5)}
-          maxItems={5}
-        />
-      )}
+      {
+        showLiveFeed && displayMode !== 'widget' && displayMode !== 'compact' && (
+          <LiveActivityFeed
+            events={filteredEventLog.slice(-5)}
+            maxItems={5}
+          />
+        )
+      }
 
       {/* Keyboard Shortcuts Help Modal */}
       <AnimatePresence>
