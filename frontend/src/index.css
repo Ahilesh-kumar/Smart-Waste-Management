@@ -53,9 +53,12 @@
   --light-shadow: 0 4px 24px 0 rgba(13, 148, 136, 0.12);
 
   /* Liquid Metal (Dark Mode) */
-  --dark-mesh-1: #0f172a;
-  --dark-mesh-2: #1e1b4b;
-  --dark-mesh-3: #020617;
+  --dark-mesh-1: #020617;
+  /* Slate 950 */
+  --dark-mesh-2: #0f172a;
+  /* Slate 900 */
+  --dark-mesh-3: #000000;
+  /* Pure Black */
   --dark-accent: #14b8a6;
   --dark-bg: #020617;
   --dark-glass-bg: rgba(15, 23, 42, 0.7);
@@ -1059,4 +1062,110 @@ body {
   background: linear-gradient(90deg, var(--primary-500), var(--accent-500), var(--primary-500));
   background-size: 200% 200%;
   animation: gradientBorder 3s ease infinite;
+}
+
+/* ============================================
+   CHART ENHANCEMENTS (Phase 1 & 3)
+   ============================================ */
+
+/* Chart Card Container */
+.chart-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+}
+
+.chart-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Chart Title */
+.chart-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Chart Animation */
+@keyframes chartSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chart-animate {
+  animation: chartSlideIn 0.6s ease-out;
+}
+
+/* Recharts Customization */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.02);
+}
+
+.recharts-tooltip-wrapper {
+  z-index: 100 !important;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4));
+}
+
+.recharts-legend-item-text {
+  color: #94a3b8 !important;
+  font-size: 0.7rem !important;
+  font-weight: 500 !important;
+}
+
+.recharts-legend-icon {
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+/* Compare mode highlight */
+.compare-active {
+  position: relative;
+}
+
+.compare-active::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 2px dashed rgba(168, 85, 247, 0.5);
+  border-radius: inherit;
+  pointer-events: none;
+  animation: comparePulse 2s ease-in-out infinite;
+}
+
+@keyframes comparePulse {
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Expand button reveal on hover */
+.chart-card:hover .chart-expand-btn {
+  opacity: 1;
+}
+
+.chart-expand-btn {
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }

@@ -6,6 +6,10 @@ import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedCounter, ProgressRing, Sparkline, LiveIndicator, TiltCard } from './UIComponents';
 import { LiveActivityFeed, useSwipeGesture, PullRefreshIndicator } from './AdvancedComponents';
+import {
+  EnhancedAreaChart, TimeRangeSelector, ChartModal,
+  CompareToggle, ChartCard, CompareChart, GlassTooltip, TimelineScrubber, AnimatedBackground
+} from './ChartEnhancements';
 
 const socket = io('http://localhost:3001');
 
@@ -189,6 +193,16 @@ function App() {
   const [showLiveFeed, setShowLiveFeed] = useState(true);
   const [recentDetections, setRecentDetections] = useState([]);
 
+
+  // Chart enhancement state (Phase 1 & 3)
+  const [chartTimeRange, setChartTimeRange] = useState('all');
+  const [expandedChart, setExpandedChart] = useState(null); // 'trends' | 'confidence' | null
+
+  // History slider state (0 = live, negative = past cycles)
+  const [chartHistoryIndex, setChartHistoryIndex] = useState(0);
+  const [chartDataHistory, setChartDataHistory] = useState([]);
+  const MAX_HISTORY_CYCLES = 30;
+
   // Add toast helper
   const addToast = (message, type = 'info') => {
     const id = Date.now();
@@ -343,6 +357,43 @@ function App() {
       socket.off('ai_inference');
     };
   }, []);
+
+  // Chart History Capture - save snapshots every 5 seconds
+  useEffect(() => {
+    if (!data.isOn) return;
+
+    const captureInterval = setInterval(() => {
+      setChartDataHistory(prev => {
+        const snapshot = {
+          timestamp: Date.now(),
+          processingCounts: { ...processingCounts },
+          timeSeriesData: [...timeSeriesData],
+          confidenceHistory: [...confidenceHistory],
+          detectionHours: [...detectionHours]
+        };
+        const updated = [...prev, snapshot];
+        // Keep only last MAX_HISTORY_CYCLES
+        return updated.slice(-MAX_HISTORY_CYCLES);
+      });
+    }, 5000); // Capture every 5 seconds
+
+    return () => clearInterval(captureInterval);
+  }, [data.isOn, processingCounts, timeSeriesData, confidenceHistory, detectionHours]);
+
+  // Helper to get chart data at history index
+  const getHistoricalData = (dataKey) => {
+    if (chartHistoryIndex === 0 || chartDataHistory.length === 0) {
+      // Live data
+      return dataKey === 'processingCounts' ? processingCounts :
+        dataKey === 'timeSeriesData' ? timeSeriesData :
+          dataKey === 'confidenceHistory' ? confidenceHistory :
+            dataKey === 'detectionHours' ? detectionHours : null;
+    }
+    // Historical data
+    const historyIdx = chartDataHistory.length + chartHistoryIndex;
+    const snapshot = chartDataHistory[Math.max(0, historyIdx)];
+    return snapshot ? snapshot[dataKey] : null;
+  };
 
   // Session Timer - only runs when system is ON
   useEffect(() => {
@@ -991,9 +1042,12 @@ function App() {
 
   return (
     <div className={clsx(
-      "min-h-screen font-sans p-6 transition-all duration-700",
+      "min-h-screen font-sans p-6 transition-all duration-700 relative overflow-hidden",
       theme === 'dark' ? "animate-mesh-dark text-slate-100" : "animate-mesh-light text-slate-800"
     )}>
+      {/* Animated Aurora Background */}
+      <AnimatedBackground />
+
       {/* Toast Notifications Container */}
       <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2">
         <AnimatePresence>
@@ -2049,6 +2103,54 @@ function App() {
             </button>
           </div>
 
+          {/* ===== ENHANCED CHARTS (Phase 1 & 3) ===== */}
+          <ChartCard
+            title="Category Trends"
+            icon={TrendingUp}
+            className={clsx(compareMode && "compare-active")}
+            onExpand={() => setExpandedChart('trends')}
+            actions={
+              <div className="flex items-center gap-2">
+                <CompareToggle isActive={compareMode} onToggle={() => setCompareMode(!compareMode)} />
+                <TimeRangeSelector value={chartTimeRange} onChange={setChartTimeRange} />
+              </div>
+            }
+          >
+            {compareMode ? (
+              <CompareChart
+                currentData={timeSeriesData.map(d => ({ ...d, total: d.bio + d.hazard + d.wet + d.dry }))}
+                previousData={timeSeriesData.slice(0, -10).map(d => ({ ...d, total: d.bio + d.hazard + d.wet + d.dry }))}
+                height={200}
+              />
+            ) : (
+              <EnhancedAreaChart
+                data={timeSeriesData}
+                timeRange={chartTimeRange}
+                height={200}
+                showLegend={true}
+              />
+            )}
+          </ChartCard>
+
+          {/* Expanded Chart Modal */}
+          <ChartModal
+            isOpen={expandedChart === 'trends'}
+            onClose={() => setExpandedChart(null)}
+            title="Category Trends - Detailed View"
+          >
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <TimeRangeSelector value={chartTimeRange} onChange={setChartTimeRange} />
+              </div>
+              <EnhancedAreaChart
+                data={timeSeriesData}
+                timeRange={chartTimeRange}
+                height={400}
+                showLegend={true}
+              />
+            </div>
+          </ChartModal>
+
           {/* Bin Status Stack */}
           <div className={clsx("flex-1 p-6 rounded-3xl border flex flex-col", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}>
             <h3 className="text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2 opacity-70">
@@ -2099,13 +2201,44 @@ function App() {
         </div>
 
         {/* BOTTOM SECTION: ANALYTICS (Full Width) */}
-        <div className="col-span-12 mt-4">
+        <div className="col-span-12 mt-4 chart-animate">
           <div className="flex items-center gap-4 mb-6">
             <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
               <BarChart2 className="text-blue-500" /> Real-Time Analytics
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-teal-400 border border-teal-500/30">ENHANCED</span>
             </h2>
             <div className="h-px flex-1 bg-gradient-to-r from-slate-700 to-transparent"></div>
           </div>
+
+          {/* SVG Gradient Definitions for Charts */}
+          <svg width="0" height="0" style={{ position: 'absolute' }}>
+            <defs>
+              <linearGradient id="chartGradientBio" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity={0.6} />
+                <stop offset="100%" stopColor="#10b981" stopOpacity={0.1} />
+              </linearGradient>
+              <linearGradient id="chartGradientHazard" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ef4444" stopOpacity={0.6} />
+                <stop offset="100%" stopColor="#ef4444" stopOpacity={0.1} />
+              </linearGradient>
+              <linearGradient id="chartGradientWet" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.6} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1} />
+              </linearGradient>
+              <linearGradient id="chartGradientDry" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.6} />
+                <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.1} />
+              </linearGradient>
+              <linearGradient id="chartGradientPurple" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.6} />
+                <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.1} />
+              </linearGradient>
+              <linearGradient id="chartGradientIndigo" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#6366f1" stopOpacity={0.3} />
+              </linearGradient>
+            </defs>
+          </svg>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 1. Category Distribution (Pie) */}
@@ -2113,7 +2246,28 @@ function App() {
               className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
               onClick={() => setExpandedGraph({
                 title: 'Category Distribution', chart: (
-                  <ResponsiveContainer width="100%" height="100%"><RechartsPie><Pie data={[{ name: 'Bio', value: processingCounts.bio }, { name: 'Haz', value: processingCounts.hazard }, { name: 'Wet', value: processingCounts.wet }, { name: 'Dry', value: processingCounts.dry }]} cx="50%" cy="50%" innerRadius={100} outerRadius={150} paddingAngle={2} dataKey="value" label><Cell fill="#10b981" /><Cell fill="#ef4444" /><Cell fill="#3b82f6" /><Cell fill="#f59e0b" /></Pie><Legend /><Tooltip /></RechartsPie></ResponsiveContainer>
+                  <div className="h-full flex flex-col">
+                    <TimelineScrubber
+                      value={chartHistoryIndex}
+                      onChange={setChartHistoryIndex}
+                      maxHistory={MAX_HISTORY_CYCLES}
+                      snapshots={chartDataHistory}
+                      label="Browse History"
+                    />
+                    <div className="flex-1 min-h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RechartsPie>
+                          <Pie data={(() => {
+                            const histData = getHistoricalData('processingCounts') || processingCounts;
+                            return [{ name: 'Bio', value: histData.bio }, { name: 'Haz', value: histData.hazard }, { name: 'Wet', value: histData.wet }, { name: 'Dry', value: histData.dry }];
+                          })()} cx="50%" cy="50%" innerRadius={100} outerRadius={150} paddingAngle={2} dataKey="value" label>
+                            <Cell fill="#10b981" /><Cell fill="#ef4444" /><Cell fill="#3b82f6" /><Cell fill="#f59e0b" />
+                          </Pie>
+                          <Legend /><Tooltip />
+                        </RechartsPie>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 )
               })}
             >
@@ -2133,14 +2287,39 @@ function App() {
               className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
               onClick={() => setExpandedGraph({
                 title: 'Items by Category', chart: (
-                  <ResponsiveContainer width="100%" height="100%"><BarChart data={[{ name: 'Bio', count: processingCounts.bio }, { name: 'Haz', count: processingCounts.hazard }, { name: 'Wet', count: processingCounts.wet }, { name: 'Dry', count: processingCounts.dry }]}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="count"><Cell fill="#10b981" /><Cell fill="#ef4444" /><Cell fill="#3b82f6" /><Cell fill="#f59e0b" /></Bar></BarChart></ResponsiveContainer>
+                  <div className="h-full flex flex-col">
+                    <TimelineScrubber
+                      value={chartHistoryIndex}
+                      onChange={setChartHistoryIndex}
+                      maxHistory={MAX_HISTORY_CYCLES}
+                      snapshots={chartDataHistory}
+                      label="Browse History"
+                    />
+                    <div className="flex-1 min-h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={(() => {
+                          const histData = getHistoricalData('processingCounts') || processingCounts;
+                          return [{ name: 'Bio', count: histData.bio }, { name: 'Haz', count: histData.hazard }, { name: 'Wet', count: histData.wet }, { name: 'Dry', count: histData.dry }];
+                        })()}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                          <XAxis dataKey="name" tick={{ fill: '#64748b' }} />
+                          <YAxis tick={{ fill: '#64748b' }} />
+                          <Tooltip content={<GlassTooltip />} />
+                          <Bar dataKey="count"><Cell fill="#10b981" /><Cell fill="#ef4444" /><Cell fill="#3b82f6" /><Cell fill="#f59e0b" /></Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 )
               })}
             >
               <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">Items by Category</h3>
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={[{ name: 'Bio', count: processingCounts.bio }, { name: 'Haz', count: processingCounts.hazard }, { name: 'Wet', count: processingCounts.wet }, { name: 'Dry', count: processingCounts.dry }]}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} /><XAxis dataKey="name" fontSize={10} /><YAxis fontSize={10} /><Bar dataKey="count"><Cell fill="#10b981" /><Cell fill="#ef4444" /><Cell fill="#3b82f6" /><Cell fill="#f59e0b" /></Bar>
+                <BarChart data={(() => {
+                  const histData = getHistoricalData('processingCounts') || processingCounts;
+                  return [{ name: 'Bio', count: histData.bio }, { name: 'Haz', count: histData.hazard }, { name: 'Wet', count: histData.wet }, { name: 'Dry', count: histData.dry }];
+                })()}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" /><XAxis dataKey="name" fontSize={10} tick={{ fill: '#64748b' }} /><YAxis fontSize={10} tick={{ fill: '#64748b' }} /><Tooltip content={<GlassTooltip />} /><Bar dataKey="count"><Cell fill="#10b981" /><Cell fill="#ef4444" /><Cell fill="#3b82f6" /><Cell fill="#f59e0b" /></Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -2150,14 +2329,44 @@ function App() {
               className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
               onClick={() => setExpandedGraph({
                 title: 'Detections Trend', chart: (
-                  <ResponsiveContainer width="100%" height="100%"><LineChart data={timeSeriesData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="time" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="bio" stroke="#10b981" strokeWidth={3} /><Line type="monotone" dataKey="hazard" stroke="#ef4444" strokeWidth={3} /><Line type="monotone" dataKey="wet" stroke="#3b82f6" strokeWidth={3} /><Line type="monotone" dataKey="dry" stroke="#f59e0b" strokeWidth={3} /></LineChart></ResponsiveContainer>
+                  <div className="h-full flex flex-col">
+                    <TimelineScrubber
+                      value={chartHistoryIndex}
+                      onChange={setChartHistoryIndex}
+                      maxHistory={MAX_HISTORY_CYCLES}
+                      snapshots={chartDataHistory}
+                      label="Browse History"
+                    />
+                    <div className="flex-1 min-h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={getHistoricalData('timeSeriesData') || timeSeriesData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                          <XAxis dataKey="time" tick={{ fill: '#64748b' }} />
+                          <YAxis tick={{ fill: '#64748b' }} />
+                          <Tooltip content={<GlassTooltip />} />
+                          <Legend />
+                          <Line type="monotone" dataKey="bio" stroke="#10b981" strokeWidth={3} />
+                          <Line type="monotone" dataKey="hazard" stroke="#ef4444" strokeWidth={3} />
+                          <Line type="monotone" dataKey="wet" stroke="#3b82f6" strokeWidth={3} />
+                          <Line type="monotone" dataKey="dry" stroke="#f59e0b" strokeWidth={3} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 )
               })}
             >
               <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">Latest Trends</h3>
               <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={timeSeriesData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} /><XAxis dataKey="time" fontSize={10} /><YAxis fontSize={10} /><Line type="monotone" dataKey="bio" stroke="#10b981" dot={false} /><Line type="monotone" dataKey="hazard" stroke="#ef4444" dot={false} /><Line type="monotone" dataKey="wet" stroke="#3b82f6" dot={false} /><Line type="monotone" dataKey="dry" stroke="#f59e0b" dot={false} />
+                <LineChart data={getHistoricalData('timeSeriesData') || timeSeriesData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                  <XAxis dataKey="time" fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
+                  <YAxis fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
+                  <Tooltip content={<GlassTooltip />} />
+                  <Line type="monotone" dataKey="bio" stroke="#10b981" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="hazard" stroke="#ef4444" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="wet" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="dry" stroke="#f59e0b" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -2167,14 +2376,44 @@ function App() {
               className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
               onClick={() => setExpandedGraph({
                 title: 'Cumulative Processing', chart: (
-                  <ResponsiveContainer width="100%" height="100%"><AreaChart data={timeSeriesData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="time" /><YAxis /><Tooltip /><Legend /><Area type="monotone" dataKey="bio" stackId="1" fill="#10b981" /><Area type="monotone" dataKey="hazard" stackId="1" fill="#ef4444" /><Area type="monotone" dataKey="wet" stackId="1" fill="#3b82f6" /><Area type="monotone" dataKey="dry" stackId="1" fill="#f59e0b" /></AreaChart></ResponsiveContainer>
+                  <div className="h-full flex flex-col">
+                    <TimelineScrubber
+                      value={chartHistoryIndex}
+                      onChange={setChartHistoryIndex}
+                      maxHistory={MAX_HISTORY_CYCLES}
+                      snapshots={chartDataHistory}
+                      label="Browse History"
+                    />
+                    <div className="flex-1 min-h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={getHistoricalData('timeSeriesData') || timeSeriesData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                          <XAxis dataKey="time" tick={{ fill: '#64748b' }} />
+                          <YAxis tick={{ fill: '#64748b' }} />
+                          <Tooltip content={<GlassTooltip />} />
+                          <Legend />
+                          <Area type="monotone" dataKey="bio" stackId="1" fill="url(#chartGradientBio)" stroke="#10b981" strokeWidth={2} />
+                          <Area type="monotone" dataKey="hazard" stackId="1" fill="url(#chartGradientHazard)" stroke="#ef4444" strokeWidth={2} />
+                          <Area type="monotone" dataKey="wet" stackId="1" fill="url(#chartGradientWet)" stroke="#3b82f6" strokeWidth={2} />
+                          <Area type="monotone" dataKey="dry" stackId="1" fill="url(#chartGradientDry)" stroke="#f59e0b" strokeWidth={2} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 )
               })}
             >
               <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">Cumulative Processing</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={timeSeriesData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} /><XAxis dataKey="time" fontSize={10} /><YAxis fontSize={10} /><Area type="monotone" dataKey="bio" stackId="1" fill="#10b981" fillOpacity={0.5} stroke="#10b981" /><Area type="monotone" dataKey="hazard" stackId="1" fill="#ef4444" fillOpacity={0.5} stroke="#ef4444" /><Area type="monotone" dataKey="wet" stackId="1" fill="#3b82f6" fillOpacity={0.5} stroke="#3b82f6" /><Area type="monotone" dataKey="dry" stackId="1" fill="#f59e0b" fillOpacity={0.5} stroke="#f59e0b" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                  <XAxis dataKey="time" fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
+                  <YAxis fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
+                  <Tooltip content={<GlassTooltip />} />
+                  <Area type="monotone" dataKey="bio" stackId="1" fill="url(#chartGradientBio)" stroke="#10b981" strokeWidth={2} />
+                  <Area type="monotone" dataKey="hazard" stackId="1" fill="url(#chartGradientHazard)" stroke="#ef4444" strokeWidth={2} />
+                  <Area type="monotone" dataKey="wet" stackId="1" fill="url(#chartGradientWet)" stroke="#3b82f6" strokeWidth={2} />
+                  <Area type="monotone" dataKey="dry" stackId="1" fill="url(#chartGradientDry)" stroke="#f59e0b" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -2184,14 +2423,34 @@ function App() {
               className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
               onClick={() => setExpandedGraph({
                 title: 'AI Confidence Distribution', chart: (
-                  <ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="time" name="Time" /><YAxis dataKey="confidence" name="Confidence" /><Tooltip /><Scatter data={confidenceHistory} fill="#8884d8" /></ScatterChart></ResponsiveContainer>
+                  <div className="h-full flex flex-col">
+                    <TimelineScrubber
+                      value={chartHistoryIndex}
+                      onChange={setChartHistoryIndex}
+                      maxHistory={MAX_HISTORY_CYCLES}
+                      snapshots={chartDataHistory}
+                      label="Browse History"
+                    />
+                    <div className="flex-1 min-h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ScatterChart>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                          <XAxis dataKey="time" name="Time" tick={{ fill: '#64748b' }} />
+                          <YAxis dataKey="confidence" name="Confidence" domain={[0, 100]} tick={{ fill: '#64748b' }} />
+                          <Tooltip content={<GlassTooltip />} />
+                          <Scatter data={getHistoricalData('confidenceHistory') || confidenceHistory} fill="#8b5cf6" />
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 )
               })}
             >
               <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">AI Confidence</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <ScatterChart>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} /><XAxis dataKey="time" fontSize={10} /><YAxis dataKey="confidence" domain={[0, 100]} fontSize={10} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" /><XAxis dataKey="time" fontSize={10} tick={{ fill: '#64748b' }} /><YAxis dataKey="confidence" domain={[0, 100]} fontSize={10} tick={{ fill: '#64748b' }} />
+                  <Tooltip content={<GlassTooltip />} />
                   <Scatter data={confidenceHistory} fill="#8b5cf6" />
                 </ScatterChart>
               </ResponsiveContainer>
@@ -2200,6 +2459,30 @@ function App() {
             {/* 6. Detection Heatmap by Hour */}
             <div
               className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              onClick={() => setExpandedGraph({
+                title: 'Detection Heatmap', chart: (
+                  <div className="h-full flex flex-col">
+                    <TimelineScrubber
+                      value={chartHistoryIndex}
+                      onChange={setChartHistoryIndex}
+                      maxHistory={MAX_HISTORY_CYCLES}
+                      snapshots={chartDataHistory}
+                      label="Browse History"
+                    />
+                    <div className="flex-1 min-h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={(getHistoricalData('detectionHours') || detectionHours).map((count, hour) => ({ hour: `${hour}:00`, count }))}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                          <XAxis dataKey="hour" tick={{ fill: '#64748b' }} />
+                          <YAxis tick={{ fill: '#64748b' }} />
+                          <Tooltip content={<GlassTooltip />} />
+                          <Bar dataKey="count" fill="url(#chartGradientIndigo)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )
+              })}
             >
               <h3 className="text-sm font-bold opacity-70 mb-4 uppercase flex items-center gap-2">
                 Detection Heatmap
@@ -2207,10 +2490,11 @@ function App() {
               </h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={detectionHours.map((count, hour) => ({ hour: `${hour}:00`, count }))}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                  <XAxis dataKey="hour" fontSize={9} interval={2} />
-                  <YAxis fontSize={10} />
-                  <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                  <XAxis dataKey="hour" fontSize={9} interval={2} tick={{ fill: '#64748b' }} axisLine={false} />
+                  <YAxis fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
+                  <Tooltip content={<GlassTooltip />} />
+                  <Bar dataKey="count" fill="url(#chartGradientIndigo)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
