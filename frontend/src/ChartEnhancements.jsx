@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     AreaChart, Area, LineChart, Line,
@@ -310,53 +310,84 @@ export const CompareChart = ({
     );
 };
 
-// ===== PREMIUM BLACK SMOOTH ANIMATION BACKGROUND =====
-// Dark elegant background with smooth gradient animations
-export const AnimatedBackground = () => (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-black">
-        {/* Smooth gradient blob - top left */}
-        <motion.div
-            className="absolute -top-32 -left-32 w-96 h-96 rounded-full"
-            style={{
-                background: 'radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%)',
-                filter: 'blur(80px)'
-            }}
-            animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.5, 0.8, 0.5],
-            }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
+// ===== REACTIVE LIQUID ORB BACKGROUND =====
+// A large, fluid, glowing orb that follows the mouse lazily
 
-        {/* Smooth gradient blob - bottom right */}
-        <motion.div
-            className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full"
-            style={{
-                background: 'radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%)',
-                filter: 'blur(80px)'
-            }}
-            animate={{
-                scale: [1, 1.15, 1],
-                opacity: [0.4, 0.7, 0.4],
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-        />
 
-        {/* Center subtle glow */}
-        <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
-            style={{
-                background: 'radial-gradient(circle, rgba(20,184,166,0.03) 0%, transparent 60%)',
-                filter: 'blur(100px)'
-            }}
-            animate={{
-                scale: [1, 1.1, 1],
-                opacity: [0.3, 0.5, 0.3],
-            }}
-            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        />
-    </div>
-);
+export const AnimatedBackground = () => {
+    const orbRef = useRef(null);
+
+    useEffect(() => {
+        const orb = orbRef.current;
+        if (!orb) return;
+
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let orbX = mouseX;
+        let orbY = mouseY;
+
+        // Configuration
+        const speed = 0.05; // Lower = lazier/smoother follow
+
+        const handleMouseMove = (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+
+        let animationFrameId;
+
+        const animate = () => {
+            // Linear interpolation for smooth trailing
+            orbX += (mouseX - orbX) * speed;
+            orbY += (mouseY - orbY) * speed;
+
+            // Apply position
+            orb.style.transform = `translate(${orbX}px, ${orbY}px) translate(-50%, -50%)`;
+
+            animationFrameId = requestAnimationFrame(animate);
+        };
+        animate();
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            cancelAnimationFrame(animationFrameId);
+        };
+    }, []);
+
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-black">
+            {/* The Liquid Orb */}
+            <div
+                ref={orbRef}
+                className="absolute w-[800px] h-[800px] rounded-full blur-[120px] opacity-20"
+                style={{
+                    background: 'conic-gradient(from 0deg, #06b6d4, #8b5cf6, #ec4899, #06b6d4)',
+                    top: 0,
+                    left: 0,
+                    willChange: 'transform'
+                }}
+            >
+                {/* Inner animating texture/morph using CSS animation */}
+                <div className="absolute inset-0 animate-spin-slow rounded-full mix-blend-overlay opacity-50"
+                    style={{ background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2), transparent)' }} />
+            </div>
+
+            {/* Ambient secondary static glow for depth */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-10"
+                style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)' }} />
+
+            {/* Very subtle mesh overlay to texture the black */}
+            <div className="absolute inset-0 opacity-[0.03]"
+                style={{
+                    backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+                    backgroundSize: '40px 40px'
+                }}
+            />
+        </div>
+    );
+};
 
 // ===== TIMELINE SCRUBBER =====
 // Beautiful timeline with draggable slider and animated background
