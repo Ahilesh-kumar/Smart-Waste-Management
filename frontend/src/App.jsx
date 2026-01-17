@@ -1033,7 +1033,7 @@ function App() {
   if (displayMode === 'widget') {
     return (
       <div className={clsx("min-h-screen flex items-center justify-center bg-transparent", theme === 'dark' ? "text-white" : "text-slate-800")}>
-        <div className={clsx("w-80 p-6 rounded-3xl border shadow-2xl backdrop-blur-xl flex flex-col gap-4", theme === 'dark' ? "bg-slate-900/80 border-slate-700" : "bg-white/80 border-slate-200")}>
+        <div className={clsx("w-80 p-6 rounded-3xl border shadow-2xl backdrop-blur-xl flex flex-col gap-4", theme === 'dark' ? "bg-[#0a0a0a]/90 border-white/10" : "bg-white/80 border-slate-200")}>
           <div className="flex justify-between items-center">
             <h2 className="font-black text-lg flex items-center gap-2"><Recycle size={20} className="text-green-500" /> Waste AI</h2>
             <button onClick={() => setDisplayMode('full')} className="p-1 hover:bg-white/10 rounded"><ArrowUpRight size={16} /></button>
@@ -1179,30 +1179,30 @@ function App() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className={clsx("p-6 rounded-2xl border shadow-2xl max-w-md", theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200")}
+              className={clsx("p-6 rounded-2xl border shadow-2xl max-w-md", theme === 'dark' ? "bg-[#0a0a0a] border-white/10" : "bg-white border-slate-200")}
               onClick={e => e.stopPropagation()}
             >
               <h3 className="text-xl font-bold mb-4">⌨️ Keyboard Shortcuts</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span>Toggle Power</span>
-                  <kbd className="px-2 py-1 bg-slate-700 rounded text-xs font-mono">Space</kbd>
+                  <kbd className="px-2 py-1 bg-neutral-800 rounded text-xs font-mono">Space</kbd>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Reset Session</span>
-                  <kbd className="px-2 py-1 bg-slate-700 rounded text-xs font-mono">R</kbd>
+                  <kbd className="px-2 py-1 bg-neutral-800 rounded text-xs font-mono">R</kbd>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Settings</span>
-                  <kbd className="px-2 py-1 bg-slate-700 rounded text-xs font-mono">S</kbd>
+                  <kbd className="px-2 py-1 bg-neutral-800 rounded text-xs font-mono">S</kbd>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Close Modal</span>
-                  <kbd className="px-2 py-1 bg-slate-700 rounded text-xs font-mono">Esc</kbd>
+                  <kbd className="px-2 py-1 bg-neutral-800 rounded text-xs font-mono">Esc</kbd>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>This Help</span>
-                  <kbd className="px-2 py-1 bg-slate-700 rounded text-xs font-mono">?</kbd>
+                  <kbd className="px-2 py-1 bg-neutral-800 rounded text-xs font-mono">?</kbd>
                 </div>
               </div>
               <button onClick={() => setShowKeyboardHelp(false)} className="mt-4 w-full py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition">
@@ -1227,7 +1227,7 @@ function App() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className={clsx("p-6 rounded-2xl border shadow-2xl w-full max-w-md", theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200")}
+              className={clsx("p-6 rounded-2xl border shadow-2xl w-full max-w-md", theme === 'dark' ? "bg-[#0a0a0a] border-white/10" : "bg-white border-slate-200")}
               onClick={e => e.stopPropagation()}
             >
               <h3 className="text-xl font-bold mb-4">⚙️ Settings</h3>
@@ -1246,7 +1246,7 @@ function App() {
                   <select
                     value={sensitivity}
                     onChange={(e) => setSensitivity(e.target.value)}
-                    className="px-3 py-1 rounded-lg bg-slate-700 border border-slate-600 text-sm"
+                    className="px-3 py-1 rounded-lg bg-neutral-800 border border-white/10 text-sm"
                   >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
@@ -1310,7 +1310,7 @@ function App() {
               exit={{ scale: 0.8, opacity: 0 }}
               className={clsx(
                 "w-[90vw] max-w-5xl p-8 rounded-3xl shadow-2xl border",
-                theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
+                theme === 'dark' ? "bg-[#0a0a0a] border-white/10" : "bg-white border-slate-200"
               )}
               onClick={(e) => e.stopPropagation()}
             >
@@ -1354,7 +1354,7 @@ function App() {
               exit={{ scale: 0.9, opacity: 0 }}
               className={clsx(
                 "w-[95vw] max-w-5xl p-8 rounded-3xl shadow-2xl border flex flex-col max-h-[90vh]",
-                theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
+                theme === 'dark' ? "bg-[#0a0a0a] border-white/10" : "bg-white border-slate-200"
               )}
               onClick={(e) => e.stopPropagation()}
             >
@@ -1384,7 +1384,7 @@ function App() {
                       "px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all",
                       historyFilter === filter
                         ? "bg-blue-500 text-white"
-                        : theme === 'dark' ? "bg-slate-800 text-slate-400 hover:bg-slate-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        : theme === 'dark' ? "bg-neutral-800 text-neutral-400 hover:bg-neutral-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     )}
                   >
                     {filter === 'all' ? 'All Time' : filter}
@@ -1397,7 +1397,7 @@ function App() {
                     "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
                     compareMode
                       ? "bg-purple-500 text-white"
-                      : theme === 'dark' ? "bg-slate-800 text-slate-400 hover:bg-slate-700" : "bg-slate-100 text-slate-600"
+                      : theme === 'dark' ? "bg-neutral-800 text-neutral-400 hover:bg-neutral-700" : "bg-slate-100 text-slate-600"
                   )}
                 >
                   <BarChart2 size={14} /> Compare {compareMode && `(${selectedForCompare.length}/2)`}
@@ -1406,7 +1406,7 @@ function App() {
                   onClick={exportAllHistory}
                   className={clsx(
                     "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
-                    theme === 'dark' ? "bg-slate-800 text-slate-400 hover:bg-slate-700" : "bg-slate-100 text-slate-600"
+                    theme === 'dark' ? "bg-neutral-800 text-neutral-400 hover:bg-neutral-700" : "bg-slate-100 text-slate-600"
                   )}
                 >
                   <Download size={14} /> Export All
@@ -1522,7 +1522,7 @@ function App() {
               exit={{ y: 50, opacity: 0 }}
               className={clsx(
                 "w-[95vw] h-[90vh] max-w-6xl p-8 rounded-3xl shadow-2xl border flex flex-col overflow-hidden",
-                theme === 'dark' ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
+                theme === 'dark' ? "bg-[#0a0a0a] border-white/10" : "bg-white border-slate-200"
               )}
               onClick={(e) => e.stopPropagation()}
             >
@@ -1550,7 +1550,7 @@ function App() {
               <div className="flex-1 overflow-y-auto grid grid-cols-12 gap-6 p-2">
 
                 {/* 1. Composition Chart (Pie) */}
-                <div className="col-span-12 lg:col-span-4 p-6 rounded-2xl border border-dashed border-slate-700 flex flex-col items-center justify-center bg-black/20">
+                <div className="col-span-12 lg:col-span-4 p-6 rounded-2xl border border-dashed border-white/10 flex flex-col items-center justify-center bg-black/20">
                   <h3 className="text-sm font-bold uppercase tracking-wider mb-6 opacity-70">Waste Composition</h3>
                   <div className="w-full h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1658,7 +1658,7 @@ function App() {
       {/* Header */}
       <header className={clsx(
         "sticky top-0 z-50 flex justify-between items-center mb-8 py-4 px-6 -mx-6 border-b transition-all duration-300 backdrop-blur-xl",
-        theme === 'dark' ? "border-slate-700/50 bg-slate-900/80" : "border-slate-200 bg-white/80"
+        theme === 'dark' ? "border-white/10 bg-[#0a0a0a]/90" : "border-slate-200 bg-white/80"
       )}>
         <div className="flex items-center gap-4">
           <div className="icon-container-primary shadow-lg shadow-teal-500/20">
@@ -1772,7 +1772,7 @@ function App() {
                     <input
                       type="text"
                       placeholder="http://192.168.1.x:8080"
-                      className="flex-1 rounded-lg bg-slate-800 border-slate-700 text-white px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                      className="flex-1 rounded-lg bg-neutral-900 border-white/10 text-white px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
                       onKeyDown={(e) => e.key === 'Enter' && setCamUrl(e.currentTarget.value)}
                     />
                   </div>
@@ -1801,7 +1801,7 @@ function App() {
           {/* AI Status & Connectivity Strip */}
           <div className={clsx(
             "p-4 rounded-2xl flex flex-col gap-3",
-            theme === 'dark' ? "bg-slate-800/50 border border-slate-700" : "bg-white border border-slate-200"
+            theme === 'dark' ? "bg-neutral-900/50 border border-white/10" : "bg-white border border-slate-200"
           )}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-wrap">
@@ -1835,7 +1835,7 @@ function App() {
                     step="0.1"
                     value={cameraZoom}
                     onChange={(e) => setCameraZoom(parseFloat(e.target.value))}
-                    className="flex-1 h-1 appearance-none bg-slate-700 rounded-full cursor-pointer"
+                    className="flex-1 h-1 appearance-none bg-neutral-800 rounded-full cursor-pointer"
                   />
                   <span className="text-xs font-mono w-8">{cameraZoom.toFixed(1)}x</span>
                 </div>
@@ -2029,7 +2029,7 @@ function App() {
                   onClick={() => setIsPaused(!isPaused)}
                   className={clsx(
                     "w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
-                    isPaused ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30" : "bg-slate-700 hover:bg-slate-600"
+                    isPaused ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30" : "bg-neutral-800 hover:bg-neutral-700"
                   )}
                   title={isPaused ? "Resume" : "Pause"}
                 >
@@ -2113,7 +2113,7 @@ function App() {
             {/* Bio Card */}
             <div className={clsx(
               "category-card category-card-bio card-animate",
-              theme === 'dark' ? "bg-slate-800/60 border border-slate-700/50" : "bg-white/80 border border-slate-200"
+              theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
             )}>
               <div className="category-icon category-icon-bio">
                 <Recycle size={18} className="text-white" />
@@ -2125,7 +2125,7 @@ function App() {
             {/* Hazard Card */}
             <div className={clsx(
               "category-card category-card-hazard card-animate",
-              theme === 'dark' ? "bg-slate-800/60 border border-slate-700/50" : "bg-white/80 border border-slate-200"
+              theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
             )}>
               <div className="category-icon category-icon-hazard">
                 <AlertTriangle size={18} className="text-white" />
@@ -2137,7 +2137,7 @@ function App() {
             {/* Wet Card */}
             <div className={clsx(
               "category-card category-card-wet card-animate",
-              theme === 'dark' ? "bg-slate-800/60 border border-slate-700/50" : "bg-white/80 border border-slate-200"
+              theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
             )}>
               <div className="category-icon category-icon-wet">
                 <Activity size={18} className="text-white" />
@@ -2149,7 +2149,7 @@ function App() {
             {/* Dry Card */}
             <div className={clsx(
               "category-card category-card-dry card-animate",
-              theme === 'dark' ? "bg-slate-800/60 border border-slate-700/50" : "bg-white/80 border border-slate-200"
+              theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
             )}>
               <div className="category-icon category-icon-dry">
                 <Trash2 size={18} className="text-white" />
@@ -2165,7 +2165,7 @@ function App() {
               onClick={exportToCSV}
               className={clsx(
                 "p-4 rounded-xl border flex flex-col items-center gap-2 hover:scale-[1.02] transition-transform",
-                theme === 'dark' ? "bg-slate-800 border-slate-700 hover:bg-slate-700" : "bg-white border-slate-200 hover:bg-slate-50"
+                theme === 'dark' ? "bg-neutral-900 border-white/10 hover:bg-neutral-800" : "bg-white border-slate-200 hover:bg-slate-50"
               )}
             >
               <Download size={20} className="text-blue-500" />
@@ -2177,7 +2177,7 @@ function App() {
                 "p-4 rounded-xl border flex flex-col items-center gap-2 hover:scale-[1.02] transition-transform",
                 notificationEnabled
                   ? (theme === 'dark' ? "bg-yellow-900/20 border-yellow-700" : "bg-yellow-50 border-yellow-200")
-                  : (theme === 'dark' ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200")
+                  : (theme === 'dark' ? "bg-neutral-900 border-white/10" : "bg-white border-slate-200")
               )}
             >
               {notificationEnabled ? <BellRing size={20} className="text-yellow-500" /> : <BellOff size={20} className="text-slate-500" />}
@@ -2234,7 +2234,7 @@ function App() {
           </ChartModal>
 
           {/* Bin Status Stack */}
-          <div className={clsx("flex-1 p-6 rounded-3xl border flex flex-col", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}>
+          <div className={clsx("flex-1 p-6 rounded-3xl border flex flex-col", theme === 'dark' ? "bg-neutral-900/40 border-white/10" : "bg-white border-slate-200")}>
             <h3 className="text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2 opacity-70">
               <Database size={16} /> Bin Capacities
             </h3>
@@ -2249,7 +2249,7 @@ function App() {
                         {timeLeft && (
                           <span className={clsx(
                             "text-[10px] px-1.5 py-0.5 rounded-full font-mono",
-                            bin.volume > 80 ? "bg-red-500/20 text-red-400" : "bg-slate-500/20 text-slate-400"
+                            bin.volume > 80 ? "bg-red-500/20 text-red-400" : "bg-neutral-700/30 text-neutral-400"
                           )}>
                             ~{timeLeft} left
                           </span>
@@ -2325,7 +2325,7 @@ function App() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 1. Category Distribution (Pie) */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-neutral-900/40 border-white/10" : "bg-white border-slate-200")}
               onClick={() => setExpandedGraph({
                 title: 'Category Distribution', chart: (
                   <div className="h-full flex flex-col">
@@ -2366,7 +2366,7 @@ function App() {
 
             {/* 2. Items Processed (Bar) */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-neutral-900/40 border-white/10" : "bg-white border-slate-200")}
               onClick={() => setExpandedGraph({
                 title: 'Items by Category', chart: (
                   <div className="h-full flex flex-col">
@@ -2408,7 +2408,7 @@ function App() {
 
             {/* 3. Detections Line */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-neutral-900/40 border-white/10" : "bg-white border-slate-200")}
               onClick={() => setExpandedGraph({
                 title: 'Detections Trend', chart: (
                   <div className="h-full flex flex-col">
@@ -2455,7 +2455,7 @@ function App() {
 
             {/* 4. Area Chart (Span 2) */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", theme === 'dark' ? "bg-neutral-900/40 border-white/10" : "bg-white border-slate-200")}
               onClick={() => setExpandedGraph({
                 title: 'Cumulative Processing', chart: (
                   <div className="h-full flex flex-col">
@@ -2502,7 +2502,7 @@ function App() {
 
             {/* 5. Scatter Chart (AI Confidence) */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-neutral-900/40 border-white/10" : "bg-white border-slate-200")}
               onClick={() => setExpandedGraph({
                 title: 'AI Confidence Distribution', chart: (
                   <div className="h-full flex flex-col">
@@ -2540,7 +2540,7 @@ function App() {
 
             {/* 6. Detection Heatmap by Hour */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", theme === 'dark' ? "bg-slate-800/40 border-slate-700" : "bg-white border-slate-200")}
+              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", theme === 'dark' ? "bg-neutral-900/40 border-white/10" : "bg-white border-slate-200")}
               onClick={() => setExpandedGraph({
                 title: 'Detection Heatmap', chart: (
                   <div className="h-full flex flex-col">

@@ -52,20 +52,20 @@
   --light-text-secondary: #475569;
   --light-shadow: 0 4px 24px 0 rgba(13, 148, 136, 0.12);
 
-  /* Liquid Metal (Dark Mode) */
-  --dark-mesh-1: #020617;
-  /* Slate 950 */
-  --dark-mesh-2: #0f172a;
-  /* Slate 900 */
-  --dark-mesh-3: #000000;
+  /* Liquid Metal (Dark Mode - Premium Black) */
+  --dark-mesh-1: #000000;
   /* Pure Black */
+  --dark-mesh-2: #050505;
+  /* Near Black */
+  --dark-mesh-3: #0a0a0a;
+  /* Rich Black */
   --dark-accent: #14b8a6;
-  --dark-bg: #020617;
-  --dark-glass-bg: rgba(15, 23, 42, 0.7);
-  --dark-glass-border: rgba(255, 255, 255, 0.08);
-  --dark-text-primary: #f1f5f9;
-  --dark-text-secondary: #94a3b8;
-  --dark-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.4);
+  --dark-bg: #000000;
+  --dark-glass-bg: rgba(5, 5, 5, 0.85);
+  --dark-glass-border: rgba(255, 255, 255, 0.06);
+  --dark-text-primary: #f8fafc;
+  --dark-text-secondary: #a1a1aa;
+  --dark-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.6);
 
   /* Bento Grid Spacing */
   --bento-gap: 16px;
@@ -113,7 +113,7 @@ body {
 }
 
 .animate-mesh-dark {
-  background: linear-gradient(-45deg, var(--dark-mesh-1), var(--dark-mesh-2), var(--dark-mesh-3));
+  background: linear-gradient(-45deg, var(--dark-mesh-1), var(--dark-mesh-2), var(--dark-mesh-3), #000000);
   background-size: 400% 400%;
   animation: meshGradient 30s ease infinite;
 }
@@ -148,7 +148,7 @@ body {
 
 /* ===== DASHBOARD CARD SYSTEM ===== */
 .dashboard-card {
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(5, 5, 5, 0.7);
   backdrop-filter: blur(20px) saturate(150%);
   -webkit-backdrop-filter: blur(20px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -502,7 +502,7 @@ body {
 }
 
 .card-modern-dark {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.7) 100%);
+  background: linear-gradient(135deg, rgba(5, 5, 5, 0.9) 0%, rgba(10, 10, 10, 0.8) 100%);
   backdrop-filter: blur(16px) saturate(150%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1331,7 +1331,7 @@ body {
 .cinematic-bg {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, #0f172a 0%, #020617 100%);
+  background: radial-gradient(ellipse at center, #000000 0%, #050505 100%);
 }
 
 .cinematic-screen.light-mode .cinematic-bg {
