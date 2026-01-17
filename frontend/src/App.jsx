@@ -2190,8 +2190,8 @@ function App() {
             title="Category Trends"
             icon={TrendingUp}
             className={clsx(
-              theme === 'dark' ? "bg-[#0a0a0a] border-white/5" : "bg-white border-slate-200",
-              "border rounded-3xl p-6 flex flex-col",
+              "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light",
+              "p-6 flex flex-col",
               compareMode && "compare-active"
             )}
             onExpand={() => setExpandedChart('trends')}
@@ -2238,7 +2238,7 @@ function App() {
           </ChartModal>
 
           {/* Bin Status Stack */}
-          <div className={clsx("flex-1 p-6 rounded-3xl border flex flex-col", theme === 'dark' ? "bg-[#0a0a0a] border-white/5" : "bg-white border-slate-200")}>
+          <div className={clsx("flex-1 p-6 flex flex-col", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}>
             <h3 className="text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2 opacity-70">
               <Database size={16} /> Bin Capacities
             </h3>
@@ -2328,7 +2328,7 @@ function App() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 1. Category Distribution (Pie) */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-[#0a0a0a] border-white/5" : "bg-white border-slate-200")}
+              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
               onClick={() => setExpandedGraph({
                 title: 'Category Distribution', chart: (
                   <div className="h-full flex flex-col">
@@ -2369,7 +2369,7 @@ function App() {
 
             {/* 2. Items Processed (Bar) */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-[#0a0a0a] border-white/5" : "bg-white border-slate-200")}
+              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
               onClick={() => setExpandedGraph({
                 title: 'Items by Category', chart: (
                   <div className="h-full flex flex-col">
@@ -2411,7 +2411,7 @@ function App() {
 
             {/* 3. Detections Line */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-[#0a0a0a] border-white/5" : "bg-white border-slate-200")}
+              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
               onClick={() => setExpandedGraph({
                 title: 'Detections Trend', chart: (
                   <div className="h-full flex flex-col">
@@ -2458,7 +2458,7 @@ function App() {
 
             {/* 4. Area Chart (Span 2) */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", theme === 'dark' ? "bg-[#0a0a0a] border-white/5" : "bg-white border-slate-200")}
+              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
               onClick={() => setExpandedGraph({
                 title: 'Cumulative Processing', chart: (
                   <div className="h-full flex flex-col">
@@ -2505,7 +2505,7 @@ function App() {
 
             {/* 5. Scatter Chart (AI Confidence) */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all", theme === 'dark' ? "bg-[#0a0a0a] border-white/5" : "bg-white border-slate-200")}
+              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
               onClick={() => setExpandedGraph({
                 title: 'AI Confidence Distribution', chart: (
                   <div className="h-full flex flex-col">
@@ -2543,7 +2543,7 @@ function App() {
 
             {/* 6. Detection Heatmap by Hour */}
             <div
-              className={clsx("p-6 rounded-3xl border cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", theme === 'dark' ? "bg-[#0a0a0a] border-white/5" : "bg-white border-slate-200")}
+              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
               onClick={() => setExpandedGraph({
                 title: 'Detection Heatmap', chart: (
                   <div className="h-full flex flex-col">
