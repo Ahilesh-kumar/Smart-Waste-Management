@@ -1329,9 +1329,11 @@ body {
 
 /* Background */
 .cinematic-bg {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background: radial-gradient(ellipse at center, #000000 0%, #050505 100%);
+  background: #0a0a0a;
+  /* Premium Black to match dashboard */
+  display: flex;
 }
 
 .cinematic-screen.light-mode .cinematic-bg {

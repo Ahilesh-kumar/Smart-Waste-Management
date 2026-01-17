@@ -22,7 +22,7 @@ export const GlassTooltip = ({ active, payload, label }) => {
         <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="px-4 py-3 rounded-xl backdrop-blur-xl bg-slate-900/90 border border-white/10 shadow-2xl shadow-black/50"
+            className="px-4 py-3 rounded-xl backdrop-blur-xl bg-neutral-900/90 border border-white/10 shadow-2xl shadow-black/50"
         >
             <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">{label}</div>
             <div className="space-y-1.5">
@@ -50,14 +50,14 @@ export const TimeRangeSelector = ({ value, onChange }) => {
     const options = ['5m', '15m', '1h', 'all'];
 
     return (
-        <div className="flex gap-1 p-1 rounded-lg bg-slate-800/50 border border-slate-700/50">
+        <div className="flex gap-1 p-1 rounded-lg bg-neutral-900/50 border border-white/10">
             {options.map(opt => (
                 <button
                     key={opt}
                     onClick={() => onChange(opt)}
                     className={`px-3 py-1 text-xs font-semibold rounded-md transition-all duration-200 ${value === opt
                         ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                        : 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
                         }`}
                 >
                     {opt.toUpperCase()}
@@ -173,11 +173,11 @@ export const ChartModal = ({ isOpen, onClose, title, children }) => {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
                     transition={{ type: 'spring', damping: 25 }}
-                    className="w-full max-w-5xl max-h-[90vh] bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden"
+                    className="w-full max-w-5xl max-h-[90vh] bg-neutral-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Modal Header */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
                         <h2 className="text-lg font-bold text-white">{title}</h2>
                         <button
                             onClick={onClose}
@@ -203,7 +203,7 @@ export const CompareToggle = ({ isActive, onToggle }) => (
         onClick={onToggle}
         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isActive
             ? 'bg-violet-500/20 text-violet-400 border border-violet-500/50'
-            : 'bg-slate-800/50 text-slate-400 border border-slate-700 hover:border-slate-600'
+            : 'bg-neutral-900/50 text-neutral-400 border border-white/10 hover:border-white/20'
             }`}
     >
         <ArrowLeftRight size={14} />
@@ -419,7 +419,7 @@ export const TimelineScrubber = ({
     };
 
     return (
-        <div className="relative w-full mt-4 mb-2 p-5 rounded-2xl bg-slate-900/80 border border-slate-700/50 backdrop-blur-xl overflow-hidden">
+        <div className="relative w-full mt-4 mb-2 p-5 rounded-2xl bg-neutral-900/80 border border-white/10 backdrop-blur-xl overflow-hidden">
             {/* Animated Background */}
             <AnimatedBackground />
 
@@ -449,7 +449,7 @@ export const TimelineScrubber = ({
                     <button
                         onClick={() => onChange(Math.max(minValue, value - 1))}
                         disabled={value <= minValue || availableSnapshots === 0}
-                        className="p-3 rounded-xl bg-gradient-to-br from-slate-700/80 to-slate-800/80 hover:from-slate-600/80 hover:to-slate-700/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-slate-600/50 group"
+                        className="p-3 rounded-xl bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 hover:from-neutral-700/80 hover:to-neutral-800/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/10 group"
                     >
                         <ChevronLeft size={20} className="text-slate-300 group-hover:text-cyan-400 transition-colors" />
                     </button>
@@ -512,7 +512,7 @@ export const TimelineScrubber = ({
                     <button
                         onClick={() => onChange(Math.min(0, value + 1))}
                         disabled={value >= 0}
-                        className="p-3 rounded-xl bg-gradient-to-br from-slate-700/80 to-slate-800/80 hover:from-slate-600/80 hover:to-slate-700/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-slate-600/50 group"
+                        className="p-3 rounded-xl bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 hover:from-neutral-700/80 hover:to-neutral-800/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/10 group"
                     >
                         <ChevronRight size={20} className="text-slate-300 group-hover:text-cyan-400 transition-colors" />
                     </button>
