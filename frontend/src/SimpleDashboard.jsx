@@ -4,16 +4,19 @@ import { WidthProvider } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import clsx from 'clsx';
-import { Settings, X, Plus, RotateCcw, Save } from 'lucide-react';
+import { Settings, X, Plus, RotateCcw, Save, BarChart3, Type, Trash2 } from 'lucide-react';
 
 // Reuse existing widgets
 import { SystemControlWidget } from './widgets/SystemControlWidget';
 import { StatsOverviewWidget } from './widgets/StatsOverviewWidget';
 import { BinStatusWidget } from './widgets/BinStatusWidget';
 import { LiveFeedWidget } from './widgets/LiveFeedWidget';
-import { AnalyticsDeckWidget } from './widgets/AnalyticsDeckWidget';
 import { DetectionLogWidget } from './widgets/DetectionLogWidget';
 import { MechanismControlWidget } from './widgets/MechanismControlWidget';
+// Split analytics widgets
+import { WasteCompositionWidget } from './widgets/WasteCompositionWidget';
+import { ThroughputVelocityWidget } from './widgets/ThroughputVelocityWidget';
+import { SessionCompareWidget } from './widgets/SessionCompareWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -31,8 +34,10 @@ const DEFAULT_LAYOUTS = {
         { i: 'stats', x: 8, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
         { i: 'bins', x: 8, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
 
-        // BOTTOM (12 units wide)
-        { i: 'analytics', x: 0, y: 9, w: 12, h: 4, minW: 6, minH: 3 }
+        // BOTTOM ROW - Split analytics charts (4 units each)
+        { i: 'waste_composition', x: 0, y: 9, w: 4, h: 3, minW: 3, minH: 2 },
+        { i: 'throughput_velocity', x: 4, y: 9, w: 4, h: 3, minW: 3, minH: 2 },
+        { i: 'session_compare', x: 8, y: 9, w: 4, h: 3, minW: 3, minH: 2 }
     ]
 };
 
@@ -42,8 +47,10 @@ const WIDGET_TITLES = {
     bins: 'Bin Status',
     live_feed: 'Camera Feed',
     logs: 'Recent Detections',
-    analytics: 'Analytics Deck',
-    mech_control: 'Mechanism Controls'
+    mech_control: 'Mechanism Controls',
+    waste_composition: 'Waste Composition',
+    throughput_velocity: 'Throughput Velocity',
+    session_compare: 'Session vs Average'
 };
 
 export const SimpleDashboard = ({
@@ -79,6 +86,19 @@ export const SimpleDashboard = ({
         }
     });
 
+    // Multiple Text Labels (draggable)
+    const [textLabels, setTextLabels] = useState(() => {
+        try {
+            const saved = localStorage.getItem('simple_dashboard_text_labels');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    });
+
+    // New text label input
+    const [newLabelText, setNewLabelText] = useState('');
+
     // Save Effects
     useEffect(() => {
         localStorage.setItem('simple_dashboard_layout', JSON.stringify(layouts));
@@ -88,11 +108,44 @@ export const SimpleDashboard = ({
         localStorage.setItem('simple_dashboard_hidden', JSON.stringify(hiddenWidgets));
     }, [hiddenWidgets]);
 
+    // Save text labels
+    useEffect(() => {
+        localStorage.setItem('simple_dashboard_text_labels', JSON.stringify(textLabels));
+    }, [textLabels]);
+
     // Helpers
     const resetLayout = () => {
         setLayouts(DEFAULT_LAYOUTS);
         setHiddenWidgets([]);
+        setTextLabels([]);
         if (onLayoutReset) onLayoutReset();
+    };
+
+    const addTextLabel = () => {
+        if (!newLabelText.trim()) return;
+        const newLabel = {
+            id: `text_${Date.now()}`,
+            text: newLabelText.trim()
+        };
+        // Add to labels
+        setTextLabels(prev => [...prev, newLabel]);
+        // Add to layout
+        setLayouts(prev => ({
+            ...prev,
+            lg: [
+                ...prev.lg,
+                { i: newLabel.id, x: 0, y: 0, w: 6, h: 1, minW: 3, minH: 1 }
+            ]
+        }));
+        setNewLabelText('');
+    };
+
+    const removeTextLabel = (labelId) => {
+        setTextLabels(prev => prev.filter(l => l.id !== labelId));
+        setLayouts(prev => ({
+            ...prev,
+            lg: prev.lg.filter(item => item.i !== labelId)
+        }));
     };
 
     const toggleWidget = (id) => {
@@ -102,6 +155,18 @@ export const SimpleDashboard = ({
     };
 
     const renderWidget = (id) => {
+        // Check if it's a text label
+        if (id.startsWith('text_')) {
+            const label = textLabels.find(l => l.id === id);
+            return label ? (
+                <div className="flex items-center gap-3 h-full p-4">
+                    <BarChart3 size={20} className="text-cyan-500 flex-shrink-0" />
+                    <h3 className="text-xl font-black text-white tracking-tight">{label.text}</h3>
+                    <div className="flex-1 h-px bg-gradient-to-r from-cyan-500/50 to-transparent" />
+                </div>
+            ) : null;
+        }
+
         switch (id) {
             case 'sys_control': return <SystemControlWidget theme={theme} {...props} />;
             case 'stats': return <StatsOverviewWidget theme={theme} {...props} />;
@@ -109,7 +174,9 @@ export const SimpleDashboard = ({
             case 'live_feed': return <LiveFeedWidget theme={theme} {...props} />;
             case 'mech_control': return <MechanismControlWidget theme={theme} {...props} />;
             case 'logs': return <DetectionLogWidget theme={theme} {...props} />;
-            case 'analytics': return <AnalyticsDeckWidget theme={theme} {...props} />;
+            case 'waste_composition': return <WasteCompositionWidget theme={theme} {...props} />;
+            case 'throughput_velocity': return <ThroughputVelocityWidget theme={theme} {...props} />;
+            case 'session_compare': return <SessionCompareWidget theme={theme} {...props} />;
             default: return null;
         }
     };
@@ -119,40 +186,125 @@ export const SimpleDashboard = ({
 
     return (
         <div className="relative min-h-screen">
+            {/* Custom resize handle styles */}
+            <style>{`
+                .react-resizable-handle {
+                    position: absolute;
+                    width: 20px;
+                    height: 20px;
+                    background: transparent;
+                    z-index: 100;
+                }
+                .react-resizable-handle::after {
+                    content: '';
+                    position: absolute;
+                    right: 3px;
+                    bottom: 3px;
+                    width: 8px;
+                    height: 8px;
+                    border-right: 3px solid rgba(45, 212, 191, 0.8);
+                    border-bottom: 3px solid rgba(45, 212, 191, 0.8);
+                    border-radius: 0 0 4px 0;
+                    transition: all 0.2s ease;
+                }
+                .react-resizable-handle:hover::after {
+                    border-color: #2dd4bf;
+                    transform: scale(1.2);
+                }
+                .react-resizable-handle-se { bottom: 0; right: 0; cursor: se-resize; }
+                .react-resizable-handle-sw { bottom: 0; left: 0; cursor: sw-resize; transform: rotate(90deg); }
+                .react-resizable-handle-ne { top: 0; right: 0; cursor: ne-resize; transform: rotate(-90deg); }
+                .react-resizable-handle-nw { top: 0; left: 0; cursor: nw-resize; transform: rotate(180deg); }
+            `}</style>
+
             {/* Edit Mode Toolbar */}
             {isEditMode && (
-                <div className="mb-6 p-4 rounded-2xl bg-neutral-900/90 border border-teal-500/30 backdrop-blur-xl animate-in slide-in-from-top-4 flex flex-col md:flex-row justify-between items-center gap-4 z-50 relative">
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 text-teal-400 font-bold">
-                            <Settings size={20} className="animate-spin-slow" />
-                            <span>Customizing Layout</span>
+                <div className="mb-6 p-4 rounded-2xl bg-neutral-900/90 border border-teal-500/30 backdrop-blur-xl animate-in slide-in-from-top-4 flex flex-col gap-4 z-50 relative">
+                    {/* Top Row: Title and Reset */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 text-teal-400 font-bold">
+                                <Settings size={20} className="animate-spin-slow" />
+                                <span>Customizing Layout</span>
+                            </div>
                         </div>
-                        <div className="h-6 w-px bg-white/10 mx-2" />
-                        <div className="flex flex-wrap gap-2">
-                            {Object.entries(WIDGET_TITLES).map(([id, title]) => (
-                                <button
-                                    key={id}
-                                    onClick={() => toggleWidget(id)}
-                                    className={clsx(
-                                        "px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-2",
-                                        hiddenWidgets.includes(id)
-                                            ? "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700"
-                                            : "bg-teal-500/20 text-teal-400 border-teal-500/30 shadow-[0_0_10px_rgba(45,212,191,0.1)]"
-                                    )}
-                                >
-                                    {hiddenWidgets.includes(id) ? <Plus size={12} /> : <X size={12} />}
-                                    {title}
-                                </button>
-                            ))}
-                        </div>
+
+                        <button
+                            onClick={resetLayout}
+                            className="px-4 py-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold text-sm hover:bg-rose-500/20 transition-all flex items-center gap-2 whitespace-nowrap"
+                        >
+                            <RotateCcw size={16} /> Reset Default
+                        </button>
                     </div>
 
-                    <button
-                        onClick={resetLayout}
-                        className="px-4 py-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold text-sm hover:bg-rose-500/20 transition-all flex items-center gap-2 whitespace-nowrap"
-                    >
-                        <RotateCcw size={16} /> Reset Default
-                    </button>
+                    {/* Add Text Label Section */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                            <Type size={18} className="text-cyan-400 flex-shrink-0" />
+                            <input
+                                type="text"
+                                value={newLabelText}
+                                onChange={(e) => setNewLabelText(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && addTextLabel()}
+                                placeholder="Add a section title (e.g., Real-Time Analytics)"
+                                className="flex-1 bg-transparent border-none outline-none text-white placeholder-slate-500 font-bold"
+                            />
+                            <button
+                                onClick={addTextLabel}
+                                disabled={!newLabelText.trim()}
+                                className={clsx(
+                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1",
+                                    newLabelText.trim()
+                                        ? "bg-cyan-500 text-black hover:bg-cyan-400"
+                                        : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                                )}
+                            >
+                                <Plus size={14} /> Add
+                            </button>
+                        </div>
+
+                        {/* Existing Text Labels */}
+                        {textLabels.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {textLabels.map(label => (
+                                    <div
+                                        key={label.id}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-500/20 text-violet-400 border border-violet-500/30"
+                                    >
+                                        <BarChart3 size={12} />
+                                        <span className="text-xs font-bold">{label.text}</span>
+                                        <button
+                                            onClick={() => removeTextLabel(label.id)}
+                                            className="p-0.5 hover:bg-violet-500/30 rounded transition-colors"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Widget Toggles */}
+                    <div className="flex flex-wrap gap-2">
+                        {Object.entries(WIDGET_TITLES).map(([id, title]) => (
+                            <button
+                                key={id}
+                                onClick={() => toggleWidget(id)}
+                                className={clsx(
+                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-2",
+                                    hiddenWidgets.includes(id)
+                                        ? "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700"
+                                        : "bg-teal-500/20 text-teal-400 border-teal-500/30 shadow-[0_0_10px_rgba(45,212,191,0.1)]"
+                                )}
+                            >
+                                {hiddenWidgets.includes(id) ? <Plus size={12} /> : <X size={12} />}
+                                {title}
+                            </button>
+                        ))}
+                    </div>
+
+                    <p className="text-xs text-slate-500">💡 Tip: Drag widgets to reposition. Drag corners to resize. Add text labels above widgets!</p>
                 </div>
             )}
 
