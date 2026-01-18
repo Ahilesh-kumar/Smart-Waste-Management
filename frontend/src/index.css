@@ -46,30 +46,34 @@
   --light-mesh-2: #7c3aed;
   --light-mesh-3: #f0fdfa;
   --light-bg: #f8fafc;
-  --light-glass-bg: rgba(255, 255, 255, 0.6);
-  --light-glass-border: rgba(255, 255, 255, 0.8);
+  --light-glass-bg: rgba(255, 255, 255, 0.4);
+  --light-glass-border: rgba(255, 255, 255, 0.65);
   --light-text-primary: #0f172a;
   --light-text-secondary: #475569;
-  --light-shadow: 0 4px 24px 0 rgba(13, 148, 136, 0.12);
+  --light-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 15px -3px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  --light-inner-glow: radial-gradient(circle at top left, rgba(255, 255, 255, 0.8), transparent 70%);
 
   /* Liquid Metal (Dark Mode - Premium Black) */
   --dark-mesh-1: #000000;
-  /* Pure Black */
-  --dark-mesh-2: #050505;
-  /* Near Black */
-  --dark-mesh-3: #0a0a0a;
-  /* Rich Black */
+  --dark-mesh-2: #09090b;
+  --dark-mesh-3: #18181b;
   --dark-accent: #14b8a6;
   --dark-bg: #000000;
-  --dark-glass-bg: rgba(5, 5, 5, 0.85);
-  --dark-glass-border: rgba(255, 255, 255, 0.06);
+  --dark-glass-bg: rgba(9, 9, 11, 0.6);
+  --dark-glass-border: rgba(255, 255, 255, 0.08);
   --dark-text-primary: #f8fafc;
   --dark-text-secondary: #a1a1aa;
-  --dark-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.6);
+  --dark-shadow:
+    0 10px 30px -10px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  --dark-inner-glow: linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent 60%);
 
-  /* Bento Grid Spacing */
-  --bento-gap: 16px;
-  --bento-radius: 20px;
+  /* Spatial Spacing */
+  --bento-gap: 24px;
+  --bento-radius: 28px;
 }
 
 /* ===== TYPOGRAPHY SYSTEM ===== */
@@ -151,20 +155,40 @@ body {
 /* --- Spatial Glass (Light) System --- */
 .glass-panel-light {
   background: var(--light-glass-bg);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--light-glass-border);
   box-shadow: var(--light-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-panel-light::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--light-inner-glow);
+  pointer-events: none;
+  mix-blend-mode: overlay;
 }
 
 /* --- Liquid Metal (Dark) System --- */
 .glass-panel-dark {
   background: var(--dark-glass-bg);
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
   border: 1px solid var(--dark-glass-border);
   box-shadow: var(--dark-shadow);
-  /* Subtle grain texture overlay simulated via gradient or image if needed, keeping simple for CSS */
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-panel-dark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--dark-inner-glow);
+  pointer-events: none;
 }
 
 .neon-text {
@@ -532,17 +556,27 @@ body {
 }
 
 .card-modern-dark {
-  background: linear-gradient(135deg, rgba(2, 2, 2, 0.98) 0%, rgba(5, 5, 5, 0.95) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: var(--dark-glass-bg);
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
+  border: 1px solid var(--dark-glass-border);
+  box-shadow: var(--dark-shadow);
+}
+
+.card-modern-dark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--dark-inner-glow);
+  pointer-events: none;
 }
 
 .card-modern-light {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.8) 100%);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
+  background: var(--light-glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--light-glass-border);
+  box-shadow: var(--light-shadow);
 }
 
 .card-modern:hover {
@@ -550,8 +584,12 @@ body {
 }
 
 .card-modern-dark:hover {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(6, 182, 212, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  border-color: rgba(6, 182, 212, 0.25);
+  box-shadow:
+    0 20px 40px -10px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 0 20px rgba(20, 184, 166, 0.1);
+  /* Teal glow */
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .card-modern-light:hover {
@@ -569,6 +607,12 @@ body {
   box-shadow: 0 8px 40px rgba(13, 148, 136, 0.4);
 }
 
+/* Glow Utility */
+.glow-primary {
+  box-shadow: 0 0 40px -10px rgba(20, 184, 166, 0.3) !important;
+  border: 1px solid rgba(20, 184, 166, 0.3);
+}
+
 /* Category Card Variants */
 .card-wet {
   border-left: 4px solid var(--wet-color);
@@ -582,8 +626,63 @@ body {
   border-left: 4px solid var(--bio-color);
 }
 
-.card-hazard {
-  border-left: 4px solid var(--hazard-color);
+/* Tilt Glare Effect */
+.tilt-card-wrapper {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--bento-radius);
+}
+
+.tilt-glare {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(255, 255, 255, 0.15) 0%,
+      transparent 50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  mix-blend-mode: overlay;
+  z-index: 10;
+  border-radius: inherit;
+}
+
+.tilt-card-wrapper:hover .tilt-glare {
+  opacity: 1;
+}
+
+/* Stagger Entrance */
+.stagger-enter>* {
+  opacity: 0;
+  animation: fadeSlideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.stagger-enter>*:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.stagger-enter>*:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.stagger-enter>*:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.stagger-enter>*:nth-child(4) {
+  animation-delay: 0.25s;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Stat Number Styling - Modern Outfit Font */

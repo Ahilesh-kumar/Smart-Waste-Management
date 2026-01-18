@@ -174,7 +174,7 @@ export const LiveIndicator = ({ status = 'online', size = 8 }) => (
 );
 
 // ===== RIPPLE BUTTON =====
-// Button with material design ripple effect
+// Button with material design ripple effect & haptic scale
 export const RippleButton = ({ children, onClick, className = '', ...props }) => {
     const buttonRef = useRef(null);
 
@@ -184,11 +184,18 @@ export const RippleButton = ({ children, onClick, className = '', ...props }) =>
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
+        // Create ripple element
         const ripple = document.createElement('span');
-        ripple.className = 'ripple-effect';
+        ripple.className = 'absolute bg-white/30 rounded-full animate-ping pointer-events-none transform -translate-x-1/2 -translate-y-1/2';
+        ripple.style.width = `${Math.max(rect.width, rect.height)}px`;
+        ripple.style.height = `${Math.max(rect.width, rect.height)}px`;
         ripple.style.left = `${x}px`;
         ripple.style.top = `${y}px`;
+
         button.appendChild(ripple);
+
+        // Haptic feedback simulation (if supported)
+        if (navigator.vibrate) navigator.vibrate(5);
 
         setTimeout(() => ripple.remove(), 600);
         onClick?.(e);
@@ -198,7 +205,7 @@ export const RippleButton = ({ children, onClick, className = '', ...props }) =>
         <button
             ref={buttonRef}
             onClick={handleClick}
-            className={`ripple-container ${className}`}
+            className={`relative overflow-hidden active:scale-95 transition-transform duration-100 ${className}`}
             {...props}
         >
             {children}
@@ -207,8 +214,8 @@ export const RippleButton = ({ children, onClick, className = '', ...props }) =>
 };
 
 // ===== TILT CARD =====
-// Card with 3D parallax tilt effect on hover
-export const TiltCard = ({ children, className = '', maxTilt = 5 }) => {
+// Card with 3D parallax tilt effect & light glare on hover
+export const TiltCard = ({ children, className = '', maxTilt = 5, style = {} }) => {
     const cardRef = useRef(null);
 
     const handleMouseMove = (e) => {
@@ -218,25 +225,39 @@ export const TiltCard = ({ children, className = '', maxTilt = 5 }) => {
         const y = e.clientY - rect.top;
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
+
+        // Tilt calculation
         const rotateX = ((y - centerY) / centerY) * -maxTilt;
         const rotateY = ((x - centerX) / centerX) * maxTilt;
 
+        // Apply transformations
         card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+
+        // Update glare position variables
+        card.style.setProperty('--mouse-x', `${(x / rect.width) * 100}%`);
+        card.style.setProperty('--mouse-y', `${(y / rect.height) * 100}%`);
     };
 
     const handleMouseLeave = () => {
         const card = cardRef.current;
         card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+        // Reset glare to center or fade out depending on CSS
+        card.style.setProperty('--mouse-x', '50%');
+        card.style.setProperty('--mouse-y', '50%');
     };
 
     return (
         <div
             ref={cardRef}
-            className={`transition-transform duration-200 ${className}`}
+            className={`tilt-card-wrapper transition-transform duration-300 ${className}`}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
+            style={{ transformStyle: 'preserve-3d', ...style }}
         >
-            {children}
+            <div className="tilt-glare" />
+            <div style={{ transform: 'translateZ(20px)' }}>
+                {children}
+            </div>
         </div>
     );
 };
