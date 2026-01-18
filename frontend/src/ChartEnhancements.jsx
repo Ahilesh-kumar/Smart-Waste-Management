@@ -86,7 +86,7 @@ export const EnhancedAreaChart = ({
 
     return (
         <div className="w-full chart-animate">
-            <ResponsiveContainer width="100%" height={height}>
+            <ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={0}>
                 <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     {/* Gradient Definitions */}
                     <defs>
@@ -220,13 +220,19 @@ export const ChartCard = ({
     children,
     onExpand,
     actions,
-    className = ''
+    className = '',
+    description
 }) => (
     <div className={`chart-card ${className}`}>
         <div className="flex items-center justify-between mb-4">
-            <h3 className="chart-title">
+            <h3 className="chart-title group/title flex items-center gap-2 cursor-help relative">
                 {Icon && <Icon size={14} className="text-slate-500" />}
                 <span>{title}</span>
+                {description && (
+                    <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-slate-900 border border-white/10 rounded-lg text-[10px] text-slate-300 opacity-0 group-hover/title:opacity-100 pointer-events-none transition-opacity z-10 shadow-xl">
+                        {description}
+                    </div>
+                )}
             </h3>
             <div className="flex items-center gap-2">
                 {actions}
@@ -253,7 +259,7 @@ export const CompareChart = ({
 }) => {
     return (
         <div className="w-full">
-            <ResponsiveContainer width="100%" height={height}>
+            <ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={0}>
                 <AreaChart margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                         <linearGradient id="currentGrad" x1="0" y1="0" x2="0" y2="1">
@@ -535,7 +541,7 @@ export const HistorySlider = TimelineScrubber;
 export const PremiumRadarChart = ({ data, height = 300 }) => {
     return (
         <div className="w-full h-full chart-animate">
-            <ResponsiveContainer width="100%" height={height}>
+            <ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={0}>
                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
                     <PolarGrid stroke="rgba(255, 255, 255, 0.1)" />
                     <PolarAngleAxis
@@ -633,7 +639,7 @@ export const PremiumPieChart = ({ data = [], height = 200, showLegend = true }) 
 
     return (
         <div className="w-full h-full chart-animate">
-            <ResponsiveContainer width="100%" height={height}>
+            <ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={0}>
                 <PieChart>
                     <defs>
                         {PIE_COLORS.map((color, index) => (
@@ -704,7 +710,7 @@ export const ConfidenceHistogram = ({ data = [], height = 150 }) => {
 
     return (
         <div className="w-full chart-animate">
-            <ResponsiveContainer width="100%" height={height}>
+            <ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={0}>
                 <BarChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
                     <defs>
                         <linearGradient id="confidenceGradient" x1="0" y1="0" x2="0" y2="1">
@@ -753,7 +759,7 @@ export const HourlyStackedBarChart = ({ data = [], height = 180 }) => {
 
     return (
         <div className="w-full chart-animate">
-            <ResponsiveContainer width="100%" height={height}>
+            <ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={0}>
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                     <XAxis
@@ -779,6 +785,147 @@ export const HourlyStackedBarChart = ({ data = [], height = 180 }) => {
                     <Bar dataKey="dry" name="Dry" stackId="a" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                 </BarChart>
             </ResponsiveContainer>
+        </div>
+    );
+};
+
+// ===== PREDICTIVE LINE CHART (Forecasting) =====
+export const PredictiveLineChart = ({ data = [], height = 200 }) => {
+    return (
+        <div className="w-full chart-animate">
+            <ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={0}>
+                <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis
+                        dataKey="time"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b', fontSize: 10 }}
+                    />
+                    <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b', fontSize: 10 }}
+                        domain={[0, 100]}
+                    />
+                    <Tooltip content={<GlassTooltip />} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: '10px' }} />
+
+                    {/* Historical Data (Solid) */}
+                    <Line
+                        type="monotone"
+                        dataKey="actual"
+                        name="Actual Fill"
+                        stroke="#2dd4bf"
+                        strokeWidth={2}
+                        dot={false}
+                        activeDot={{ r: 4, fill: '#2dd4bf' }}
+                    />
+
+                    {/* Forecast Data (Dashed) */}
+                    <Line
+                        type="monotone"
+                        dataKey="predicted"
+                        name="Forecast"
+                        stroke="#a855f7"
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        dot={false}
+                    />
+
+                    {/* Threshold Line */}
+                    <Line
+                        type="monotone"
+                        dataKey="threshold"
+                        name="Capacity Limit"
+                        stroke="#f43f5e"
+                        strokeWidth={1}
+                        strokeDasharray="3 3"
+                        dot={false}
+                    />
+                </LineChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
+// ===== USAGE HEATMAP =====
+export const UsageHeatmap = ({ data = [], height = 200 }) => {
+    // Expects data format: [{ hour: '08:00', day: 'Mon', value: 85 }, ...]
+    // Simplified visualization using ScatterChart or specialized heatmap logic
+    // For this implementation, we'll use a 7-day BarChart representation for "Peak Hours"
+
+    return (
+        <div className="w-full chart-animate">
+            <ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={0}>
+                <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis
+                        dataKey="hour"
+                        fontSize={10}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b' }}
+                    />
+                    <YAxis
+                        fontSize={10}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b' }}
+                    />
+                    <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<GlassTooltip />} />
+                    <Bar dataKey="value" name="Activity Level" radius={[4, 4, 0, 0]}>
+                        {data.map((entry, index) => (
+                            <Cell
+                                key={`cell-${index}`}
+                                fill={entry.value > 80 ? '#f43f5e' : entry.value > 50 ? '#f59e0b' : '#10b981'}
+                            />
+                        ))}
+                    </Bar>
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
+// ===== SUSTAINABILITY GAUGE =====
+export const SustainabilityGauge = ({ score = 85, height = 200 }) => {
+    const data = [
+        { name: 'Score', value: score, fill: '#10b981' },
+        { name: 'Remaining', value: 100 - score, fill: 'rgba(255,255,255,0.1)' }
+    ];
+
+    return (
+        <div className="w-full h-full flex items-center justify-center relative chart-animate">
+            <ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={0}>
+                <PieChart>
+                    <Pie
+                        data={data}
+                        cx="50%"
+                        cy="70%"
+                        startAngle={180}
+                        endAngle={0}
+                        innerRadius="70%"
+                        outerRadius="90%"
+                        paddingAngle={0}
+                        dataKey="value"
+                        stroke="none"
+                    >
+                        {data.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                    </Pie>
+                </PieChart>
+            </ResponsiveContainer>
+
+            <div className="absolute inset-0 flex flex-col items-center justify-center pt-8">
+                <span className="text-4xl font-bold font-mono text-white tracking-tighter">
+                    {score}%
+                </span>
+                <span className="text-xs text-emerald-400 font-medium uppercase tracking-wider mt-1">
+                    Eco Score
+                </span>
+            </div>
         </div>
     );
 };

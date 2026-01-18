@@ -8,9 +8,13 @@ import { AnimatedCounter, ProgressRing, Sparkline, LiveIndicator, TiltCard } fro
 import { LiveActivityFeed, useSwipeGesture, PullRefreshIndicator } from './AdvancedComponents';
 import {
   EnhancedAreaChart, TimeRangeSelector, ChartModal,
-  CompareToggle, ChartCard, CompareChart, GlassTooltip, TimelineScrubber, AnimatedBackground, PremiumRadarChart, PremiumPieChart, ConfidenceHistogram, HourlyStackedBarChart
+  CompareToggle, ChartCard, CompareChart, GlassTooltip, TimelineScrubber, AnimatedBackground, PremiumRadarChart, PremiumPieChart, ConfidenceHistogram, HourlyStackedBarChart,
+  PredictiveLineChart, UsageHeatmap, SustainabilityGauge
 } from './ChartEnhancements';
 import { SimpleDashboard } from './SimpleDashboard';
+import AnalyticsDetailModal from './components/AnalyticsDetailModal';
+import HistorySlider from './components/HistorySlider';
+import { AnalyticsDeckWidget } from './widgets/AnalyticsDeckWidget';
 
 const socket = io('http://localhost:3001');
 
@@ -214,6 +218,117 @@ function App() {
   const [chartHistoryIndex, setChartHistoryIndex] = useState(0);
   const [chartDataHistory, setChartDataHistory] = useState([]);
   const MAX_HISTORY_CYCLES = 30;
+
+  // Modal State
+  const [activeModal, setActiveModal] = useState(null); // 'composition', 'throughput', 'session', 'hourly', 'confidence', 'radar'
+  const [historyValue, setHistoryValue] = useState(0); // 0 = live, -1 = past run 1, etc.
+
+  // Mock History Data Generator for Sliders
+  const generateMockHistory = (baseData) => {
+    // Create 10 past versions with FAKE data variation (especially for Bio as requested)
+    return Array.from({ length: 11 }).map((_, i) => ({
+      id: i,
+      timestamp: i === 0 ? "NOW" : new Date(Date.now() - i * 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      data: i === 0 ? null : { // 0 is live, others are mocks
+        // Fake data generation
+        bio: Math.floor(Math.random() * 50) + 10,
+        hazard: Math.floor(Math.random() * 30) + 5,
+        wet: Math.floor(Math.random() * 60) + 20,
+        dry: Math.floor(Math.random() * 80) + 30,
+        total: Math.floor(Math.random() * 200) + 100
+      }
+    })).reverse();
+  };
+
+  const handleExpandChart = (chartType) => {
+    setActiveModal(chartType);
+    setHistoryValue(0); // Reset to live
+  };
+
+  const runs = generateMockHistory(); // Generate usage history
+  const getModalContent = () => {
+    switch (activeModal) {
+      case 'composition':
+      case 'radar':
+        // Use history counts if historyValue < 0
+        const currentCounts = historyValue !== 0 && runs[10 - Math.abs(historyValue)]?.data
+          ? runs[10 - Math.abs(historyValue)].data
+          : processingCounts;
+
+        return <PremiumRadarChart data={[
+          { subject: 'Bio', A: currentCounts.bio || 0, fullMark: 100 },
+          { subject: 'Hazard', A: currentCounts.hazard || 0, fullMark: 100 },
+          { subject: 'Wet', A: currentCounts.wet || 0, fullMark: 100 },
+          { subject: 'Dry', A: currentCounts.dry || 0, fullMark: 100 },
+        ]} height={400} />;
+      case 'throughput':
+        // Mock history variation for throughput
+        const throughputHistory = timeSeriesData.map(d => ({
+          ...d,
+          bio: d.bio * (1 + (historyValue * 0.1)),
+          total: d.total * (1 + (historyValue * 0.05))
+        }));
+        return <EnhancedAreaChart data={throughputHistory} height={400} />;
+      case 'session':
+        // Mock history for session comparison
+        const histFactor = 1 + (historyValue * 0.1);
+        return (
+          <ResponsiveContainer width="100%" height={400} minWidth={0} minHeight={0}>
+            <BarChart data={[
+              { name: 'Total', current: processingCounts.total * histFactor, average: processingCounts.total * 0.8 },
+              { name: 'Wet', current: processingCounts.wet * histFactor, average: processingCounts.wet * 0.9 },
+              { name: 'Dry', current: processingCounts.dry * histFactor, average: processingCounts.dry * 0.7 },
+              { name: 'Bio', current: processingCounts.bio * histFactor, average: processingCounts.bio * 1.1 },
+              { name: 'Haz', current: processingCounts.hazard * histFactor, average: processingCounts.hazard * 0.5 }
+            ]} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="name" stroke="#64748b" />
+              <YAxis stroke="#64748b" />
+              <Tooltip content={<GlassTooltip />} />
+              <Legend wrapperStyle={{ paddingTop: '20px' }} />
+              <Bar dataKey="current" name={historyValue === 0 ? "Current Session" : "Past Session"} fill="#2dd4bf" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="average" name="Historical Avg" fill="#94a3b8" radius={[4, 4, 0, 0]} fillOpacity={0.3} />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      case 'hourly':
+        return <HourlyStackedBarChart data={hourlyData} height={400} />;
+      case 'confidence':
+        // Shift confidence distribution for history
+        const confData = [
+          { range: '0-20%', count: 2 + Math.abs(historyValue) },
+          { range: '80-100%', count: 15 - Math.abs(historyValue) }
+        ];
+        return <ConfidenceHistogram data={confData} height={400} />;
+      case 'predictive':
+        // Shift prediction curve
+        const offset = Math.abs(historyValue) * 5;
+        const predictiveData = [
+          { time: '10:00', actual: 45 - offset, predicted: 45 - offset, threshold: 80 },
+          { time: '11:00', actual: 52 - offset, predicted: 50 - offset, threshold: 80 },
+          { time: '12:00', actual: 68 - offset, predicted: 65 - offset, threshold: 80 },
+          { time: '13:00', actual: 75 - offset, predicted: 78 - offset, threshold: 80 },
+          { time: '14:00', actual: null, predicted: 85 - offset, threshold: 80 },
+          { time: '15:00', actual: null, predicted: 92 - offset, threshold: 80 },
+        ];
+        return <PredictiveLineChart data={predictiveData} height={400} />;
+      case 'heatmap':
+        // Shift peak hour
+        const heatmapData = [
+          { hour: '08:00', value: 30 + Math.random() * 20 },
+          { hour: '10:00', value: 65 - Math.abs(historyValue) * 5 },
+          { hour: '12:00', value: 95 - Math.abs(historyValue) * 10 },
+          { hour: '14:00', value: 70 + Math.abs(historyValue) * 5 },
+          { hour: '16:00', value: 45 },
+          { hour: '18:00', value: 20 },
+        ];
+        return <UsageHeatmap data={heatmapData} height={400} />;
+      case 'sustainability':
+        return <SustainabilityGauge score={87 - Math.abs(historyValue) * 2} height={400} />;
+      default:
+        return <div>Select a chart</div>;
+    }
+  };
 
   // === PHASE 2: INTELLIGENT FEATURES STATE ===
   // Predictive Fill Time-to-Full (TTF)
@@ -2447,313 +2562,63 @@ function App() {
           </div>
 
           {/* BOTTOM SECTION: ANALYTICS (Full Width) */}
+          {/* BOTTOM SECTION: ANALYTICS (Full Width) */}
           <div className="col-span-12 mt-4 chart-animate">
-            <div className="flex items-center gap-4 mb-6">
-              <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
-                <BarChart2 className="text-blue-500" /> Real-Time Analytics
-              </h2>
-              <div className="h-px flex-1 bg-gradient-to-r from-slate-700 to-transparent"></div>
-            </div>
-
-            {/* SVG Gradient Definitions for Charts */}
-            <svg width="0" height="0" style={{ position: 'absolute' }}>
-              <defs>
-                <linearGradient id="chartGradientBio" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.6} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.1} />
-                </linearGradient>
-                <linearGradient id="chartGradientHazard" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ef4444" stopOpacity={0.6} />
-                  <stop offset="100%" stopColor="#ef4444" stopOpacity={0.1} />
-                </linearGradient>
-                <linearGradient id="chartGradientWet" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.6} />
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1} />
-                </linearGradient>
-                <linearGradient id="chartGradientDry" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.6} />
-                  <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.1} />
-                </linearGradient>
-                <linearGradient id="chartGradientPurple" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.6} />
-                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.1} />
-                </linearGradient>
-                <linearGradient id="chartGradientIndigo" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0.3} />
-                </linearGradient>
-              </defs>
-            </svg>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* 1. COMPOSITION PIE/RADAR (Updated with Toggle) */}
-              <ChartCard
-                title="Waste Composition"
-                className={clsx(
-                  "cursor-pointer hover:border-teal-500/30 transition-all card-modern h-[320px]",
-                  theme === 'dark' ? "card-modern-dark" : "card-modern-light"
-                )}
-                actions={
-                  <div className="flex gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setCompositionChartView('pie'); }}
-                      className={clsx(
-                        "px-2 py-0.5 text-[10px] rounded transition-all",
-                        compositionChartView === 'pie' ? "bg-emerald-500 text-white" : "text-slate-500 hover:text-slate-300"
-                      )}
-                    >
-                      Pie
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setCompositionChartView('radar'); }}
-                      className={clsx(
-                        "px-2 py-0.5 text-[10px] rounded transition-all",
-                        compositionChartView === 'radar' ? "bg-cyan-500 text-white" : "text-slate-500 hover:text-slate-300"
-                      )}
-                    >
-                      Radar
-                    </button>
-                  </div>
-                }
-                onExpand={() => setExpandedGraph({
-                  title: 'Detailed Composition Analysis',
-                  chart: (
-                    <div className="h-full flex flex-col">
-                      <TimelineScrubber
-                        value={chartHistoryIndex}
-                        onChange={setChartHistoryIndex}
-                        maxHistory={MAX_HISTORY_CYCLES}
-                        snapshots={chartDataHistory}
-                        label="Time Travel"
-                      />
-                      <div className="flex-1 mt-6">
-                        <PremiumRadarChart
-                          data={(() => {
-                            const d = getHistoricalData('processingCounts') || processingCounts;
-                            const total = d.bio + d.hazard + d.wet + d.dry || 1;
-                            return [
-                              { subject: 'Bio', A: (d.bio / total) * 100, fullMark: 100 },
-                              { subject: 'Haz', A: (d.hazard / total) * 100, fullMark: 100 },
-                              { subject: 'Wet', A: (d.wet / total) * 100, fullMark: 100 },
-                              { subject: 'Dry', A: (d.dry / total) * 100, fullMark: 100 }
-                            ];
-                          })()}
-                          height="100%"
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-              >
-                <div className="h-full pb-6">
-                  {compositionChartView === 'pie' ? (
-                    <PremiumPieChart
-                      data={[
-                        { name: 'Bio', value: processingCounts.bio || 0 },
-                        { name: 'Hazard', value: processingCounts.hazard || 0 },
-                        { name: 'Wet', value: processingCounts.wet || 0 },
-                        { name: 'Dry', value: processingCounts.dry || 0 }
-                      ]}
-                      height={250}
-                      showLegend={false}
-                    />
-                  ) : (
-                    <PremiumRadarChart
-                      data={[
-                        { subject: 'Bio', A: processingCounts.bio, fullMark: 150 },
-                        { subject: 'Haz', A: processingCounts.hazard, fullMark: 150 },
-                        { subject: 'Wet', A: processingCounts.wet, fullMark: 150 },
-                        { subject: 'Dry', A: processingCounts.dry, fullMark: 150 }
-                      ]}
-                      height={250}
-                    />
-                  )}
+            {/* Replaced Hardcoded Analytics with Smart Widget */}
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-teal-500/10">
+                  <TrendingUp className="text-teal-400" size={24} />
                 </div>
-              </ChartCard>
+                <h2 className="text-xl font-bold text-white tracking-tight">Real-Time Analytics</h2>
+              </div>
 
-              {/* 2. THROUGHPUT VELOCITY (Area Chart) */}
-              <ChartCard
-                title="Throughput Velocity"
-                className="cursor-pointer hover:border-purple-500/30 transition-all card-modern card-modern-dark h-[320px]"
-                onExpand={() => setExpandedGraph({
-                  title: 'Throughput Trends',
-                  chart: (
-                    <div className="h-full flex flex-col">
-                      <div className="flex justify-end mb-4"><TimeRangeSelector value="all" onChange={() => { }} /></div>
-                      <EnhancedAreaChart data={chartDataHistory} height={400} />
-                    </div>
-                  )
-                })}
-              >
-                <div className="h-full pb-2">
-                  <EnhancedAreaChart data={chartDataHistory.slice(-10)} height="100%" showLegend={false} />
-                </div>
-              </ChartCard>
-
-              {/* 3. HISTORICAL COMPARISON (Stacked Bar) */}
-              <ChartCard
-                title="Session vs Average"
-                className="cursor-pointer hover:border-amber-500/30 transition-all card-modern card-modern-dark h-[320px]"
-                onExpand={() => setExpandedGraph({
-                  title: 'Historical Comparison',
-                  chart: (
-                    <CompareChart
-                      currentData={chartDataHistory}
-                      previousData={chartDataHistory.map(d => ({ ...d, total: d.total * 0.8 }))} // Mock previous
-                      height={400}
-                    />
-                  )
-                })}
-              >
-                <div className="h-full pb-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={[
-                      { name: 'Avg', bio: 40, hazard: 10, wet: 60, dry: 30 }, // Mock Baseline
-                      { name: 'Now', bio: processingCounts.bio, hazard: processingCounts.hazard, wet: processingCounts.wet, dry: processingCounts.dry }
-                    ]}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
-                      <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<GlassTooltip />} />
-                      <Bar dataKey="bio" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} />
-                      <Bar dataKey="wet" stackId="a" fill="#3b82f6" />
-                      <Bar dataKey="dry" stackId="a" fill="#f59e0b" />
-                      <Bar dataKey="hazard" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </ChartCard>
-            </div>
-
-            {/* 4. Area Chart (Span 2) */}
-            <div
-              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
-              onClick={() => setExpandedGraph({
-                title: 'Cumulative Processing', chart: (
-                  <div className="h-full flex flex-col">
-                    <TimelineScrubber
-                      value={chartHistoryIndex}
-                      onChange={setChartHistoryIndex}
-                      maxHistory={MAX_HISTORY_CYCLES}
-                      snapshots={chartDataHistory}
-                      label="Browse History"
-                    />
-                    <div className="flex-1 min-h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={getHistoricalData('timeSeriesData') || timeSeriesData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                          <XAxis dataKey="time" tick={{ fill: '#64748b' }} />
-                          <YAxis tick={{ fill: '#64748b' }} />
-                          <Tooltip content={<GlassTooltip />} />
-                          <Legend />
-                          <Area type="monotone" dataKey="bio" stackId="1" fill="url(#chartGradientBio)" stroke="#10b981" strokeWidth={2} />
-                          <Area type="monotone" dataKey="hazard" stackId="1" fill="url(#chartGradientHazard)" stroke="#ef4444" strokeWidth={2} />
-                          <Area type="monotone" dataKey="wet" stackId="1" fill="url(#chartGradientWet)" stroke="#3b82f6" strokeWidth={2} />
-                          <Area type="monotone" dataKey="dry" stackId="1" fill="url(#chartGradientDry)" stroke="#f59e0b" strokeWidth={2} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )
-              })}
-            >
-              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">Cumulative Processing</h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={timeSeriesData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                  <XAxis dataKey="time" fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
-                  <YAxis fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
-                  <Tooltip content={<GlassTooltip />} />
-                  <Area type="monotone" dataKey="bio" stackId="1" fill="url(#chartGradientBio)" stroke="#10b981" strokeWidth={2} />
-                  <Area type="monotone" dataKey="hazard" stackId="1" fill="url(#chartGradientHazard)" stroke="#ef4444" strokeWidth={2} />
-                  <Area type="monotone" dataKey="wet" stackId="1" fill="url(#chartGradientWet)" stroke="#3b82f6" strokeWidth={2} />
-                  <Area type="monotone" dataKey="dry" stackId="1" fill="url(#chartGradientDry)" stroke="#f59e0b" strokeWidth={2} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* 5. Scatter Chart (AI Confidence) */}
-            <div
-              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
-              onClick={() => setExpandedGraph({
-                title: 'AI Confidence Distribution', chart: (
-                  <div className="h-full flex flex-col">
-                    <TimelineScrubber
-                      value={chartHistoryIndex}
-                      onChange={setChartHistoryIndex}
-                      maxHistory={MAX_HISTORY_CYCLES}
-                      snapshots={chartDataHistory}
-                      label="Browse History"
-                    />
-                    <div className="flex-1 min-h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <ScatterChart>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                          <XAxis dataKey="time" name="Time" tick={{ fill: '#64748b' }} />
-                          <YAxis dataKey="confidence" name="Confidence" domain={[0, 100]} tick={{ fill: '#64748b' }} />
-                          <Tooltip content={<GlassTooltip />} />
-                          <Scatter data={getHistoricalData('confidenceHistory') || confidenceHistory} fill="#8b5cf6" />
-                        </ScatterChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )
-              })}
-            >
-              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">AI Confidence</h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <ScatterChart>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" /><XAxis dataKey="time" fontSize={10} tick={{ fill: '#64748b' }} /><YAxis dataKey="confidence" domain={[0, 100]} fontSize={10} tick={{ fill: '#64748b' }} />
-                  <Tooltip content={<GlassTooltip />} />
-                  <Scatter data={confidenceHistory} fill="#8b5cf6" />
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* 6. Detection Heatmap by Hour */}
-            <div
-              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
-              onClick={() => setExpandedGraph({
-                title: 'Detection Heatmap', chart: (
-                  <div className="h-full flex flex-col">
-                    <TimelineScrubber
-                      value={chartHistoryIndex}
-                      onChange={setChartHistoryIndex}
-                      maxHistory={MAX_HISTORY_CYCLES}
-                      snapshots={chartDataHistory}
-                      label="Browse History"
-                    />
-                    <div className="flex-1 min-h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={(getHistoricalData('detectionHours') || detectionHours).map((count, hour) => ({ hour: `${hour}:00`, count }))}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                          <XAxis dataKey="hour" tick={{ fill: '#64748b' }} />
-                          <YAxis tick={{ fill: '#64748b' }} />
-                          <Tooltip content={<GlassTooltip />} />
-                          <Bar dataKey="count" fill="url(#chartGradientIndigo)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )
-              })}
-            >
-              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase flex items-center gap-2">
-                Detection Heatmap
-                <span className="text-xs font-normal opacity-50">(Peak: {detectionHours.indexOf(Math.max(...detectionHours))}:00)</span>
-              </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={detectionHours.map((count, hour) => ({ hour: `${hour}:00`, count }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                  <XAxis dataKey="hour" fontSize={9} interval={2} tick={{ fill: '#64748b' }} axisLine={false} />
-                  <YAxis fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
-                  <Tooltip content={<GlassTooltip />} />
-                  <Bar dataKey="count" fill="url(#chartGradientIndigo)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="w-full min-h-[600px] lg:min-h-[400px] h-auto">
+                <AnalyticsDeckWidget
+                  theme={theme}
+                  chartTimeRange={chartTimeRange}
+                  setChartTimeRange={setChartTimeRange}
+                  timeSeriesData={timeSeriesData}
+                  processingCounts={processingCounts}
+                  hourlyData={hourlyData}
+                  confidenceData={confidenceHistory}
+                  recentDetections={recentDetections}
+                  onExpandChart={handleExpandChart}
+                />
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Analytics Detail Modal */}
+      <AnalyticsDetailModal
+        isOpen={!!activeModal}
+        onClose={() => setActiveModal(null)}
+        title={activeModal ? activeModal.charAt(0).toUpperCase() + activeModal.slice(1) + " Analysis" : ""}
+        description={{
+          'composition': "Shows the breakdown of detected waste by category (Bio, Hazard, Wet, Dry).",
+          'radar': "Multivariate view of waste distribution across categories.",
+          'throughput': "Real-time processing speed showing items detected per minute.",
+          'session': "Comparison of current session statistics against historical averages.",
+          'hourly': "Hourly breakdown of waste detection counts.",
+          'confidence': "Histogram of AI detection certainty scores.",
+          'predictive': "Forecasts bin capacity saturation based on current inflow rates.",
+          'heatmap': "Identifies busiest hours of operation to optimize staffing.",
+          'sustainability': "Real-time eco-efficiency score based on recycling accuracy."
+        }[activeModal]}
+        footer={
+          <HistorySlider
+            value={historyValue}
+            min={0}
+            max={10}
+            onChange={setHistoryValue}
+            runs={generateMockHistory()}
+          />
+        }
+      >
+        {activeModal && getModalContent()}
+      </AnalyticsDetailModal>
 
       {/* Notifications overlay (if enabled) */}
       {
@@ -2762,7 +2627,7 @@ function App() {
         </div>
       }
 
-    </div>
+    </div >
   );
 }
 

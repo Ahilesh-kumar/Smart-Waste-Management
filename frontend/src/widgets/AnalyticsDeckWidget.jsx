@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import clsx from 'clsx';
 import { TrendingUp, PieChart, BarChart2, Activity } from 'lucide-react';
-import { ChartCard, EnhancedAreaChart, PremiumRadarChart, PremiumPieChart, ConfidenceHistogram, HourlyStackedBarChart } from '../ChartEnhancements';
+import { ChartCard, EnhancedAreaChart, PremiumRadarChart, PremiumPieChart, ConfidenceHistogram, HourlyStackedBarChart, PredictiveLineChart, UsageHeatmap, SustainabilityGauge } from '../ChartEnhancements';
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { GlassTooltip } from '../ChartEnhancements';
 
@@ -17,7 +17,8 @@ export const AnalyticsDeckWidget = ({
     setShowComparisonMode = () => { },
     hourlyData = [],
     confidenceData = [],
-    recentDetections = []
+    recentDetections = [],
+    onExpandChart = () => { }
 }) => {
     const [chartView, setChartView] = useState('pie'); // 'pie' or 'radar'
 
@@ -69,13 +70,36 @@ export const AnalyticsDeckWidget = ({
         return bins;
     };
 
+
+    // Pro Charts Data Mock
+    const predictiveData = [
+        { time: '10:00', actual: 45, predicted: 45, threshold: 80 },
+        { time: '11:00', actual: 52, predicted: 50, threshold: 80 },
+        { time: '12:00', actual: 68, predicted: 65, threshold: 80 },
+        { time: '13:00', actual: 75, predicted: 78, threshold: 80 },
+        { time: '14:00', actual: null, predicted: 85, threshold: 80 },
+        { time: '15:00', actual: null, predicted: 92, threshold: 80 },
+    ];
+
+    const heatmapData = [
+        { hour: '08:00', value: 30 },
+        { hour: '10:00', value: 65 },
+        { hour: '12:00', value: 95 }, // Peak
+        { hour: '14:00', value: 70 },
+        { hour: '16:00', value: 45 },
+        { hour: '18:00', value: 20 },
+    ];
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
-            {/* 1. Waste Composition - Pie/Radar Toggle */}
+            {/* 1. Waste Composition */}
             <ChartCard
                 title="Waste Composition"
                 icon={PieChart}
-                rightElement={
+                description="Breakdown of detected waste by category (Bio, Hazard, Wet, Dry)."
+                onExpand={() => onExpandChart('composition')}
+                className={clsx("card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light", "p-4 flex flex-col group")}
+                actions={
                     <div className="flex gap-1">
                         <button
                             onClick={() => setChartView('pie')}
@@ -105,11 +129,14 @@ export const AnalyticsDeckWidget = ({
                 )}
             </ChartCard>
 
-            {/* 2. Throughput Velocity - Area Chart */}
+            {/* 2. Throughput Velocity */}
             <ChartCard
                 title="Throughput Velocity"
                 icon={TrendingUp}
-                rightElement={
+                description="Real-time processing speed showing items detected per minute."
+                onExpand={() => onExpandChart('throughput')}
+                className={clsx("card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light", "p-4 flex flex-col group")}
+                actions={
                     <div className="flex gap-1">
                         {['5m', '1h'].map(r => (
                             <button
@@ -133,53 +160,48 @@ export const AnalyticsDeckWidget = ({
                 />
             </ChartCard>
 
-            {/* 3. Session vs Average - Bar Chart */}
+            {/* 3. Predictive Fill (PRO) */}
             <ChartCard
-                title="Session vs Average"
-                icon={BarChart2}
-                rightElement={
-                    <button
-                        onClick={() => setShowComparisonMode(!showComparisonMode)}
-                        className="text-[10px] text-cyan-400 hover:underline"
-                    >
-                        {showComparisonMode ? "Show Hourly" : "Compare"}
-                    </button>
-                }
+                title="Predictive Fill Level"
+                icon={TrendingUp}
+                description="Forecasts bin capacity saturation based on current inflow rates."
+                onExpand={() => onExpandChart('predictive')}
+                className={clsx("card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light", "p-4 flex flex-col group")}
             >
-                <ResponsiveContainer width="100%" height={180}>
-                    <BarChart data={getComparisonData()} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} />
-                        <Tooltip content={<GlassTooltip />} />
-                        <Bar dataKey="current" name="This Session" fill="#2dd4bf" radius={[4, 4, 0, 0]} barSize={20} />
-                        <Bar dataKey="average" name="Daily Avg" fill="#94a3b8" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.3} />
-                    </BarChart>
-                </ResponsiveContainer>
+                <PredictiveLineChart data={predictiveData} height={180} />
             </ChartCard>
 
-            {/* 4. Hourly Breakdown - Stacked Bar Chart */}
+            {/* 4. Peak Usage Heatmap (PRO) */}
             <ChartCard
-                title="Hourly Breakdown"
-                icon={BarChart2}
-            >
-                <HourlyStackedBarChart data={hourlyData} height={180} />
-            </ChartCard>
-
-            {/* 5. Detection Confidence - Histogram */}
-            <ChartCard
-                title="Confidence Distribution"
+                title="Peak Operational Hours"
                 icon={Activity}
+                description="Identifies busiest hours of operation to optimize staffing."
+                onExpand={() => onExpandChart('heatmap')}
+                className={clsx("card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light", "p-4 flex flex-col group")}
+            >
+                <UsageHeatmap data={heatmapData} height={180} />
+            </ChartCard>
+
+            {/* 5. Sustainability Index (PRO) */}
+            <ChartCard
+                title="Sustainability Score"
+                icon={PieChart}
+                description="Real-time eco-efficiency score based on recycling accuracy."
+                onExpand={() => onExpandChart('sustainability')}
+                className={clsx("card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light", "p-4 flex flex-col group")}
+            >
+                <SustainabilityGauge score={87} height={180} />
+            </ChartCard>
+
+            {/* 6. Confidence Distribution */}
+            <ChartCard
+                title="AI Confidence"
+                icon={Activity}
+                description="Histogram of AI detection certainty scores."
+                onExpand={() => onExpandChart('confidence')}
+                className={clsx("card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light", "p-4 flex flex-col group")}
             >
                 <ConfidenceHistogram data={computeConfidenceHistogram()} height={180} />
-            </ChartCard>
-
-            {/* 6. Material Distribution - Radar (Always visible as secondary view) */}
-            <ChartCard
-                title="Material Balance"
-                icon={PieChart}
-            >
-                <PremiumRadarChart data={radarData} height={180} />
             </ChartCard>
         </div>
     );

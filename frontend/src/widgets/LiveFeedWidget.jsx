@@ -22,27 +22,53 @@ export const LiveFeedWidget = ({
     latency = 0,
     theme
 }) => {
+    const [hasFeedError, setHasFeedError] = React.useState(false);
+
+    // Reset error when URL changes
+    React.useEffect(() => {
+        setHasFeedError(false);
+    }, [camUrl]);
+
     return (
         <div className="relative w-full h-full rounded-3xl overflow-hidden group border border-white/10 bg-black shadow-2xl">
             {/* Live Feed Image */}
-            <img
-                id="live-feed-img"
-                src={`http://${camUrl}/video`}
-                alt="Live Stream"
-                className={clsx(
-                    "w-full h-full object-cover transition-transform duration-500 will-change-transform",
-                    !isConnected && "grayscale opacity-50 blur-sm"
-                )}
-                style={{ transform: `rotate(${rotation}deg)` }}
-                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
-            />
+            {!hasFeedError ? (
+                <img
+                    id="live-feed-img"
+                    src={`http://${camUrl}/video`}
+                    alt="Live Stream"
+                    className={clsx(
+                        "w-full h-full object-cover transition-transform duration-500 will-change-transform",
+                        !isConnected && "grayscale opacity-50 blur-sm"
+                    )}
+                    style={{ transform: `rotate(${rotation}deg)` }}
+                    onError={() => setHasFeedError(true)}
+                />
+            ) : (
+                /* Enhanced Offline/Error State */
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900/90 backdrop-blur-md">
+                    <div className="p-4 rounded-full bg-white/5 border border-white/10 shadow-[0_0_30px_rgba(244,63,94,0.2)] mb-4 animate-pulse">
+                        <Camera size={48} className="text-rose-400 opacity-80" />
+                    </div>
+                    <p className="font-mono text-sm tracking-widest uppercase text-rose-400 font-bold mb-1">Feed Unavailable</p>
+                    <p className="text-xs text-slate-500">Check connection to {camUrl}</p>
+                    <button
+                        onClick={() => setHasFeedError(false)}
+                        className="mt-6 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-cyan-400 transition-colors flex items-center gap-2"
+                    >
+                        <RotateCw size={12} />
+                        RETRY CONNECTION
+                    </button>
+                </div>
+            )}
 
-            {/* Fallback / Loading State */}
-            <div className="absolute inset-0 hidden flex-col items-center justify-center bg-neutral-900 text-neutral-500 z-0">
-                <Camera size={48} className="mb-4 opacity-50 animate-pulse" />
-                <p className="font-mono text-xs tracking-widest uppercase">Connecting to Feed...</p>
-                <p className="text-[10px] mt-2 opacity-40">{camUrl}</p>
-            </div>
+            {/* Connecting Overlay (when not errored but not connected) */}
+            {!isConnected && !hasFeedError && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm z-10 pointer-events-none">
+                    <div className="w-12 h-12 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin mb-4" />
+                    <p className="font-mono text-xs tracking-widest uppercase text-emerald-400">System Connecting...</p>
+                </div>
+            )}
 
             {/* AI Bounding Box Overlay */}
             {boxPos && (
