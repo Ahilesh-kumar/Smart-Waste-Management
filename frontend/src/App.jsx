@@ -1887,10 +1887,7 @@ function App() {
 
           {/* AI Status & Connectivity Strip */}
           {/* AI Status & Connectivity Strip (Enhanced Phase 3) */}
-          <div className={clsx(
-            "p-3 rounded-2xl flex flex-col gap-2 glass-panel-light dark:glass-panel-dark transition-all duration-500",
-            theme === 'dark' ? "border-white/5" : "border-slate-200"
-          )}>
+          <div className="p-3 rounded-2xl flex flex-col gap-2 card-modern-dark transition-all duration-500 border-white/5">
             <div className="flex items-center justify-between">
               {/* Left Group: Connection & Model */}
               <div className="flex items-center gap-3 flex-wrap">
