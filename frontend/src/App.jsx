@@ -313,15 +313,30 @@ function App() {
         ];
         return <PredictiveLineChart data={predictiveData} height={400} />;
       case 'heatmap':
-        // Shift peak hour
-        const heatmapData = [
-          { hour: '08:00', value: 30 + Math.random() * 20 },
-          { hour: '10:00', value: 65 - Math.abs(historyValue) * 5 },
-          { hour: '12:00', value: 95 - Math.abs(historyValue) * 10 },
-          { hour: '14:00', value: 70 + Math.abs(historyValue) * 5 },
-          { hour: '16:00', value: 45 },
-          { hour: '18:00', value: 20 },
-        ];
+        // Shift peak hour based on history, OR use real data if live (historyValue == 0)
+        let baseHeatmap = [];
+
+        if (historyValue === 0 && detectionHours.length > 0 && typeof detectionHours[0] === 'object') {
+          // Use Real Data from Backend
+          baseHeatmap = detectionHours;
+        } else {
+          // Mock Data Fallback
+          baseHeatmap = [
+            { hour: '08:00', value: 30 },
+            { hour: '10:00', value: 65 },
+            { hour: '12:00', value: 95 },
+            { hour: '14:00', value: 70 },
+            { hour: '16:00', value: 45 },
+            { hour: '18:00', value: 20 },
+          ];
+        }
+
+        // Apply History Shift
+        const heatmapData = baseHeatmap.map(d => ({
+          ...d,
+          value: Math.max(0, d.value + (historyValue * 5 * (Math.random() - 0.5)))
+        }));
+
         return <UsageHeatmap data={heatmapData} height={400} />;
       case 'sustainability':
         return <SustainabilityGauge score={87 - Math.abs(historyValue) * 2} height={400} />;
@@ -524,7 +539,23 @@ function App() {
 
     socket.on('ai_inference', (data) => {
       setAiData(data);
-      // Small hack: Append confidence to history immediately for better resolution
+    });
+
+    // --- REAL AI LISTENERS (Phase 4) ---
+    socket.on('prediction_update', (data) => {
+      // data.predictions = { 0: "5m", 1: "FULL", ... }
+      if (data && data.predictions) {
+        setPredictedFillTimes(prev => ({ ...prev, ...data.predictions }));
+      }
+    });
+
+    socket.on('heatmap_update', (data) => {
+      // data.hourly = [{ hour: "14:00", value: 12 }, ...]
+      if (data && data.hourly) {
+        setDetectionHours(data.hourly);
+        // Also save to LS for persistence across reloads
+        localStorage.setItem('waste_detection_hours', JSON.stringify(data.hourly));
+      }
     });
 
     return () => {
@@ -533,7 +564,22 @@ function App() {
       socket.off('system_state');
       socket.off('alert');
       socket.off('ai_inference');
+      socket.off('prediction_update');
+      socket.off('heatmap_update');
     };
+  }, []);
+
+  // --- THEME SCHEDULER (Phase 4) ---
+  useEffect(() => {
+    const checkTime = () => {
+      const hour = new Date().getHours();
+      // Dark mode between 7 PM (19) and 7 AM (7)
+      const shouldBeDark = hour >= 19 || hour < 7;
+      setTheme(shouldBeDark ? 'dark' : 'light');
+    };
+    checkTime(); // Initial check
+    const interval = setInterval(checkTime, 60000); // Check every minute
+    return () => clearInterval(interval);
   }, []);
 
   // Chart History Capture - save snapshots every 5 seconds
@@ -752,21 +798,37 @@ function App() {
   }, [data.bins, data.isOn, aiData]);
 
   // Export Event Log to CSV
-  const exportToCSV = () => {
-    if (eventLog.length === 0) return;
-    const headers = ['Time', 'Class', 'Category', 'Confidence'];
-    const csv = [
-      headers.join(','),
-      ...eventLog.map(e => [e.time, e.rawClass, e.category, e.confidence].join(','))
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `waste_log_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  // --- REPORT GENERATOR (Phase 4) ---
+  const generateReport = async () => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const html2canvas = (await import('html2canvas')).default;
+
+      const report = new jsPDF('p', 'mm', 'a4');
+      const element = document.getElementById('dashboard-container'); // Need to add ID to main container
+
+      if (!element) {
+        alert("Dashboard container not found!");
+        return;
+      }
+
+      const canvas = await html2canvas(element, { scale: 0.7 });
+      const imgData = canvas.toDataURL('image/png');
+      const imgProps = report.getImageProperties(imgData);
+      const pdfWidth = report.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      report.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      report.save(`waste-audit-${new Date().toISOString().slice(0, 10)}.pdf`);
+      addToast("Report Generated Successfully!", "success");
+    } catch (err) {
+      console.error("PDF Gen Error:", err);
+      // Fallback
+      window.print();
+    }
   };
+
+  const exportToCSV = generateReport;
 
   // === SESSION HISTORY HELPERS ===
 
@@ -1283,7 +1345,7 @@ function App() {
   }
 
   return (
-    <div className={clsx(
+    <div id="dashboard-container" className={clsx(
       "min-h-screen font-sans p-6 transition-all duration-700 relative z-10",
       theme === 'dark' ? "animate-mesh-dark text-slate-100" : "animate-mesh-light text-slate-800"
     )}>
@@ -1334,7 +1396,7 @@ function App() {
       )}
 
       {/* Toast Notifications Container */}
-      <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2">
+      <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2 pointer-events-none">
         <AnimatePresence>
           {toasts.map(toast => (
             <motion.div
@@ -1343,7 +1405,7 @@ function App() {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 100, scale: 0.8 }}
               className={clsx(
-                "px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border flex items-center gap-2 text-sm font-medium",
+                "px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border flex items-center gap-2 text-sm font-medium pointer-events-auto",
                 toast.type === 'success' && "bg-green-500/90 border-green-400 text-white",
                 toast.type === 'error' && "bg-red-500/90 border-red-400 text-white",
                 toast.type === 'warning' && "bg-amber-500/90 border-amber-400 text-white",

@@ -137,6 +137,18 @@ REFERENCE_AREA = 640 * 480 * 0.4 * 0.4  # Scaled frame size
 MIN_WEIGHT = 1.0    # Minimum weight in grams
 MAX_WEIGHT = 500.0  # Maximum weight cap in grams
 
+# --- REAL AI: Analytics Tracking ---
+import datetime
+
+# 1. Heatmap: Track detection counts per hour (0-23)
+hourly_detections = {h: 0 for h in range(24)}
+last_hour_check = datetime.datetime.now().hour
+
+# 2. Predictive: Track fill rates (grams per minute)
+fill_rate_history = deque(maxlen=60) # Last 60 seconds
+bin_fill_levels = {0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0} # Simulated total grams per bin
+BIN_CAPACITY_GRAMS = 5000.0 # 5kg capacity per bin for simulation
+
 def estimate_weight(class_name: str, box_width_pct: float, box_height_pct: float) -> float:
     """
     Estimate object weight based on bounding box size and category density.
@@ -324,6 +336,46 @@ while True:
                 print(f"SORTING: {cached_class} ({cached_conf:.1f}%) -> Bin {dashboard_bin_id}")
                 sio.emit('item_sorted', {'type': dashboard_bin_id}) 
                 last_sorted_time = current_time
+
+                # --- REAL AI UPDATE: Heatmap ---
+                current_hour = datetime.datetime.now().hour
+                hourly_detections[current_hour] += 1
+                
+                # Emit Heatmap Update
+                heatmap_payload = [
+                    {'hour': f"{h:02d}:00", 'value': count} 
+                    for h, count in hourly_detections.items() 
+                    if count > 0 # Optimize payload, only send active hours or send full list 
+                ]
+                # Send full 24h list simplified or just top active
+                # For UI simplicty let's send top 6 active or a subset range
+                # Sending full daily stat event
+                sio.emit('heatmap_update', {'hourly': heatmap_payload})
+
+                # --- REAL AI UPDATE: Predictive Fill ---
+                # Add estimated weight to bin
+                weight = cached_weight if cached_weight > 0 else 50.0 # Fallback
+                bin_fill_levels[dashboard_bin_id] += weight
+                
+                # Calculate simple velocity (grams added in last minute - smoothed)
+                # Since this is event based, we just broadcast new fill %
+                
+                predictions = {}
+                for b_id, grams in bin_fill_levels.items():
+                    current_pct = min(100.0, (grams / BIN_CAPACITY_GRAMS) * 100)
+                    
+                    # Naive prediction: constant inflow assumption (1 item every 5 mins per bin avg)
+                    # Real algo would use fill_rate_history
+                    remaining_grams = BIN_CAPACITY_GRAMS - grams
+                    if remaining_grams <= 0:
+                        predictions[b_id] = "FULL"
+                    else:
+                        # Estimate Time to Full (TTF)
+                        # Assume avg inflow 100g/min active time
+                        ttf_min = remaining_grams / 100.0 
+                        predictions[b_id] = f"{int(ttf_min)}m"
+
+                sio.emit('prediction_update', {'predictions': predictions})
 
     if cv2.waitKey(1) == 27:
         break

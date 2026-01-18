@@ -76,7 +76,7 @@ export const LiveActivityFeed = ({ events = [], maxItems = 5, onClose, onDismiss
     };
 
     return (
-        <div className="fixed right-4 top-24 z-40 w-72 space-y-2">
+        <div className="fixed right-4 top-24 z-40 w-72 space-y-2 pointer-events-none">
             <AnimatePresence mode="popLayout">
                 {visibleEvents.map((event, index) => {
                     const style = getCategoryStyle(event.category);
@@ -89,7 +89,7 @@ export const LiveActivityFeed = ({ events = [], maxItems = 5, onClose, onDismiss
                             animate={{ opacity: 1, x: 0, scale: 1 }}
                             exit={{ opacity: 0, x: 100, scale: 0.8 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className={`p-3 rounded-xl backdrop-blur-xl border ${style.bg} ${style.border} shadow-lg`}
+                            className={`p-3 rounded-xl backdrop-blur-xl border ${style.bg} ${style.border} shadow-lg pointer-events-auto`}
                         >
                             <div className="flex items-center gap-3">
                                 <div className={`w-8 h-8 rounded-lg ${style.bg} flex items-center justify-center`}>
