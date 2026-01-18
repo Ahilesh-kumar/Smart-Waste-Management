@@ -25,19 +25,20 @@ export const SystemControlWidget = ({
                     <button
                         onClick={togglePause}
                         className={clsx(
-                            "w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
+                            "w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
                             isPaused ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30" : "bg-neutral-800 hover:bg-neutral-700"
                         )}
-                        title={isPaused ? "Resume" : "Pause"}
+                        title={isPaused ? "Resume sorting system" : "Pause sorting - keeps camera active"}
                     >
                         {isPaused ? <Play size={24} className="text-white fill-current" /> : <Pause size={24} className="text-white" />}
                     </button>
                     <button
                         onClick={togglePower}
                         className={clsx(
-                            "w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
+                            "w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
                             isOn ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/30" : "bg-teal-500 hover:bg-teal-600 shadow-teal-500/30"
                         )}
+                        title={isOn ? "Turn OFF - stops all operations" : "Turn ON - starts conveyor & AI"}
                     >
                         <Power size={24} className="text-white" />
                     </button>

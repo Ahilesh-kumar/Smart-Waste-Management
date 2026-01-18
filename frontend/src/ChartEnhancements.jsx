@@ -80,7 +80,14 @@ export const EnhancedAreaChart = ({
     // Filter data based on time range
     const filteredData = useMemo(() => {
         if (timeRange === 'all' || !data.length) return data;
-        const sliceMap = { '5m': 5, '15m': 15, '1h': 30 };
+        // Map time ranges to number of data points to show
+        const sliceMap = {
+            '5m': 5,      // ~50 seconds at 10s intervals
+            '15m': 15,    // ~2.5 minutes
+            '1h': 30,     // ~5 minutes
+            'today': 100, // Last 100 points (~16 minutes)
+            'week': data.length // Show all available (max 500)
+        };
         return data.slice(-(sliceMap[timeRange] || data.length));
     }, [data, timeRange]);
 
@@ -223,7 +230,7 @@ export const ChartCard = ({
     className = '',
     description
 }) => (
-    <div className={`chart-card ${className}`}>
+    <div className={`chart-card group ${className}`}>
         <div className="flex items-center justify-between mb-4">
             <h3 className="chart-title group/title flex items-center gap-2 cursor-help relative">
                 {Icon && <Icon size={14} className="text-slate-500" />}
@@ -239,10 +246,10 @@ export const ChartCard = ({
                 {onExpand && (
                     <button
                         onClick={onExpand}
-                        className="p-1.5 rounded-lg hover:bg-white/10 transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 hover:border-cyan-500/50 transition-all opacity-60 group-hover:opacity-100"
                         title="Expand chart"
                     >
-                        <Maximize2 size={14} className="text-slate-400" />
+                        <Maximize2 size={14} className="text-slate-400 group-hover:text-cyan-400" />
                     </button>
                 )}
             </div>

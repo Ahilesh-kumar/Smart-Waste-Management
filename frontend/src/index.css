@@ -69,6 +69,115 @@
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-accent-400;
   }
+
+  /* ===== CHART CARD HOVER STYLES ===== */
+  .chart-card {
+    @apply rounded-2xl transition-all duration-300 ease-out;
+  }
+
+  .chart-card:hover {
+    @apply rounded-3xl transform -translate-y-0.5;
+    box-shadow: 0 0 30px rgba(20, 184, 166, 0.15), 0 10px 40px rgba(0, 0, 0, 0.3);
+    border-color: rgba(20, 184, 166, 0.3);
+  }
+
+  /* ===== CARD-MODERN PREMIUM STYLES ===== */
+  .card-modern {
+    @apply rounded-2xl transition-all duration-300 ease-out;
+    border-radius: 1rem;
+  }
+
+  .card-modern:hover {
+    border-radius: 1.5rem;
+    transform: translateY(-2px);
+    box-shadow: 0 0 25px rgba(20, 184, 166, 0.1), 0 8px 32px rgba(0, 0, 0, 0.25);
+  }
+
+  .card-modern-dark {
+    @apply bg-neutral-900/80 backdrop-blur-xl border border-white/10;
+  }
+
+  .card-modern-dark:hover {
+    border-color: rgba(20, 184, 166, 0.25);
+    background: rgba(23, 23, 23, 0.9);
+  }
+
+  .card-modern-light {
+    @apply bg-white/95 backdrop-blur-xl border border-slate-200/80;
+    color: #1e293b !important;
+    /* Slate-800 - ensures text visibility */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-modern-light:hover {
+    border-color: rgba(20, 184, 166, 0.5);
+    box-shadow: 0 0 25px rgba(20, 184, 166, 0.15), 0 10px 40px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+  }
+
+  /* Light mode text visibility */
+  .card-modern-light h1,
+  .card-modern-light h2,
+  .card-modern-light h3,
+  .card-modern-light h4,
+  .card-modern-light h5,
+  .card-modern-light h6 {
+    color: #0f172a !important;
+    /* Slate-900 */
+  }
+
+  .card-modern-light p,
+  .card-modern-light span,
+  .card-modern-light label {
+    color: #334155 !important;
+    /* Slate-700 */
+  }
+
+  /* ===== GLOBAL CURVY CORNERS FIX ===== */
+  /* BASE STATE: All widgets start with curvy corners */
+  [class*="rounded-xl"],
+  [class*="rounded-lg"],
+  [class*="rounded-2xl"],
+  [class*="bg-slate-800"],
+  [class*="bg-neutral-900"],
+  [class*="bg-slate-900"],
+  .card-modern,
+  .chart-card {
+    border-radius: 1rem !important;
+    overflow: hidden !important;
+    /* KEY: clips child elements to parent's rounded corners */
+    transition: border-radius 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease !important;
+  }
+
+  /* HOVER STATE: Increase roundness */
+  [class*="rounded-xl"]:hover,
+  [class*="rounded-lg"]:hover,
+  [class*="rounded-2xl"]:hover,
+  [class*="bg-slate-800"]:hover,
+  [class*="bg-neutral-900"]:hover,
+  [class*="bg-slate-900"]:hover,
+  .card-modern:hover,
+  .chart-card:hover {
+    border-radius: 1.5rem !important;
+  }
+
+  /* Specific widget class overrides */
+  .widget-card,
+  .stat-card,
+  .info-card,
+  .data-card {
+    border-radius: 1rem !important;
+    overflow: hidden !important;
+    transition: all 0.3s ease !important;
+  }
+
+  .widget-card:hover,
+  .stat-card:hover,
+  .info-card:hover,
+  .data-card:hover {
+    border-radius: 1.5rem !important;
+    transform: translateY(-2px);
+  }
 }
 
 /* Animations that are hard to do in Tailwind Config */
@@ -88,25 +197,47 @@
   }
 }
 
-/* Retaining Mesh Gradient Logic for now as it uses complex backgrounds */
+/* ===== PREMIUM MESH GRADIENTS ===== */
 .animate-mesh-light {
-  background-color: #f8fafc;
-  background-image:
-    radial-gradient(at 0% 0%, hsla(170, 94%, 73%, 1) 0, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(170, 94%, 73%, 1) 0, transparent 50%),
-    radial-gradient(at 100% 100%, hsla(270, 94%, 73%, 1) 0, transparent 50%);
-  background-size: 200% 200%;
-  animation: meshGradient 20s ease infinite;
+  background: linear-gradient(135deg, #e0f7fa 0%, #f3e5f5 25%, #fff3e0 50%, #e8f5e9 75%, #e1f5fe 100%);
+  background-size: 400% 400%;
+  animation: meshGradient 15s ease infinite;
+}
+
+/* Extra spicy light mode with colorful accents */
+.animate-mesh-light::before {
+  content: "";
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(45, 212, 191, 0.08) 0%, transparent 50%);
+  animation: floatingOrbs 20s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .animate-mesh-dark {
-  background-color: #000000;
-  background-image:
-    radial-gradient(at 0% 0%, hsla(170, 94%, 30%, 0.2) 0, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(270, 94%, 30%, 0.2) 0, transparent 50%),
-    radial-gradient(at 100% 100%, hsla(270, 94%, 30%, 0.1) 0, transparent 50%);
-  background-size: 200% 200%;
-  animation: meshGradient 30s ease infinite;
+  background-color: #0a0a0a;
+}
+
+@keyframes floatingOrbs {
+
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  33% {
+    transform: translate(30px, -30px) rotate(5deg);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) rotate(-3deg);
+  }
 }
 
 /* --- Spatial Glass (Light) System --- */
@@ -1761,4 +1892,99 @@
   .cinematic-progress-track {
     width: 180px;
   }
+}
+
+/* ========================================
+   ULTIMATE CURVY CORNERS FIX (HIGHEST PRIORITY)
+   This is at the END of the file to override everything
+   ======================================== */
+body div[class*="p-"],
+body div[class*="rounded"],
+body div[class*="bg-slate"],
+body div[class*="bg-neutral"],
+body div[class*="border"],
+body section,
+body article,
+body aside {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+/* Exclude small elements like buttons and badges - but NOT toggle switches */
+body span[class*="badge"],
+body span[class*="px-"],
+body input,
+body select,
+body textarea {
+  border-radius: inherit !important;
+  overflow: visible !important;
+}
+
+/* ===== TOGGLE SWITCH STYLES ===== */
+/* Ensure toggles stay pill-shaped (not affected by global rules) */
+button.rounded-full,
+button[class*="rounded-full"],
+.toggle-switch {
+  border-radius: 9999px !important;
+  /* Full pill shape */
+  overflow: hidden !important;
+}
+
+/* Toggle knob inside */
+button.rounded-full>div,
+button[class*="rounded-full"]>div {
+  border-radius: 9999px !important;
+  /* Perfect circle */
+}
+
+/* =====================================================
+   LIGHT MODE MASTER OVERRIDE - HIGHEST PRIORITY
+   Forces white backgrounds and dark text in light mode
+   ===================================================== */
+.animate-mesh-light div[class*="bg-neutral"],
+.animate-mesh-light div[class*="bg-slate-8"],
+.animate-mesh-light div[class*="bg-slate-9"],
+.animate-mesh-light [class*="card-modern"] {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  background-image: none !important;
+  color: #1e293b !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+/* Light mode text - ALL elements */
+.animate-mesh-light * {
+  --tw-text-opacity: 1 !important;
+}
+
+.animate-mesh-light h1,
+.animate-mesh-light h2,
+.animate-mesh-light h3,
+.animate-mesh-light h4,
+.animate-mesh-light h5,
+.animate-mesh-light h6,
+.animate-mesh-light .font-bold,
+.animate-mesh-light .font-semibold {
+  color: #0f172a !important;
+}
+
+.animate-mesh-light p,
+.animate-mesh-light span,
+.animate-mesh-light label,
+.animate-mesh-light div,
+.animate-mesh-light td,
+.animate-mesh-light th {
+  color: #334155 !important;
+}
+
+/* Light mode specific overrides for stat labels */
+.animate-mesh-light .stat-label,
+.animate-mesh-light .text-slate-400,
+.animate-mesh-light .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Light mode chart card backgrounds */
+.animate-mesh-light .chart-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(148, 163, 184, 0.4) !important;
 }

@@ -24,7 +24,8 @@ const defaultState = {
 // Log History Defaults
 const defaultHistory = {
     logs: [],
-    sessions: []
+    sessions: [],
+    timeSeriesLog: [] // Category trends data { timestamp, wet, dry, bio, hazard }
 };
 
 // Initialize DB
@@ -68,6 +69,20 @@ const StateStore = {
             totalItems: bins.reduce((acc, bin) => acc + bin.itemsCount, 0),
             bioCount: bins[2].itemsCount
         };
+    },
+
+    // Add time series data point
+    addTimeSeriesPoint: (point) => {
+        const log = db.get('history.timeSeriesLog').value();
+        log.push({ ...point, timestamp: new Date().toISOString() });
+        // Keep only last 500 points (about 1.5 hours at 10s intervals)
+        if (log.length > 500) log.shift();
+        db.set('history.timeSeriesLog', log).write();
+    },
+
+    // Get time series for frontend
+    getTimeSeries: (limit = 100) => {
+        return db.get('history.timeSeriesLog').value().slice(-limit);
     }
 };
 

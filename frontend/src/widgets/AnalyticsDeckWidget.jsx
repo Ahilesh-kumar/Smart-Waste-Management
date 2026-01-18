@@ -137,19 +137,34 @@ export const AnalyticsDeckWidget = ({
                 onExpand={() => onExpandChart('throughput')}
                 className={clsx("card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light", "p-4 flex flex-col group")}
                 actions={
-                    <div className="flex gap-1">
-                        {['5m', '1h'].map(r => (
-                            <button
-                                key={r}
-                                onClick={() => setChartTimeRange(r)}
-                                className={clsx(
-                                    "px-2 py-0.5 text-[10px] rounded",
-                                    chartTimeRange === r ? "bg-cyan-500 text-white" : "text-slate-500 hover:text-slate-300"
-                                )}
-                            >
-                                {r}
-                            </button>
-                        ))}
+                    <div className="flex items-center gap-2">
+                        {/* Trend Delta Badge */}
+                        {timeSeriesData.length >= 2 && (
+                            <span className={clsx(
+                                "px-1.5 py-0.5 text-[9px] font-bold rounded",
+                                (timeSeriesData[timeSeriesData.length - 1]?.total || 0) >= (timeSeriesData[0]?.total || 0)
+                                    ? "bg-emerald-500/20 text-emerald-400"
+                                    : "bg-rose-500/20 text-rose-400"
+                            )}>
+                                {((timeSeriesData[timeSeriesData.length - 1]?.total || 0) >= (timeSeriesData[0]?.total || 0) ? "+" : "")}
+                                {Math.round(((timeSeriesData[timeSeriesData.length - 1]?.total || 1) / Math.max(1, timeSeriesData[0]?.total || 1) - 1) * 100)}%
+                            </span>
+                        )}
+                        {/* Time Range Buttons */}
+                        <div className="flex gap-1">
+                            {['5m', '1h', 'today', 'week'].map(r => (
+                                <button
+                                    key={r}
+                                    onClick={() => setChartTimeRange(r)}
+                                    className={clsx(
+                                        "px-2 py-0.5 text-[10px] rounded capitalize",
+                                        chartTimeRange === r ? "bg-cyan-500 text-white" : "text-slate-500 hover:text-slate-300"
+                                    )}
+                                >
+                                    {r}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 }
             >

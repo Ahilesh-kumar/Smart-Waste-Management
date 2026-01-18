@@ -274,13 +274,72 @@ function App() {
           { subject: 'Dry', A: radarCounts.dry || 0, fullMark: 100 },
         ]} height={400} />;
       case 'throughput':
-        // Mock history variation for throughput
-        const throughputHistory = timeSeriesData.map(d => ({
-          ...d,
-          bio: d.bio * (1 + (historyValue * 0.1)),
-          total: d.total * (1 + (historyValue * 0.05))
-        }));
-        return <EnhancedAreaChart data={throughputHistory} height={400} />;
+        // Enhanced Category Trends Modal with Controls
+        const trendData = timeSeriesData.length > 0 ? timeSeriesData : [];
+        const currentTotal = trendData[trendData.length - 1]?.total || 0;
+        const previousTotal = trendData[0]?.total || 1;
+        const trendDelta = Math.round(((currentTotal / Math.max(1, previousTotal)) - 1) * 100);
+
+        // Calculate category totals
+        const latestPoint = trendData[trendData.length - 1] || {};
+        const categoryStats = [
+          { name: 'Wet', value: latestPoint.wet || 0, color: '#06b6d4' },
+          { name: 'Dry', value: latestPoint.dry || 0, color: '#f59e0b' },
+          { name: 'Bio', value: latestPoint.bio || 0, color: '#10b981' },
+          { name: 'Hazard', value: latestPoint.hazard || 0, color: '#f43f5e' },
+        ];
+
+        return (
+          <div className="space-y-4">
+            {/* Controls Bar */}
+            <div className="flex items-center justify-between flex-wrap gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+              {/* Time Range Selector */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-medium">Range:</span>
+                <div className="flex gap-1">
+                  {['5m', '1h', 'today', 'week', 'all'].map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setChartTimeRange(r)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all ${chartTimeRange === r
+                        ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg'
+                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                        }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Trend Delta Badge */}
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${trendDelta >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                }`}>
+                <span className="text-lg font-bold">{trendDelta >= 0 ? '+' : ''}{trendDelta}%</span>
+                <span className="text-xs opacity-80">vs start</span>
+              </div>
+            </div>
+
+            {/* Main Chart */}
+            <EnhancedAreaChart data={trendData} height={300} timeRange={chartTimeRange} />
+
+            {/* Category Stats Grid */}
+            <div className="grid grid-cols-4 gap-3">
+              {categoryStats.map(stat => (
+                <div key={stat.name} className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: stat.color }} />
+                  <div className="text-xl font-bold text-white">{stat.value}</div>
+                  <div className="text-xs text-slate-400">{stat.name}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Info Footer */}
+            <div className="text-center text-xs text-slate-500">
+              Data updates every 10 seconds • Showing {trendData.length} data points
+            </div>
+          </div>
+        );
       case 'session':
         // Mock history for session comparison
         const histFactor = 1 + (historyValue * 0.1);
@@ -385,6 +444,31 @@ function App() {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+  };
+
+  // Export session report as JSON file
+  const exportReport = () => {
+    const report = {
+      generatedAt: new Date().toISOString(),
+      sessionDuration: sessionDuration,
+      systemStatus: isOn ? 'Online' : 'Offline',
+      processingCounts: processingCounts,
+      bins: data?.bins || [],
+      ecoMetrics: ecoMetrics,
+      eventLog: eventLog.slice(-50), // Last 50 events
+      systemHealth: systemHealth
+    };
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `waste-report-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    addToast('Report exported successfully!', 'success');
   };
 
   // Loading screen sequence
@@ -578,6 +662,23 @@ function App() {
       }
     });
 
+    // --- CATEGORY TRENDS DATA (Phase 9) ---
+    socket.on('timeseries_update', (data) => {
+      // data.data = [{ timestamp, wet, dry, bio, hazard, total }, ...]
+      if (data && data.data) {
+        // Transform to chart-friendly format with time labels
+        const chartData = data.data.map(point => ({
+          time: new Date(point.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          wet: point.wet || 0,
+          dry: point.dry || 0,
+          bio: point.bio || 0,
+          hazard: point.hazard || 0,
+          total: point.total || 0
+        }));
+        setTimeSeriesData(chartData);
+      }
+    });
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
@@ -586,6 +687,7 @@ function App() {
       socket.off('ai_inference');
       socket.off('prediction_update');
       socket.off('heatmap_update');
+      socket.off('timeseries_update');
     };
   }, []);
 
@@ -1514,56 +1616,85 @@ function App() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className={clsx("p-6 rounded-2xl border shadow-2xl w-full max-w-md", theme === 'dark' ? "bg-[#0a0a0a] border-white/10" : "bg-white border-slate-200")}
+              className={clsx(
+                "p-6 rounded-3xl border shadow-2xl w-full max-w-md backdrop-blur-xl",
+                theme === 'dark'
+                  ? "bg-neutral-900/95 border-white/20 text-white"
+                  : "bg-white/95 border-slate-300 text-slate-900"
+              )}
               onClick={e => e.stopPropagation()}
             >
-              <h3 className="text-xl font-bold mb-4">⚙️ Settings</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span>Sound Effects</span>
+              <h3 className={clsx("text-xl font-bold mb-4", theme === 'dark' ? "text-white" : "text-slate-900")}>⚙️ Settings</h3>
+              <div className="space-y-5">
+                {/* Sound Effects */}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <span className="font-medium">Sound Effects</span>
+                    <p className="text-xs text-slate-400 mt-0.5">Play audio cues on detection & alerts</p>
+                  </div>
                   <button
                     onClick={() => setSoundEnabled(!soundEnabled)}
-                    className={clsx("w-12 h-6 rounded-full transition", soundEnabled ? "bg-green-500" : "bg-slate-600")}
+                    className={clsx("w-12 h-6 rounded-full transition flex-shrink-0", soundEnabled ? "bg-green-500" : "bg-slate-600")}
                   >
                     <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", soundEnabled ? "translate-x-6" : "translate-x-0.5")} />
                   </button>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span>Sensitivity</span>
+
+                {/* Sensitivity */}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <span className="font-medium">Sensitivity</span>
+                    <p className="text-xs text-slate-400 mt-0.5">AI detection threshold - High = more detections</p>
+                  </div>
                   <select
                     value={sensitivity}
                     onChange={(e) => setSensitivity(e.target.value)}
-                    className="px-3 py-1 rounded-lg bg-neutral-800 border border-white/10 text-sm"
+                    className="px-3 py-1 rounded-lg bg-neutral-800 border border-white/10 text-sm flex-shrink-0"
                   >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
                   </select>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span>Voice Feedback</span>
+
+                {/* Voice Feedback */}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <span className="font-medium">Voice Feedback</span>
+                    <p className="text-xs text-slate-400 mt-0.5">Announce waste type after classification</p>
+                  </div>
                   <button
                     onClick={() => setIsVoiceEnabled(!isVoiceEnabled)}
-                    className={clsx("w-12 h-6 rounded-full transition", isVoiceEnabled ? "bg-green-500" : "bg-slate-600")}
+                    className={clsx("w-12 h-6 rounded-full transition flex-shrink-0", isVoiceEnabled ? "bg-green-500" : "bg-slate-600")}
                   >
                     <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", isVoiceEnabled ? "translate-x-6" : "translate-x-0.5")} />
                   </button>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span>Auto Torch (Night Mode)</span>
+
+                {/* Auto Torch */}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <span className="font-medium">Auto Torch (Night Mode)</span>
+                    <p className="text-xs text-slate-400 mt-0.5">Enable camera flash in low-light conditions</p>
+                  </div>
                   <button
                     onClick={() => setAutoTorch(!autoTorch)}
-                    className={clsx("w-12 h-6 rounded-full transition", autoTorch ? "bg-green-500" : "bg-slate-600")}
+                    className={clsx("w-12 h-6 rounded-full transition flex-shrink-0", autoTorch ? "bg-green-500" : "bg-slate-600")}
                   >
                     <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", autoTorch ? "translate-x-6" : "translate-x-0.5")} />
                   </button>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span>Display Mode</span>
+
+                {/* Display Mode */}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <span className="font-medium">Display Mode</span>
+                    <p className="text-xs text-slate-400 mt-0.5">Switch between dashboard layouts</p>
+                  </div>
                   <select
                     value={displayMode}
                     onChange={(e) => setDisplayMode(e.target.value)}
-                    className="px-3 py-1 rounded-lg bg-slate-700 border border-slate-600 text-sm capitalize"
+                    className="px-3 py-1 rounded-lg bg-slate-700 border border-slate-600 text-sm capitalize flex-shrink-0"
                   >
                     <option value="full">Full Dashboard</option>
                     <option value="kiosk">Kiosk Mode</option>
@@ -1575,11 +1706,14 @@ function App() {
                 </div>
 
                 {displayMode === 'custom' && (
-                  <div className="flex justify-between items-center animate-in fade-in slide-in-from-top-2">
-                    <span>Edit Layout</span>
+                  <div className="flex justify-between items-start animate-in fade-in slide-in-from-top-2">
+                    <div className="flex-1">
+                      <span className="font-medium">Edit Layout</span>
+                      <p className="text-xs text-slate-400 mt-0.5">Drag widgets to rearrange dashboard</p>
+                    </div>
                     <button
                       onClick={() => setIsEditMode(!isEditMode)}
-                      className={clsx("w-12 h-6 rounded-full transition", isEditMode ? "bg-teal-500" : "bg-slate-600")}
+                      className={clsx("w-12 h-6 rounded-full transition flex-shrink-0", isEditMode ? "bg-teal-500" : "bg-slate-600")}
                     >
                       <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", isEditMode ? "translate-x-6" : "translate-x-0.5")} />
                     </button>
@@ -2524,7 +2658,7 @@ function App() {
               </RippleButton>
 
               <RippleButton
-                onClick={() => exportReport(displayMode === 'split')}
+                onClick={() => setNotificationEnabled(!notificationEnabled)}
                 className={clsx(
                   "p-4 rounded-xl border flex flex-col items-center gap-2 hover:scale-[1.02] transition-transform",
                   notificationEnabled

@@ -112,6 +112,26 @@ const initSocket = (io) => {
         });
     });
 
+    // --- TIME SERIES EMITTER (Every 10 seconds) ---
+    setInterval(() => {
+        const state = StateStore.getState();
+        if (state.isOn) {
+            // Log current category counts as a time series point
+            StateStore.addTimeSeriesPoint({
+                wet: state.bins[0].itemsCount,
+                dry: state.bins[1].itemsCount,
+                bio: state.bins[2].itemsCount,
+                hazard: state.bins[3].itemsCount,
+                total: state.bins.reduce((sum, b) => sum + b.itemsCount, 0)
+            });
+
+            // Broadcast time series to all clients
+            io.emit('timeseries_update', {
+                data: StateStore.getTimeSeries(50) // Last 50 points (~8 min)
+            });
+        }
+    }, 10000); // 10 seconds
+
     return broadcastState;
 };
 

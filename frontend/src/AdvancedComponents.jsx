@@ -41,22 +41,31 @@ export const DraggableWidget = ({
 // Real-time scrolling detection feed with auto-dismiss
 export const LiveActivityFeed = ({ events = [], maxItems = 5, onClose, onDismiss }) => {
     const [visibleEvents, setVisibleEvents] = useState([]);
+    const dismissedRef = useRef(new Set()); // Track dismissed event IDs
 
-    // Auto-dismiss notifications after 5 seconds
+    // Add new events that haven't been dismissed
     useEffect(() => {
-        // Add new events to visible list
         if (events.length > 0) {
             const latestEvents = events.slice(-maxItems);
-            setVisibleEvents(latestEvents);
+            // Filter out already-dismissed events
+            const newEvents = latestEvents.filter(e => !dismissedRef.current.has(e.id));
 
-            // Set timer to remove each event after 5 seconds
-            const timers = latestEvents.map((event, index) => {
-                return setTimeout(() => {
-                    setVisibleEvents(prev => prev.filter(e => e.id !== event.id));
-                }, 4000 + (index * 500)); // Stagger dismissal slightly
-            });
+            if (newEvents.length > 0) {
+                setVisibleEvents(prev => {
+                    // Merge new events, remove duplicates
+                    const existing = new Set(prev.map(e => e.id));
+                    const toAdd = newEvents.filter(e => !existing.has(e.id));
+                    return [...prev, ...toAdd].slice(-maxItems);
+                });
 
-            return () => timers.forEach(timer => clearTimeout(timer));
+                // Set individual timers for each new event
+                newEvents.forEach((event) => {
+                    setTimeout(() => {
+                        dismissedRef.current.add(event.id);
+                        setVisibleEvents(prev => prev.filter(e => e.id !== event.id));
+                    }, 4000); // 4 seconds flat
+                });
+            }
         }
     }, [events, maxItems]);
 
