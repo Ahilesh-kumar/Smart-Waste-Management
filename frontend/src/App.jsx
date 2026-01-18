@@ -8,7 +8,7 @@ import { AnimatedCounter, ProgressRing, Sparkline, LiveIndicator, TiltCard } fro
 import { LiveActivityFeed, useSwipeGesture, PullRefreshIndicator } from './AdvancedComponents';
 import {
   EnhancedAreaChart, TimeRangeSelector, ChartModal,
-  CompareToggle, ChartCard, CompareChart, GlassTooltip, TimelineScrubber, AnimatedBackground, PremiumRadarChart
+  CompareToggle, ChartCard, CompareChart, GlassTooltip, TimelineScrubber, AnimatedBackground, PremiumRadarChart, PremiumPieChart, ConfidenceHistogram, HourlyStackedBarChart
 } from './ChartEnhancements';
 import { SimpleDashboard } from './SimpleDashboard';
 
@@ -208,6 +208,7 @@ function App() {
   // Chart enhancement state (Phase 1 & 3)
   const [chartTimeRange, setChartTimeRange] = useState('all');
   const [expandedChart, setExpandedChart] = useState(null); // 'trends' | 'confidence' | null
+  const [compositionChartView, setCompositionChartView] = useState('pie'); // 'pie' | 'radar'
 
   // History slider state (0 = live, negative = past cycles)
   const [chartHistoryIndex, setChartHistoryIndex] = useState(0);
@@ -2485,13 +2486,35 @@ function App() {
             </svg>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* 1. COMPOSITION RADAR (Updated Phase 4) */}
+              {/* 1. COMPOSITION PIE/RADAR (Updated with Toggle) */}
               <ChartCard
                 title="Waste Composition"
                 className={clsx(
                   "cursor-pointer hover:border-teal-500/30 transition-all card-modern h-[320px]",
                   theme === 'dark' ? "card-modern-dark" : "card-modern-light"
                 )}
+                actions={
+                  <div className="flex gap-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCompositionChartView('pie'); }}
+                      className={clsx(
+                        "px-2 py-0.5 text-[10px] rounded transition-all",
+                        compositionChartView === 'pie' ? "bg-emerald-500 text-white" : "text-slate-500 hover:text-slate-300"
+                      )}
+                    >
+                      Pie
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCompositionChartView('radar'); }}
+                      className={clsx(
+                        "px-2 py-0.5 text-[10px] rounded transition-all",
+                        compositionChartView === 'radar' ? "bg-cyan-500 text-white" : "text-slate-500 hover:text-slate-300"
+                      )}
+                    >
+                      Radar
+                    </button>
+                  </div>
+                }
                 onExpand={() => setExpandedGraph({
                   title: 'Detailed Composition Analysis',
                   chart: (
@@ -2523,15 +2546,28 @@ function App() {
                 })}
               >
                 <div className="h-full pb-6">
-                  <PremiumRadarChart
-                    data={[
-                      { subject: 'Bio', A: processingCounts.bio, fullMark: 150 },
-                      { subject: 'Haz', A: processingCounts.hazard, fullMark: 150 },
-                      { subject: 'Wet', A: processingCounts.wet, fullMark: 150 },
-                      { subject: 'Dry', A: processingCounts.dry, fullMark: 150 }
-                    ]}
-                    height="100%"
-                  />
+                  {compositionChartView === 'pie' ? (
+                    <PremiumPieChart
+                      data={[
+                        { name: 'Bio', value: processingCounts.bio || 0 },
+                        { name: 'Hazard', value: processingCounts.hazard || 0 },
+                        { name: 'Wet', value: processingCounts.wet || 0 },
+                        { name: 'Dry', value: processingCounts.dry || 0 }
+                      ]}
+                      height={250}
+                      showLegend={false}
+                    />
+                  ) : (
+                    <PremiumRadarChart
+                      data={[
+                        { subject: 'Bio', A: processingCounts.bio, fullMark: 150 },
+                        { subject: 'Haz', A: processingCounts.hazard, fullMark: 150 },
+                        { subject: 'Wet', A: processingCounts.wet, fullMark: 150 },
+                        { subject: 'Dry', A: processingCounts.dry, fullMark: 150 }
+                      ]}
+                      height={250}
+                    />
+                  )}
                 </div>
               </ChartCard>
 

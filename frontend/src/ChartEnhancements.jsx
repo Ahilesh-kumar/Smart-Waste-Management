@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     AreaChart, Area, LineChart, Line, BarChart, Bar,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-    Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+    Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+    PieChart, Pie, Cell, Sector
 } from 'recharts';
 import { X, Maximize2, ArrowLeftRight, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -552,6 +553,231 @@ export const PremiumRadarChart = ({ data, height = 300 }) => {
                     />
                     <Tooltip content={<GlassTooltip />} />
                 </RadarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
+// ===== PIE CHART CATEGORY COLORS =====
+const PIE_COLORS = ['#10b981', '#f43f5e', '#06b6d4', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+// ===== ACTIVE SHAPE FOR PIE CHART =====
+const renderActiveShape = (props) => {
+    const RADIAN = Math.PI / 180;
+    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+    const sin = Math.sin(-RADIAN * midAngle);
+    const cos = Math.cos(-RADIAN * midAngle);
+    const sx = cx + (outerRadius + 10) * cos;
+    const sy = cy + (outerRadius + 10) * sin;
+    const mx = cx + (outerRadius + 30) * cos;
+    const my = cy + (outerRadius + 30) * sin;
+    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+    const ey = my;
+    const textAnchor = cos >= 0 ? 'start' : 'end';
+
+    return (
+        <g>
+            <text x={cx} y={cy} dy={8} textAnchor="middle" fill="#fff" className="text-lg font-bold">
+                {payload.name}
+            </text>
+            <Sector
+                cx={cx}
+                cy={cy}
+                innerRadius={innerRadius}
+                outerRadius={outerRadius}
+                startAngle={startAngle}
+                endAngle={endAngle}
+                fill={fill}
+            />
+            <Sector
+                cx={cx}
+                cy={cy}
+                startAngle={startAngle}
+                endAngle={endAngle}
+                innerRadius={outerRadius + 6}
+                outerRadius={outerRadius + 10}
+                fill={fill}
+            />
+            <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+            <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+            <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#e2e8f0" className="text-xs">
+                {`${value} items`}
+            </text>
+            <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#94a3b8" className="text-[10px]">
+                {`(${(percent * 100).toFixed(1)}%)`}
+            </text>
+        </g>
+    );
+};
+
+// ===== PREMIUM PIE CHART =====
+export const PremiumPieChart = ({ data = [], height = 200, showLegend = true }) => {
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    const onPieEnter = (_, index) => {
+        setActiveIndex(index);
+    };
+
+    // Transform data if needed (handle different data shapes)
+    const chartData = useMemo(() => {
+        if (!data || data.length === 0) {
+            return [
+                { name: 'Bio', value: 0 },
+                { name: 'Hazard', value: 0 },
+                { name: 'Wet', value: 0 },
+                { name: 'Dry', value: 0 }
+            ];
+        }
+        return data;
+    }, [data]);
+
+    return (
+        <div className="w-full h-full chart-animate">
+            <ResponsiveContainer width="100%" height={height}>
+                <PieChart>
+                    <defs>
+                        {PIE_COLORS.map((color, index) => (
+                            <linearGradient key={`gradient-${index}`} id={`pieGradient${index}`} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={color} stopOpacity={1} />
+                                <stop offset="100%" stopColor={color} stopOpacity={0.7} />
+                            </linearGradient>
+                        ))}
+                    </defs>
+                    <Pie
+                        activeIndex={activeIndex}
+                        activeShape={renderActiveShape}
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={height * 0.25}
+                        outerRadius={height * 0.38}
+                        paddingAngle={3}
+                        dataKey="value"
+                        onMouseEnter={onPieEnter}
+                        animationBegin={0}
+                        animationDuration={800}
+                        animationEasing="ease-out"
+                    >
+                        {chartData.map((entry, index) => (
+                            <Cell
+                                key={`cell-${index}`}
+                                fill={`url(#pieGradient${index % PIE_COLORS.length})`}
+                                stroke="rgba(0,0,0,0.3)"
+                                strokeWidth={2}
+                            />
+                        ))}
+                    </Pie>
+                    {showLegend && (
+                        <Legend
+                            layout="horizontal"
+                            verticalAlign="bottom"
+                            align="center"
+                            iconType="circle"
+                            iconSize={8}
+                            wrapperStyle={{ paddingTop: '10px' }}
+                            formatter={(value) => <span className="text-xs text-slate-400">{value}</span>}
+                        />
+                    )}
+                    <Tooltip content={<GlassTooltip />} />
+                </PieChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
+// ===== CONFIDENCE HISTOGRAM =====
+export const ConfidenceHistogram = ({ data = [], height = 150 }) => {
+    // data should be array of { range: '0-20%', count: 5 } or similar
+    const chartData = useMemo(() => {
+        if (!data || data.length === 0) {
+            // Generate default bins
+            return [
+                { range: '0-20%', count: 0 },
+                { range: '20-40%', count: 0 },
+                { range: '40-60%', count: 0 },
+                { range: '60-80%', count: 0 },
+                { range: '80-100%', count: 0 }
+            ];
+        }
+        return data;
+    }, [data]);
+
+    return (
+        <div className="w-full chart-animate">
+            <ResponsiveContainer width="100%" height={height}>
+                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="confidenceGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
+                            <stop offset="100%" stopColor="#6366f1" stopOpacity={0.4} />
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis
+                        dataKey="range"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b', fontSize: 9 }}
+                    />
+                    <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b', fontSize: 10 }}
+                    />
+                    <Tooltip content={<GlassTooltip />} />
+                    <Bar
+                        dataKey="count"
+                        name="Detections"
+                        fill="url(#confidenceGradient)"
+                        radius={[4, 4, 0, 0]}
+                        barSize={24}
+                    />
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
+// ===== HOURLY STACKED BAR CHART =====
+export const HourlyStackedBarChart = ({ data = [], height = 180 }) => {
+    const chartData = useMemo(() => {
+        if (!data || data.length === 0) {
+            // Default empty hours
+            return Array.from({ length: 12 }, (_, i) => ({
+                hour: `${i + 8}:00`,
+                bio: 0, hazard: 0, wet: 0, dry: 0
+            }));
+        }
+        return data;
+    }, [data]);
+
+    return (
+        <div className="w-full chart-animate">
+            <ResponsiveContainer width="100%" height={height}>
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis
+                        dataKey="hour"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b', fontSize: 9 }}
+                    />
+                    <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b', fontSize: 10 }}
+                    />
+                    <Tooltip content={<GlassTooltip />} />
+                    <Legend
+                        iconType="circle"
+                        iconSize={6}
+                        wrapperStyle={{ paddingTop: '5px' }}
+                    />
+                    <Bar dataKey="bio" name="Bio" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="hazard" name="Hazard" stackId="a" fill="#f43f5e" />
+                    <Bar dataKey="wet" name="Wet" stackId="a" fill="#06b6d4" />
+                    <Bar dataKey="dry" name="Dry" stackId="a" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                </BarChart>
             </ResponsiveContainer>
         </div>
     );
