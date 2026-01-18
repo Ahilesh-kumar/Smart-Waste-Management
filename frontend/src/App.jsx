@@ -10,6 +10,7 @@ import {
   EnhancedAreaChart, TimeRangeSelector, ChartModal,
   CompareToggle, ChartCard, CompareChart, GlassTooltip, TimelineScrubber, AnimatedBackground, PremiumRadarChart
 } from './ChartEnhancements';
+import { SimpleDashboard } from './SimpleDashboard';
 
 const socket = io('http://localhost:3001');
 
@@ -183,8 +184,9 @@ function App() {
   // Pause mode - camera on, counting paused
   const [isPaused, setIsPaused] = useState(false);
 
-  // Display modes: 'full' | 'kiosk' | 'split' | 'compact' | 'widget'
+  // Display modes: 'full' | 'kiosk' | 'split' | 'compact' | 'widget' | 'custom'
   const [displayMode, setDisplayMode] = useState('full');
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Event log search
   const [logSearchQuery, setLogSearchQuery] = useState('');
@@ -197,7 +199,7 @@ function App() {
   const [recentDetections, setRecentDetections] = useState([]);
 
   // Loading screen state
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStatus, setLoadingStatus] = useState('Initializing...');
   const [loadingExpanding, setLoadingExpanding] = useState(false);
@@ -1370,8 +1372,21 @@ function App() {
                     <option value="split">Split View</option>
                     <option value="compact">Compact Mode</option>
                     <option value="widget">Widget Mode</option>
+                    <option value="custom">Custom Layout</option>
                   </select>
                 </div>
+
+                {displayMode === 'custom' && (
+                  <div className="flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+                    <span>Edit Layout</span>
+                    <button
+                      onClick={() => setIsEditMode(!isEditMode)}
+                      className={clsx("w-12 h-6 rounded-full transition", isEditMode ? "bg-teal-500" : "bg-slate-600")}
+                    >
+                      <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", isEditMode ? "translate-x-6" : "translate-x-0.5")} />
+                    </button>
+                  </div>
+                )}
               </div>
               <button onClick={() => { setShowSettings(false); addToast('Settings saved', 'success'); }} className="mt-6 w-full py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition">
                 Save & Close
@@ -1780,896 +1795,929 @@ function App() {
           <button onClick={toggleTheme} className="p-2.5 rounded-xl hover:bg-slate-500/10 transition">
             {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-600" />}
           </button>
+
+          <button onClick={() => setShowSettings(true)} className="p-2.5 rounded-xl hover:bg-slate-500/10 transition">
+            <Settings size={18} className={theme === 'dark' ? "text-slate-300" : "text-slate-600"} />
+          </button>
         </div>
       </header>
 
-      {/* BENTO GRID LAYOUT */}
-      <div className={clsx(
-        "bento-grid",
-        displayMode === 'compact' && "gap-3"
-      )}>
-
-        {/* LEFT COLUMN (Camera & Controls) - spans 8 columns */}
+      {/* CUSTOM DASHBOARD MODE */}
+      {displayMode === 'custom' ? (
+        <div className="p-4 pt-0 relative z-10">
+          <SimpleDashboard
+            theme={theme}
+            isEditMode={isEditMode}
+            data={data}
+            processingCounts={processingCounts}
+            systemHealth={{ latency: 12, fps: 60, memoryUsage: 45 }} // Mock health if not available
+            togglePower={togglePower}
+            // Controls
+            speed={speed}
+            setSpeed={setSpeed} // pass wrapper if needed
+            direction={direction}
+            toggleDirection={toggleDirection}
+            servos={servos}
+            setServo={setServo}
+            togglePiP={togglePiP}
+            toggleFullscreen={toggleFullscreen}
+            // Data
+            camUrl={camUrl}
+            isConnected={isConnected}
+            eventLog={eventLog} // or filteredEventLog
+          />
+        </div>
+      ) : (
+        /* BENTO GRID LAYOUT */
         <div className={clsx(
-          "col-span-12 flex flex-col gap-4",
-          displayMode === 'split' ? "lg:col-span-6" :
-            displayMode === 'kiosk' ? "lg:col-span-9" :
-              "lg:col-span-8"
+          "bento-grid",
+          displayMode === 'compact' && "gap-3"
         )}>
 
-          {/* Main Camera Feed Card */}
+          {/* LEFT COLUMN (Camera & Controls) - spans 8 columns */}
           <div className={clsx(
-            "card-modern relative overflow-hidden h-[500px] xl:h-[600px] group",
-            theme === 'dark' ? "card-modern-dark" : "card-modern-light"
+            "col-span-12 flex flex-col gap-4",
+            displayMode === 'split' ? "lg:col-span-6" :
+              displayMode === 'kiosk' ? "lg:col-span-9" :
+                "lg:col-span-8"
           )}>
-            <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2 border border-white/10">
-              <Webcam size={16} className="text-red-500 animate-pulse" />
-              <span className="text-xs font-bold text-white tracking-wider">LIVE FEED</span>
-            </div>
 
-            <div className="w-full h-full rounded-2xl overflow-hidden relative bg-black flex items-center justify-center">
-              {camUrl ? (
-                <>
-                  <img
-                    id="live-feed-img"
-                    crossOrigin="anonymous"
-                    src={camUrl.startsWith('http') ? `${camUrl}/video` : `http://${camUrl}/video`}
-                    alt="Live Feed - Check Console for Errors"
-                    className="w-full h-full object-contain transition-all duration-300"
-                    style={{
-                      transform: `rotate(${rotation}deg) scale(${cameraZoom})`,
-                      filter: `brightness(${cameraBrightness}%)`
-                    }}
-                    onError={(e) => {
-                      console.error("Camera Feed Error:", e);
-                    }}
-                  />
-                  {/* Camera Controls Overlay */}
-                  <div className="absolute top-4 right-4 flex gap-2">
-                    <button
-                      onClick={() => {
-                        playClick();
-                        const mode = !isTorchOn ? 'enabletorch' : 'disabletorch';
-                        fetch(`${camUrl}/${mode}`, { mode: 'no-cors' })
-                          .then(() => setIsTorchOn(!isTorchOn))
-                          .catch(err => console.error("Torch error", err));
+            {/* Main Camera Feed Card */}
+            <div className={clsx(
+              "card-modern relative overflow-hidden h-[500px] xl:h-[600px] group",
+              theme === 'dark' ? "card-modern-dark" : "card-modern-light"
+            )}>
+              <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2 border border-white/10">
+                <Webcam size={16} className="text-red-500 animate-pulse" />
+                <span className="text-xs font-bold text-white tracking-wider">LIVE FEED</span>
+              </div>
+
+              <div className="w-full h-full rounded-2xl overflow-hidden relative bg-black flex items-center justify-center">
+                {camUrl ? (
+                  <>
+                    <img
+                      id="live-feed-img"
+                      crossOrigin="anonymous"
+                      src={camUrl.startsWith('http') ? `${camUrl}/video` : `http://${camUrl}/video`}
+                      alt="Live Feed - Check Console for Errors"
+                      className="w-full h-full object-contain transition-all duration-300"
+                      style={{
+                        transform: `rotate(${rotation}deg) scale(${cameraZoom})`,
+                        filter: `brightness(${cameraBrightness}%)`
                       }}
-                      className={clsx("p-2 rounded-full text-white transition-opacity backdrop-blur-md border border-white/20", isTorchOn ? "bg-yellow-500/90 hover:bg-yellow-600" : "bg-black/40 hover:bg-yellow-500 opacity-0 group-hover:opacity-100")}
-                    >
-                      <Zap size={18} className={isTorchOn ? "fill-white" : ""} />
-                    </button>
-                    <button onClick={() => { playClick(); setRotation(r => (r + 90) % 360); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-blue-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Settings size={18} className="rotate-45" />
-                    </button>
-                    <button onClick={() => { playClick(); setCamUrl(''); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Trash2 size={18} />
-                    </button>
-                    <button onClick={() => { playClick(); toggleFullscreen(); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-purple-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Activity size={18} />
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center p-8">
-                  <div className="w-20 h-20 mx-auto bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-500">
-                    <Webcam size={32} />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-300 mb-2">Connect Camera</h3>
-                  <div className="flex gap-2 max-w-xs mx-auto">
-                    <input
-                      type="text"
-                      placeholder="http://192.168.1.x:8080"
-                      className="flex-1 rounded-lg bg-neutral-900 border-white/10 text-white px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                      onKeyDown={(e) => e.key === 'Enter' && setCamUrl(e.currentTarget.value)}
+                      onError={(e) => {
+                        console.error("Camera Feed Error:", e);
+                      }}
                     />
-                  </div>
-                </div>
-              )}
-
-              {/* Bounding Box */}
-              {boxPos && (
-                <div
-                  className="absolute border-4 border-yellow-400 rounded-lg shadow-[0_0_20px_rgba(250,204,21,0.5)] transition-all duration-100 z-20"
-                  style={{
-                    left: `${boxPos.x}%`,
-                    top: `${boxPos.y}%`,
-                    width: `${boxPos.w}%`,
-                    height: `${boxPos.h}%`,
-                  }}
-                >
-                  <div className="absolute -top-10 left-0 bg-yellow-400 text-black px-3 py-1 rounded-md text-sm font-bold shadow-lg flex items-center gap-2">
-                    {aiData.class} <span className="text-xs bg-black/20 px-1 rounded">{aiData.confidence.toFixed(1)}%</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* AI Status & Connectivity Strip */}
-          {/* AI Status & Connectivity Strip (Enhanced Phase 3) */}
-          <div className="p-3 rounded-2xl flex flex-col gap-2 card-modern-dark transition-all duration-500 border-white/5">
-            <div className="flex items-center justify-between">
-              {/* Left Group: Connection & Model */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className={clsx("px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2", isConnected ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400")}>
-                  <div className={clsx("w-2 h-2 rounded-full", isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500")} />
-                  {isConnected ? "SYSTEM ONLINE" : "DISCONNECTED"}
-                </div>
-
-                {/* System Health Indicators (New Phase 2) */}
-                <div className="hidden md:flex items-center gap-4 px-4 border-l border-white/10 text-[10px] font-mono opacity-60">
-                  <span title="Network Latency">Ping: {systemHealth.latency}ms</span>
-                  <span title="Render Performance">FPS: {systemHealth.fps}</span>
-                  <span title="Memory Usage">Mem: {systemHealth.memoryUsage}MB</span>
-                </div>
-              </div>
-
-              {/* Right Group: AI & Status */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-xs font-mono opacity-60">
-                  <Activity size={14} className={aiData.confidence > 0 ? "text-cyan-400" : ""} />
-                  Inference: {aiData.confidence > 0 ? `${aiData.confidence.toFixed(1)}%` : "Idle"}
-                </div>
-              </div>
-            </div>
-
-            {/* Camera Controls Row (Collapsible) */}
-            {camUrl && (
-              <div className="flex items-center gap-4 pt-2 border-t border-white/5">
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="text-[10px] uppercase tracking-wider opacity-40 w-12">Zoom</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="3"
-                    step="0.1"
-                    value={cameraZoom}
-                    onChange={(e) => setCameraZoom(parseFloat(e.target.value))}
-                    className="flex-1 h-1 appearance-none bg-white/10 rounded-full cursor-pointer hover:bg-cyan-500/50 transition-colors"
-                  />
-                  <span className="text-xs font-mono w-8 text-right">{cameraZoom.toFixed(1)}x</span>
-                </div>
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="text-[10px] uppercase tracking-wider opacity-40 w-12">Bright</span>
-                  <input
-                    type="range"
-                    min="50"
-                    max="150"
-                    step="5"
-                    value={cameraBrightness}
-                    onChange={(e) => setCameraBrightness(parseInt(e.target.value))}
-                    className="flex-1 h-1 appearance-none bg-white/10 rounded-full cursor-pointer hover:bg-yellow-500/50 transition-colors"
-                  />
-                  <span className="text-xs font-mono w-8 text-right">{cameraBrightness}%</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Control Panel Grid (Hidden in Kiosk Mode) */}
-          {displayMode !== 'kiosk' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Conveyor Controls */}
-              <div className={clsx(
-                "card-modern",
-                theme === 'dark' ? "card-modern-dark" : "card-modern-light"
-              )}>
-                <h3 className="chart-title opacity-70">
-                  <Settings size={16} /> Conveyor Control
-                </h3>
-                <div className="space-y-4">
-                  {/* Speed Segmented Control */}
-                  <div className="segmented-control">
-                    {['Slow', 'Medium', 'Fast'].map((s) => (
+                    {/* Camera Controls Overlay */}
+                    <div className="absolute top-4 right-4 flex gap-2">
                       <button
-                        key={s}
-                        onClick={() => setSpeed(s)}
+                        onClick={() => {
+                          playClick();
+                          const mode = !isTorchOn ? 'enabletorch' : 'disabletorch';
+                          fetch(`${camUrl}/${mode}`, { mode: 'no-cors' })
+                            .then(() => setIsTorchOn(!isTorchOn))
+                            .catch(err => console.error("Torch error", err));
+                        }}
+                        className={clsx("p-2 rounded-full text-white transition-opacity backdrop-blur-md border border-white/20", isTorchOn ? "bg-yellow-500/90 hover:bg-yellow-600" : "bg-black/40 hover:bg-yellow-500 opacity-0 group-hover:opacity-100")}
+                      >
+                        <Zap size={18} className={isTorchOn ? "fill-white" : ""} />
+                      </button>
+                      <button onClick={() => { playClick(); setRotation(r => (r + 90) % 360); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-blue-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Settings size={18} className="rotate-45" />
+                      </button>
+                      <button onClick={() => { playClick(); setCamUrl(''); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Trash2 size={18} />
+                      </button>
+                      <button onClick={() => { playClick(); toggleFullscreen(); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-purple-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Activity size={18} />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center p-8">
+                    <div className="w-20 h-20 mx-auto bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-500">
+                      <Webcam size={32} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-300 mb-2">Connect Camera</h3>
+                    <div className="flex gap-2 max-w-xs mx-auto">
+                      <input
+                        type="text"
+                        placeholder="http://192.168.1.x:8080"
+                        className="flex-1 rounded-lg bg-neutral-900 border-white/10 text-white px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                        onKeyDown={(e) => e.key === 'Enter' && setCamUrl(e.currentTarget.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Bounding Box */}
+                {boxPos && (
+                  <div
+                    className="absolute border-4 border-yellow-400 rounded-lg shadow-[0_0_20px_rgba(250,204,21,0.5)] transition-all duration-100 z-20"
+                    style={{
+                      left: `${boxPos.x}%`,
+                      top: `${boxPos.y}%`,
+                      width: `${boxPos.w}%`,
+                      height: `${boxPos.h}%`,
+                    }}
+                  >
+                    <div className="absolute -top-10 left-0 bg-yellow-400 text-black px-3 py-1 rounded-md text-sm font-bold shadow-lg flex items-center gap-2">
+                      {aiData.class} <span className="text-xs bg-black/20 px-1 rounded">{aiData.confidence.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* AI Status & Connectivity Strip */}
+            {/* AI Status & Connectivity Strip (Enhanced Phase 3) */}
+            <div className="p-3 rounded-2xl flex flex-col gap-2 card-modern-dark transition-all duration-500 border-white/5">
+              <div className="flex items-center justify-between">
+                {/* Left Group: Connection & Model */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className={clsx("px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2", isConnected ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400")}>
+                    <div className={clsx("w-2 h-2 rounded-full", isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500")} />
+                    {isConnected ? "SYSTEM ONLINE" : "DISCONNECTED"}
+                  </div>
+
+                  {/* System Health Indicators (New Phase 2) */}
+                  <div className="hidden md:flex items-center gap-4 px-4 border-l border-white/10 text-[10px] font-mono opacity-60">
+                    <span title="Network Latency">Ping: {systemHealth.latency}ms</span>
+                    <span title="Render Performance">FPS: {systemHealth.fps}</span>
+                    <span title="Memory Usage">Mem: {systemHealth.memoryUsage}MB</span>
+                  </div>
+                </div>
+
+                {/* Right Group: AI & Status */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-xs font-mono opacity-60">
+                    <Activity size={14} className={aiData.confidence > 0 ? "text-cyan-400" : ""} />
+                    Inference: {aiData.confidence > 0 ? `${aiData.confidence.toFixed(1)}%` : "Idle"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Camera Controls Row (Collapsible) */}
+              {camUrl && (
+                <div className="flex items-center gap-4 pt-2 border-t border-white/5">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-[10px] uppercase tracking-wider opacity-40 w-12">Zoom</span>
+                    <input
+                      type="range"
+                      min="1"
+                      max="3"
+                      step="0.1"
+                      value={cameraZoom}
+                      onChange={(e) => setCameraZoom(parseFloat(e.target.value))}
+                      className="flex-1 h-1 appearance-none bg-white/10 rounded-full cursor-pointer hover:bg-cyan-500/50 transition-colors"
+                    />
+                    <span className="text-xs font-mono w-8 text-right">{cameraZoom.toFixed(1)}x</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-[10px] uppercase tracking-wider opacity-40 w-12">Bright</span>
+                    <input
+                      type="range"
+                      min="50"
+                      max="150"
+                      step="5"
+                      value={cameraBrightness}
+                      onChange={(e) => setCameraBrightness(parseInt(e.target.value))}
+                      className="flex-1 h-1 appearance-none bg-white/10 rounded-full cursor-pointer hover:bg-yellow-500/50 transition-colors"
+                    />
+                    <span className="text-xs font-mono w-8 text-right">{cameraBrightness}%</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Control Panel Grid (Hidden in Kiosk Mode) */}
+            {displayMode !== 'kiosk' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Conveyor Controls */}
+                <div className={clsx(
+                  "card-modern",
+                  theme === 'dark' ? "card-modern-dark" : "card-modern-light"
+                )}>
+                  <h3 className="chart-title opacity-70">
+                    <Settings size={16} /> Conveyor Control
+                  </h3>
+                  <div className="space-y-4">
+                    {/* Speed Segmented Control */}
+                    <div className="segmented-control">
+                      {['Slow', 'Medium', 'Fast'].map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setSpeed(s)}
+                          className={clsx(
+                            "segmented-btn",
+                            speed === s && "segmented-btn-active"
+                          )}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Direction Toggle */}
+                    <div className="direction-toggle">
+                      <button
+                        onClick={() => toggleDirection('Forward')}
                         className={clsx(
-                          "segmented-btn",
-                          speed === s && "segmented-btn-active"
+                          "direction-toggle-btn",
+                          direction === 'Forward' && "direction-toggle-btn-active"
                         )}
                       >
-                        {s}
+                        → Forward
                       </button>
+                      <button
+                        onClick={() => toggleDirection('Backward')}
+                        className={clsx(
+                          "direction-toggle-btn",
+                          direction !== 'Forward' && "direction-toggle-btn-reverse"
+                        )}
+                      >
+                        ← Reverse
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Servo Controls */}
+                <div className={clsx(
+                  "card-modern",
+                  theme === 'dark' ? "card-modern-dark" : "card-modern-light"
+                )}>
+                  <h3 className="chart-title opacity-70">
+                    <Sliders size={16} /> Servo Override
+                  </h3>
+                  <div className="grid grid-cols-4 gap-3">
+                    {servos.map(servo => (
+                      <div key={servo.id} className="flex flex-col items-center gap-2">
+                        <div className="h-20 w-full bg-black/10 dark:bg-white/5 rounded-xl relative overflow-hidden">
+                          <div
+                            className="absolute bottom-0 w-full rounded-xl transition-all duration-300"
+                            style={{
+                              height: `${(servo.angle / 180) * 100}%`,
+                              background: 'linear-gradient(to top, var(--primary-500), var(--primary-400))'
+                            }}
+                          />
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="180"
+                          value={servo.angle}
+                          onChange={(e) => setServo(servo.id, parseInt(e.target.value))}
+                          className="slider-modern w-full"
+                        />
+                        <span className="stat-label">S{servo.id} • {servo.angle}°</span>
+                      </div>
                     ))}
                   </div>
+                </div>
 
-                  {/* Direction Toggle */}
-                  <div className="direction-toggle">
-                    <button
-                      onClick={() => toggleDirection('Forward')}
-                      className={clsx(
-                        "direction-toggle-btn",
-                        direction === 'Forward' && "direction-toggle-btn-active"
-                      )}
-                    >
-                      → Forward
-                    </button>
-                    <button
-                      onClick={() => toggleDirection('Backward')}
-                      className={clsx(
-                        "direction-toggle-btn",
-                        direction !== 'Forward' && "direction-toggle-btn-reverse"
-                      )}
-                    >
-                      ← Reverse
-                    </button>
+                {/* Event Log with Search */}
+                <div className={clsx(
+                  "card-modern md:col-span-2",
+                  theme === 'dark' ? "card-modern-dark" : "card-modern-light"
+                )}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="chart-title opacity-70">
+                      <div className="live-dot mr-2" />
+                      <Database size={16} /> Recent Detections
+                    </h3>
+                    <input
+                      type="text"
+                      placeholder="Search logs..."
+                      value={logSearchQuery}
+                      onChange={(e) => setLogSearchQuery(e.target.value)}
+                      className="px-4 py-2 text-sm rounded-xl bg-black/10 dark:bg-white/5 border border-white/10 focus:outline-none focus:border-teal-500 transition-all w-48"
+                      autoFocus={displayMode === 'kiosk'}
+                    />
+                  </div>
+                  <div className="h-56 overflow-y-auto">
+                    <table className="table-modern">
+                      <thead>
+                        <tr>
+                          <th>Time</th>
+                          <th>Class</th>
+                          <th>Category</th>
+                          <th className="text-right">Conf</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredEventLog.length > 0 ? (
+                          filteredEventLog.slice().reverse().map((event) => (
+                            <tr key={event.id}>
+                              <td className="font-mono text-xs opacity-60">{event.time}</td>
+                              <td className="font-semibold">{event.rawClass}</td>
+                              <td>
+                                <span className={clsx("badge-category",
+                                  event.category === 'Bio-medical' && "badge-bio",
+                                  event.category === 'Hazardous' && "badge-hazard",
+                                  event.category === 'Wet Waste' && "badge-wet",
+                                  event.category === 'Dry Waste' && "badge-dry",
+                                  event.category === 'Low Confidence' && "bg-slate-500/15 text-slate-400 border border-slate-500/30"
+                                )}>
+                                  {event.category}
+                                </span>
+                              </td>
+                              <td className="text-right font-mono text-xs opacity-60">{event.confidence}%</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="4" className="py-8 text-center opacity-40 italic">
+                              {logSearchQuery ? 'No matching records' : 'No detections yet'}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
+            )}
+          </div>
 
-              {/* Servo Controls */}
+          {/* RIGHT COLUMN (Metrics, Bins, Quick Actions) */}
+          <div className={clsx(
+            "col-span-12 flex flex-col gap-6",
+            displayMode === 'split' ? "lg:col-span-6" :
+              displayMode === 'kiosk' ? "lg:col-span-3" :
+                "lg:col-span-4"
+          )}>
+
+            {/* Main Power Button & Timer */}
+            <TiltCard className={clsx(
+              "p-6 card-modern-dark transition-all border-white/5"
+            )}>
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="font-display text-xl font-bold">System Control</h2>
+                  <p className="stat-label mt-1">Master Switch</p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsPaused(!isPaused)}
+                    className={clsx(
+                      "w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
+                      isPaused ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30" : "bg-neutral-800 hover:bg-neutral-700"
+                    )}
+                    title={isPaused ? "Resume" : "Pause"}
+                  >
+                    {isPaused ? <Play size={28} className="text-white fill-current" /> : <Pause size={28} className="text-white" />}
+                  </button>
+                  <button
+                    onClick={togglePower}
+                    className={clsx(
+                      "w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
+                      data.isOn ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/30" : "bg-teal-500 hover:bg-teal-600 shadow-teal-500/30"
+                    )}
+                  >
+                    <Power size={28} className="text-white" />
+                  </button>
+                </div>
+              </div>
+
               <div className={clsx(
-                "card-modern",
-                theme === 'dark' ? "card-modern-dark" : "card-modern-light"
+                "rounded-xl p-4 flex items-center justify-between",
+                theme === 'dark' ? "bg-white/5" : "bg-slate-100"
               )}>
-                <h3 className="chart-title opacity-70">
-                  <Sliders size={16} /> Servo Override
-                </h3>
-                <div className="grid grid-cols-4 gap-3">
-                  {servos.map(servo => (
-                    <div key={servo.id} className="flex flex-col items-center gap-2">
-                      <div className="h-20 w-full bg-black/10 dark:bg-white/5 rounded-xl relative overflow-hidden">
+                <div className="flex items-center gap-3">
+                  <Clock size={18} className={isPaused ? "text-amber-400" : "text-teal-400"} />
+                  <div>
+                    <div className="stat-label">Session Time</div>
+                    <div className={clsx("stat-number-sm", isPaused && "text-amber-400")}>
+                      {isPaused ? "PAUSED" : sessionDuration}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TiltCard>
+
+            {/* Key Metrics Grid */}
+            <div className="grid grid-cols-2 gap-4 relative">
+              {/* Category Flash Popup */}
+              <AnimatePresence>
+                {categoryFlash && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.8 }}
+                    className={clsx(
+                      "absolute -top-12 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full font-bold text-white shadow-lg",
+                      categoryFlash.category === 'Bio-medical' && "bg-emerald-500",
+                      categoryFlash.category === 'Hazardous' && "bg-rose-500",
+                      categoryFlash.category === 'Wet Waste' && "bg-cyan-500",
+                      categoryFlash.category === 'Dry Waste' && "bg-amber-500"
+                    )}
+                  >
+                    +1 {categoryFlash.category}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Total Items Card */}
+              {/* Total Items Card */}
+              <TiltCard
+                className={clsx(
+                  "cursor-pointer hover-lift p-5",
+                  theme === 'dark' ? "card-modern-dark" : "card-modern-light"
+                )}
+              >
+                <div onClick={() => setShowHistoryModal(true)}>
+                  <div className="stat-label mb-2 flex items-center justify-between">
+                    Total <Database size={12} className="opacity-50" />
+                  </div>
+                  <AnimatedCounter value={processingCounts.total} className="stat-number gradient-text-primary" />
+                </div>
+              </TiltCard>
+
+              {/* Environmental Impact Widget (Phase 2) - Replaces Revenue for now or fits below */}
+              <TiltCard className={clsx(
+                "p-5 flex flex-col justify-between",
+                theme === 'dark' ? "bg-emerald-950/20 border-emerald-500/20" : "bg-emerald-50 border-emerald-200"
+              )}>
+                <div className="flex justify-between items-start">
+                  <div className="stat-label text-emerald-600 dark:text-emerald-400">Impact</div>
+                  <Leaf size={14} className="text-emerald-500" />
+                </div>
+                <div>
+                  <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                    {ecoMetrics.treesEquivalent} <span className="text-[10px] font-normal opacity-70">trees</span>
+                  </div>
+                  <div className="text-[10px] opacity-60 mt-0.5">
+                    {ecoMetrics.co2Offset} kg CO2 saved
+                  </div>
+                </div>
+              </TiltCard>
+
+              {/* Revenue Card - Featured */}
+              <div className="card-modern card-modern-dark glow-primary">
+                <div className="stat-label mb-2 opacity-70">Revenue</div>
+                <div className="stat-number text-teal-400">${(processingCounts.total * 0.05).toFixed(2)}</div>
+                <TrendingUp className="absolute bottom-3 right-3 text-white/5" size={48} />
+              </div>
+            </div>
+
+            {/* Category Cards with Icons - Staggered Entrance */}
+            <div className="grid grid-cols-4 gap-3 stagger-enter">
+              {/* Bio Card */}
+              <div className={clsx(
+                "category-card category-card-bio card-animate",
+                theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
+              )}>
+                <div className="category-icon category-icon-bio">
+                  <Recycle size={18} className="text-white" />
+                </div>
+                <div className="stat-label text-emerald-400">Bio-medical</div>
+                <AnimatedCounter value={processingCounts.bio} className="stat-number-sm text-emerald-500" />
+              </div>
+
+              {/* Hazard Card */}
+              <div className={clsx(
+                "category-card category-card-hazard card-animate",
+                theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
+              )}>
+                <div className="category-icon category-icon-hazard">
+                  <AlertTriangle size={18} className="text-white" />
+                </div>
+                <div className="stat-label text-rose-400">Hazardous</div>
+                <AnimatedCounter value={processingCounts.hazard} className="stat-number-sm text-rose-500" />
+              </div>
+
+              {/* Wet Card */}
+              <div className={clsx(
+                "category-card category-card-wet card-animate",
+                theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
+              )}>
+                <div className="category-icon category-icon-wet">
+                  <Activity size={18} className="text-white" />
+                </div>
+                <div className="stat-label text-cyan-400">Wet Waste</div>
+                <AnimatedCounter value={processingCounts.wet} className="stat-number-sm text-cyan-500" />
+              </div>
+
+              {/* Dry Card */}
+              <div className={clsx(
+                "category-card category-card-dry card-animate",
+                theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
+              )}>
+                <div className="category-icon category-icon-dry">
+                  <Trash2 size={18} className="text-white" />
+                </div>
+                <div className="stat-label text-amber-400">Dry Waste</div>
+                <AnimatedCounter value={processingCounts.dry} className="stat-number-sm text-amber-500" />
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={exportToCSV}
+                className={clsx(
+                  "p-4 rounded-xl border flex flex-col items-center gap-2 hover:scale-[1.02] transition-transform",
+                  theme === 'dark' ? "bg-neutral-900 border-white/10 hover:bg-neutral-800" : "bg-white border-slate-200 hover:bg-slate-50"
+                )}
+              >
+                <Download size={20} className="text-blue-500" />
+                <span className="text-xs font-bold">Export Report</span>
+              </button>
+              <button
+                onClick={enableNotifications}
+                className={clsx(
+                  "p-4 rounded-xl border flex flex-col items-center gap-2 hover:scale-[1.02] transition-transform",
+                  notificationEnabled
+                    ? (theme === 'dark' ? "bg-yellow-900/20 border-yellow-700" : "bg-yellow-50 border-yellow-200")
+                    : (theme === 'dark' ? "bg-neutral-900 border-white/10" : "bg-white border-slate-200")
+                )}
+              >
+                {notificationEnabled ? <BellRing size={20} className="text-yellow-500" /> : <BellOff size={20} className="text-slate-500" />}
+                <span className="text-xs font-bold">{notificationEnabled ? "Alerts On" : "Enable Alerts"}</span>
+              </button>
+            </div>
+
+            {/* ===== ENHANCED CHARTS (Phase 1 & 3) ===== */}
+            <ChartCard
+              title="Category Trends"
+              icon={TrendingUp}
+              className={clsx(
+                "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light",
+                "p-6 flex flex-col",
+                compareMode && "compare-active"
+              )}
+              onExpand={() => setExpandedChart('trends')}
+              actions={
+                <div className="flex items-center gap-2">
+                  <CompareToggle isActive={compareMode} onToggle={() => setCompareMode(!compareMode)} />
+                  <TimeRangeSelector value={chartTimeRange} onChange={setChartTimeRange} />
+                </div>
+              }
+            >
+              {compareMode ? (
+                <CompareChart
+                  currentData={timeSeriesData.map(d => ({ ...d, total: d.bio + d.hazard + d.wet + d.dry }))}
+                  previousData={timeSeriesData.slice(0, -10).map(d => ({ ...d, total: d.bio + d.hazard + d.wet + d.dry }))}
+                  height={200}
+                />
+              ) : (
+                <EnhancedAreaChart
+                  data={timeSeriesData}
+                  timeRange={chartTimeRange}
+                  height={200}
+                  showLegend={true}
+                />
+              )}
+            </ChartCard>
+
+            {/* Expanded Chart Modal */}
+            <ChartModal
+              isOpen={expandedChart === 'trends'}
+              onClose={() => setExpandedChart(null)}
+              title="Category Trends - Detailed View"
+            >
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <TimeRangeSelector value={chartTimeRange} onChange={setChartTimeRange} />
+                </div>
+                <EnhancedAreaChart
+                  data={timeSeriesData}
+                  timeRange={chartTimeRange}
+                  height={400}
+                  showLegend={true}
+                />
+              </div>
+            </ChartModal>
+
+            {/* Bin Status Stack */}
+            <TiltCard className={clsx("flex-1 p-6 flex flex-col", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}>
+              <h3 className="text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2 opacity-70">
+                <Database size={16} /> Bin Capacities & TTF
+              </h3>
+              <div className="flex-1 flex flex-col justify-between gap-4">
+                {data.bins?.map((bin) => {
+                  const prediction = predictedFillTimes[bin.id];
+                  return (
+                    <div key={bin.id} className="space-y-2 group p-2 rounded-lg -m-2 transition-all hover:bg-white/5">
+                      <div className="flex justify-between text-xs font-bold mb-1">
+                        <span className="capitalize flex items-center gap-2">
+                          {bin.name}
+                          {prediction !== '---' && (
+                            <span className={clsx(
+                              "text-[9px] px-1.5 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider",
+                              bin.volume > 90 ? "bg-rose-500/20 text-rose-400" :
+                                bin.volume > 70 ? "bg-amber-500/20 text-amber-400" : "bg-blue-500/10 text-blue-400"
+                            )}>
+                              FULL IN: {prediction}
+                            </span>
+                          )}
+                        </span>
+                        <span className={clsx(
+                          "font-mono",
+                          bin.volume >= 90 ? "text-red-500" :
+                            bin.volume >= 75 ? "text-orange-500" :
+                              bin.volume >= 50 ? "text-yellow-500" : "text-green-500"
+                        )}>
+                          {bin.volume.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="h-2 w-full bg-black/30 rounded-full overflow-hidden shadow-inner relative">
+                        {/* Background Striping Pattern */}
+                        <div className="absolute inset-0 opacity-10 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%,transparent_100%)] bg-[length:10px_10px]" />
                         <div
-                          className="absolute bottom-0 w-full rounded-xl transition-all duration-300"
-                          style={{
-                            height: `${(servo.angle / 180) * 100}%`,
-                            background: 'linear-gradient(to top, var(--primary-500), var(--primary-400))'
-                          }}
+                          className={clsx(
+                            "h-full rounded-full transition-all duration-1000 bg-gradient-to-r relative",
+                            getBinGradient(bin.volume)
+                          )}
+                          style={{ width: `${Math.min(bin.volume, 100)}%` }}
+                        >
+                          {/* Shimmer Effect on Bar */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </TiltCard>
+
+          </div>
+
+          {/* BOTTOM SECTION: ANALYTICS (Full Width) */}
+          <div className="col-span-12 mt-4 chart-animate">
+            <div className="flex items-center gap-4 mb-6">
+              <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
+                <BarChart2 className="text-blue-500" /> Real-Time Analytics
+              </h2>
+              <div className="h-px flex-1 bg-gradient-to-r from-slate-700 to-transparent"></div>
+            </div>
+
+            {/* SVG Gradient Definitions for Charts */}
+            <svg width="0" height="0" style={{ position: 'absolute' }}>
+              <defs>
+                <linearGradient id="chartGradientBio" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.6} />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.1} />
+                </linearGradient>
+                <linearGradient id="chartGradientHazard" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#ef4444" stopOpacity={0.6} />
+                  <stop offset="100%" stopColor="#ef4444" stopOpacity={0.1} />
+                </linearGradient>
+                <linearGradient id="chartGradientWet" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.6} />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1} />
+                </linearGradient>
+                <linearGradient id="chartGradientDry" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.6} />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.1} />
+                </linearGradient>
+                <linearGradient id="chartGradientPurple" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.6} />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.1} />
+                </linearGradient>
+                <linearGradient id="chartGradientIndigo" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0.3} />
+                </linearGradient>
+              </defs>
+            </svg>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* 1. COMPOSITION RADAR (Updated Phase 4) */}
+              <ChartCard
+                title="Waste Composition"
+                className={clsx(
+                  "cursor-pointer hover:border-teal-500/30 transition-all card-modern h-[320px]",
+                  theme === 'dark' ? "card-modern-dark" : "card-modern-light"
+                )}
+                onExpand={() => setExpandedGraph({
+                  title: 'Detailed Composition Analysis',
+                  chart: (
+                    <div className="h-full flex flex-col">
+                      <TimelineScrubber
+                        value={chartHistoryIndex}
+                        onChange={setChartHistoryIndex}
+                        maxHistory={MAX_HISTORY_CYCLES}
+                        snapshots={chartDataHistory}
+                        label="Time Travel"
+                      />
+                      <div className="flex-1 mt-6">
+                        <PremiumRadarChart
+                          data={(() => {
+                            const d = getHistoricalData('processingCounts') || processingCounts;
+                            const total = d.bio + d.hazard + d.wet + d.dry || 1;
+                            return [
+                              { subject: 'Bio', A: (d.bio / total) * 100, fullMark: 100 },
+                              { subject: 'Haz', A: (d.hazard / total) * 100, fullMark: 100 },
+                              { subject: 'Wet', A: (d.wet / total) * 100, fullMark: 100 },
+                              { subject: 'Dry', A: (d.dry / total) * 100, fullMark: 100 }
+                            ];
+                          })()}
+                          height="100%"
                         />
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="180"
-                        value={servo.angle}
-                        onChange={(e) => setServo(servo.id, parseInt(e.target.value))}
-                        className="slider-modern w-full"
-                      />
-                      <span className="stat-label">S{servo.id} • {servo.angle}°</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Event Log with Search */}
-              <div className={clsx(
-                "card-modern md:col-span-2",
-                theme === 'dark' ? "card-modern-dark" : "card-modern-light"
-              )}>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="chart-title opacity-70">
-                    <div className="live-dot mr-2" />
-                    <Database size={16} /> Recent Detections
-                  </h3>
-                  <input
-                    type="text"
-                    placeholder="Search logs..."
-                    value={logSearchQuery}
-                    onChange={(e) => setLogSearchQuery(e.target.value)}
-                    className="px-4 py-2 text-sm rounded-xl bg-black/10 dark:bg-white/5 border border-white/10 focus:outline-none focus:border-teal-500 transition-all w-48"
-                    autoFocus={displayMode === 'kiosk'}
+                  )
+                })}
+              >
+                <div className="h-full pb-6">
+                  <PremiumRadarChart
+                    data={[
+                      { subject: 'Bio', A: processingCounts.bio, fullMark: 150 },
+                      { subject: 'Haz', A: processingCounts.hazard, fullMark: 150 },
+                      { subject: 'Wet', A: processingCounts.wet, fullMark: 150 },
+                      { subject: 'Dry', A: processingCounts.dry, fullMark: 150 }
+                    ]}
+                    height="100%"
                   />
                 </div>
-                <div className="h-56 overflow-y-auto">
-                  <table className="table-modern">
-                    <thead>
-                      <tr>
-                        <th>Time</th>
-                        <th>Class</th>
-                        <th>Category</th>
-                        <th className="text-right">Conf</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredEventLog.length > 0 ? (
-                        filteredEventLog.slice().reverse().map((event) => (
-                          <tr key={event.id}>
-                            <td className="font-mono text-xs opacity-60">{event.time}</td>
-                            <td className="font-semibold">{event.rawClass}</td>
-                            <td>
-                              <span className={clsx("badge-category",
-                                event.category === 'Bio-medical' && "badge-bio",
-                                event.category === 'Hazardous' && "badge-hazard",
-                                event.category === 'Wet Waste' && "badge-wet",
-                                event.category === 'Dry Waste' && "badge-dry",
-                                event.category === 'Low Confidence' && "bg-slate-500/15 text-slate-400 border border-slate-500/30"
-                              )}>
-                                {event.category}
-                              </span>
-                            </td>
-                            <td className="text-right font-mono text-xs opacity-60">{event.confidence}%</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="4" className="py-8 text-center opacity-40 italic">
-                            {logSearchQuery ? 'No matching records' : 'No detections yet'}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+              </ChartCard>
 
-        {/* RIGHT COLUMN (Metrics, Bins, Quick Actions) */}
-        <div className={clsx(
-          "col-span-12 flex flex-col gap-6",
-          displayMode === 'split' ? "lg:col-span-6" :
-            displayMode === 'kiosk' ? "lg:col-span-3" :
-              "lg:col-span-4"
-        )}>
-
-          {/* Main Power Button & Timer */}
-          <TiltCard className={clsx(
-            "p-6 card-modern-dark transition-all border-white/5"
-          )}>
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="font-display text-xl font-bold">System Control</h2>
-                <p className="stat-label mt-1">Master Switch</p>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setIsPaused(!isPaused)}
-                  className={clsx(
-                    "w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
-                    isPaused ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30" : "bg-neutral-800 hover:bg-neutral-700"
-                  )}
-                  title={isPaused ? "Resume" : "Pause"}
-                >
-                  {isPaused ? <Play size={28} className="text-white fill-current" /> : <Pause size={28} className="text-white" />}
-                </button>
-                <button
-                  onClick={togglePower}
-                  className={clsx(
-                    "w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
-                    data.isOn ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/30" : "bg-teal-500 hover:bg-teal-600 shadow-teal-500/30"
-                  )}
-                >
-                  <Power size={28} className="text-white" />
-                </button>
-              </div>
-            </div>
-
-            <div className={clsx(
-              "rounded-xl p-4 flex items-center justify-between",
-              theme === 'dark' ? "bg-white/5" : "bg-slate-100"
-            )}>
-              <div className="flex items-center gap-3">
-                <Clock size={18} className={isPaused ? "text-amber-400" : "text-teal-400"} />
-                <div>
-                  <div className="stat-label">Session Time</div>
-                  <div className={clsx("stat-number-sm", isPaused && "text-amber-400")}>
-                    {isPaused ? "PAUSED" : sessionDuration}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </TiltCard>
-
-          {/* Key Metrics Grid */}
-          <div className="grid grid-cols-2 gap-4 relative">
-            {/* Category Flash Popup */}
-            <AnimatePresence>
-              {categoryFlash && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -20, scale: 0.8 }}
-                  className={clsx(
-                    "absolute -top-12 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full font-bold text-white shadow-lg",
-                    categoryFlash.category === 'Bio-medical' && "bg-emerald-500",
-                    categoryFlash.category === 'Hazardous' && "bg-rose-500",
-                    categoryFlash.category === 'Wet Waste' && "bg-cyan-500",
-                    categoryFlash.category === 'Dry Waste' && "bg-amber-500"
-                  )}
-                >
-                  +1 {categoryFlash.category}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Total Items Card */}
-            {/* Total Items Card */}
-            <TiltCard
-              className={clsx(
-                "cursor-pointer hover-lift p-5",
-                theme === 'dark' ? "card-modern-dark" : "card-modern-light"
-              )}
-            >
-              <div onClick={() => setShowHistoryModal(true)}>
-                <div className="stat-label mb-2 flex items-center justify-between">
-                  Total <Database size={12} className="opacity-50" />
-                </div>
-                <AnimatedCounter value={processingCounts.total} className="stat-number gradient-text-primary" />
-              </div>
-            </TiltCard>
-
-            {/* Environmental Impact Widget (Phase 2) - Replaces Revenue for now or fits below */}
-            <TiltCard className={clsx(
-              "p-5 flex flex-col justify-between",
-              theme === 'dark' ? "bg-emerald-950/20 border-emerald-500/20" : "bg-emerald-50 border-emerald-200"
-            )}>
-              <div className="flex justify-between items-start">
-                <div className="stat-label text-emerald-600 dark:text-emerald-400">Impact</div>
-                <Leaf size={14} className="text-emerald-500" />
-              </div>
-              <div>
-                <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
-                  {ecoMetrics.treesEquivalent} <span className="text-[10px] font-normal opacity-70">trees</span>
-                </div>
-                <div className="text-[10px] opacity-60 mt-0.5">
-                  {ecoMetrics.co2Offset} kg CO2 saved
-                </div>
-              </div>
-            </TiltCard>
-
-            {/* Revenue Card - Featured */}
-            <div className="card-modern card-modern-dark glow-primary">
-              <div className="stat-label mb-2 opacity-70">Revenue</div>
-              <div className="stat-number text-teal-400">${(processingCounts.total * 0.05).toFixed(2)}</div>
-              <TrendingUp className="absolute bottom-3 right-3 text-white/5" size={48} />
-            </div>
-          </div>
-
-          {/* Category Cards with Icons - Staggered Entrance */}
-          <div className="grid grid-cols-4 gap-3 stagger-enter">
-            {/* Bio Card */}
-            <div className={clsx(
-              "category-card category-card-bio card-animate",
-              theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
-            )}>
-              <div className="category-icon category-icon-bio">
-                <Recycle size={18} className="text-white" />
-              </div>
-              <div className="stat-label text-emerald-400">Bio-medical</div>
-              <AnimatedCounter value={processingCounts.bio} className="stat-number-sm text-emerald-500" />
-            </div>
-
-            {/* Hazard Card */}
-            <div className={clsx(
-              "category-card category-card-hazard card-animate",
-              theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
-            )}>
-              <div className="category-icon category-icon-hazard">
-                <AlertTriangle size={18} className="text-white" />
-              </div>
-              <div className="stat-label text-rose-400">Hazardous</div>
-              <AnimatedCounter value={processingCounts.hazard} className="stat-number-sm text-rose-500" />
-            </div>
-
-            {/* Wet Card */}
-            <div className={clsx(
-              "category-card category-card-wet card-animate",
-              theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
-            )}>
-              <div className="category-icon category-icon-wet">
-                <Activity size={18} className="text-white" />
-              </div>
-              <div className="stat-label text-cyan-400">Wet Waste</div>
-              <AnimatedCounter value={processingCounts.wet} className="stat-number-sm text-cyan-500" />
-            </div>
-
-            {/* Dry Card */}
-            <div className={clsx(
-              "category-card category-card-dry card-animate",
-              theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
-            )}>
-              <div className="category-icon category-icon-dry">
-                <Trash2 size={18} className="text-white" />
-              </div>
-              <div className="stat-label text-amber-400">Dry Waste</div>
-              <AnimatedCounter value={processingCounts.dry} className="stat-number-sm text-amber-500" />
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={exportToCSV}
-              className={clsx(
-                "p-4 rounded-xl border flex flex-col items-center gap-2 hover:scale-[1.02] transition-transform",
-                theme === 'dark' ? "bg-neutral-900 border-white/10 hover:bg-neutral-800" : "bg-white border-slate-200 hover:bg-slate-50"
-              )}
-            >
-              <Download size={20} className="text-blue-500" />
-              <span className="text-xs font-bold">Export Report</span>
-            </button>
-            <button
-              onClick={enableNotifications}
-              className={clsx(
-                "p-4 rounded-xl border flex flex-col items-center gap-2 hover:scale-[1.02] transition-transform",
-                notificationEnabled
-                  ? (theme === 'dark' ? "bg-yellow-900/20 border-yellow-700" : "bg-yellow-50 border-yellow-200")
-                  : (theme === 'dark' ? "bg-neutral-900 border-white/10" : "bg-white border-slate-200")
-              )}
-            >
-              {notificationEnabled ? <BellRing size={20} className="text-yellow-500" /> : <BellOff size={20} className="text-slate-500" />}
-              <span className="text-xs font-bold">{notificationEnabled ? "Alerts On" : "Enable Alerts"}</span>
-            </button>
-          </div>
-
-          {/* ===== ENHANCED CHARTS (Phase 1 & 3) ===== */}
-          <ChartCard
-            title="Category Trends"
-            icon={TrendingUp}
-            className={clsx(
-              "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light",
-              "p-6 flex flex-col",
-              compareMode && "compare-active"
-            )}
-            onExpand={() => setExpandedChart('trends')}
-            actions={
-              <div className="flex items-center gap-2">
-                <CompareToggle isActive={compareMode} onToggle={() => setCompareMode(!compareMode)} />
-                <TimeRangeSelector value={chartTimeRange} onChange={setChartTimeRange} />
-              </div>
-            }
-          >
-            {compareMode ? (
-              <CompareChart
-                currentData={timeSeriesData.map(d => ({ ...d, total: d.bio + d.hazard + d.wet + d.dry }))}
-                previousData={timeSeriesData.slice(0, -10).map(d => ({ ...d, total: d.bio + d.hazard + d.wet + d.dry }))}
-                height={200}
-              />
-            ) : (
-              <EnhancedAreaChart
-                data={timeSeriesData}
-                timeRange={chartTimeRange}
-                height={200}
-                showLegend={true}
-              />
-            )}
-          </ChartCard>
-
-          {/* Expanded Chart Modal */}
-          <ChartModal
-            isOpen={expandedChart === 'trends'}
-            onClose={() => setExpandedChart(null)}
-            title="Category Trends - Detailed View"
-          >
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                <TimeRangeSelector value={chartTimeRange} onChange={setChartTimeRange} />
-              </div>
-              <EnhancedAreaChart
-                data={timeSeriesData}
-                timeRange={chartTimeRange}
-                height={400}
-                showLegend={true}
-              />
-            </div>
-          </ChartModal>
-
-          {/* Bin Status Stack */}
-          <TiltCard className={clsx("flex-1 p-6 flex flex-col", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}>
-            <h3 className="text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2 opacity-70">
-              <Database size={16} /> Bin Capacities & TTF
-            </h3>
-            <div className="flex-1 flex flex-col justify-between gap-4">
-              {data.bins?.map((bin) => {
-                const prediction = predictedFillTimes[bin.id];
-                return (
-                  <div key={bin.id} className="space-y-2 group p-2 rounded-lg -m-2 transition-all hover:bg-white/5">
-                    <div className="flex justify-between text-xs font-bold mb-1">
-                      <span className="capitalize flex items-center gap-2">
-                        {bin.name}
-                        {prediction !== '---' && (
-                          <span className={clsx(
-                            "text-[9px] px-1.5 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider",
-                            bin.volume > 90 ? "bg-rose-500/20 text-rose-400" :
-                              bin.volume > 70 ? "bg-amber-500/20 text-amber-400" : "bg-blue-500/10 text-blue-400"
-                          )}>
-                            FULL IN: {prediction}
-                          </span>
-                        )}
-                      </span>
-                      <span className={clsx(
-                        "font-mono",
-                        bin.volume >= 90 ? "text-red-500" :
-                          bin.volume >= 75 ? "text-orange-500" :
-                            bin.volume >= 50 ? "text-yellow-500" : "text-green-500"
-                      )}>
-                        {bin.volume.toFixed(1)}%
-                      </span>
+              {/* 2. THROUGHPUT VELOCITY (Area Chart) */}
+              <ChartCard
+                title="Throughput Velocity"
+                className="cursor-pointer hover:border-purple-500/30 transition-all card-modern card-modern-dark h-[320px]"
+                onExpand={() => setExpandedGraph({
+                  title: 'Throughput Trends',
+                  chart: (
+                    <div className="h-full flex flex-col">
+                      <div className="flex justify-end mb-4"><TimeRangeSelector value="all" onChange={() => { }} /></div>
+                      <EnhancedAreaChart data={chartDataHistory} height={400} />
                     </div>
-                    <div className="h-2 w-full bg-black/30 rounded-full overflow-hidden shadow-inner relative">
-                      {/* Background Striping Pattern */}
-                      <div className="absolute inset-0 opacity-10 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%,transparent_100%)] bg-[length:10px_10px]" />
-                      <div
-                        className={clsx(
-                          "h-full rounded-full transition-all duration-1000 bg-gradient-to-r relative",
-                          getBinGradient(bin.volume)
-                        )}
-                        style={{ width: `${Math.min(bin.volume, 100)}%` }}
-                      >
-                        {/* Shimmer Effect on Bar */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                  )
+                })}
+              >
+                <div className="h-full pb-2">
+                  <EnhancedAreaChart data={chartDataHistory.slice(-10)} height="100%" showLegend={false} />
+                </div>
+              </ChartCard>
+
+              {/* 3. HISTORICAL COMPARISON (Stacked Bar) */}
+              <ChartCard
+                title="Session vs Average"
+                className="cursor-pointer hover:border-amber-500/30 transition-all card-modern card-modern-dark h-[320px]"
+                onExpand={() => setExpandedGraph({
+                  title: 'Historical Comparison',
+                  chart: (
+                    <CompareChart
+                      currentData={chartDataHistory}
+                      previousData={chartDataHistory.map(d => ({ ...d, total: d.total * 0.8 }))} // Mock previous
+                      height={400}
+                    />
+                  )
+                })}
+              >
+                <div className="h-full pb-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={[
+                      { name: 'Avg', bio: 40, hazard: 10, wet: 60, dry: 30 }, // Mock Baseline
+                      { name: 'Now', bio: processingCounts.bio, hazard: processingCounts.hazard, wet: processingCounts.wet, dry: processingCounts.dry }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                      <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<GlassTooltip />} />
+                      <Bar dataKey="bio" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} />
+                      <Bar dataKey="wet" stackId="a" fill="#3b82f6" />
+                      <Bar dataKey="dry" stackId="a" fill="#f59e0b" />
+                      <Bar dataKey="hazard" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </ChartCard>
             </div>
-          </TiltCard>
 
-        </div>
-
-        {/* BOTTOM SECTION: ANALYTICS (Full Width) */}
-        <div className="col-span-12 mt-4 chart-animate">
-          <div className="flex items-center gap-4 mb-6">
-            <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
-              <BarChart2 className="text-blue-500" /> Real-Time Analytics
-            </h2>
-            <div className="h-px flex-1 bg-gradient-to-r from-slate-700 to-transparent"></div>
-          </div>
-
-          {/* SVG Gradient Definitions for Charts */}
-          <svg width="0" height="0" style={{ position: 'absolute' }}>
-            <defs>
-              <linearGradient id="chartGradientBio" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={0.6} />
-                <stop offset="100%" stopColor="#10b981" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="chartGradientHazard" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ef4444" stopOpacity={0.6} />
-                <stop offset="100%" stopColor="#ef4444" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="chartGradientWet" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.6} />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="chartGradientDry" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.6} />
-                <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="chartGradientPurple" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.6} />
-                <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="chartGradientIndigo" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8} />
-                <stop offset="100%" stopColor="#6366f1" stopOpacity={0.3} />
-              </linearGradient>
-            </defs>
-          </svg>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 1. COMPOSITION RADAR (Updated Phase 4) */}
-            <ChartCard
-              title="Waste Composition"
-              className={clsx("h-64", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
-              className="cursor-pointer hover:border-teal-500/30 transition-all card-modern card-modern-dark h-[320px]"
-              onExpand={() => setExpandedGraph({
-                title: 'Detailed Composition Analysis',
-                chart: (
+            {/* 4. Area Chart (Span 2) */}
+            <div
+              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
+              onClick={() => setExpandedGraph({
+                title: 'Cumulative Processing', chart: (
                   <div className="h-full flex flex-col">
                     <TimelineScrubber
                       value={chartHistoryIndex}
                       onChange={setChartHistoryIndex}
                       maxHistory={MAX_HISTORY_CYCLES}
                       snapshots={chartDataHistory}
-                      label="Time Travel"
+                      label="Browse History"
                     />
-                    <div className="flex-1 mt-6">
-                      <PremiumRadarChart
-                        data={(() => {
-                          const d = getHistoricalData('processingCounts') || processingCounts;
-                          const total = d.bio + d.hazard + d.wet + d.dry || 1;
-                          return [
-                            { subject: 'Bio', A: (d.bio / total) * 100, fullMark: 100 },
-                            { subject: 'Haz', A: (d.hazard / total) * 100, fullMark: 100 },
-                            { subject: 'Wet', A: (d.wet / total) * 100, fullMark: 100 },
-                            { subject: 'Dry', A: (d.dry / total) * 100, fullMark: 100 }
-                          ];
-                        })()}
-                        height="100%"
-                      />
+                    <div className="flex-1 min-h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={getHistoricalData('timeSeriesData') || timeSeriesData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                          <XAxis dataKey="time" tick={{ fill: '#64748b' }} />
+                          <YAxis tick={{ fill: '#64748b' }} />
+                          <Tooltip content={<GlassTooltip />} />
+                          <Legend />
+                          <Area type="monotone" dataKey="bio" stackId="1" fill="url(#chartGradientBio)" stroke="#10b981" strokeWidth={2} />
+                          <Area type="monotone" dataKey="hazard" stackId="1" fill="url(#chartGradientHazard)" stroke="#ef4444" strokeWidth={2} />
+                          <Area type="monotone" dataKey="wet" stackId="1" fill="url(#chartGradientWet)" stroke="#3b82f6" strokeWidth={2} />
+                          <Area type="monotone" dataKey="dry" stackId="1" fill="url(#chartGradientDry)" stroke="#f59e0b" strokeWidth={2} />
+                        </AreaChart>
+                      </ResponsiveContainer>
                     </div>
                   </div>
                 )
               })}
             >
-              <div className="h-full pb-6">
-                <PremiumRadarChart
-                  data={[
-                    { subject: 'Bio', A: processingCounts.bio, fullMark: 150 },
-                    { subject: 'Haz', A: processingCounts.hazard, fullMark: 150 },
-                    { subject: 'Wet', A: processingCounts.wet, fullMark: 150 },
-                    { subject: 'Dry', A: processingCounts.dry, fullMark: 150 }
-                  ]}
-                  height="100%"
-                />
-              </div>
-            </ChartCard>
+              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">Cumulative Processing</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={timeSeriesData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                  <XAxis dataKey="time" fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
+                  <YAxis fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
+                  <Tooltip content={<GlassTooltip />} />
+                  <Area type="monotone" dataKey="bio" stackId="1" fill="url(#chartGradientBio)" stroke="#10b981" strokeWidth={2} />
+                  <Area type="monotone" dataKey="hazard" stackId="1" fill="url(#chartGradientHazard)" stroke="#ef4444" strokeWidth={2} />
+                  <Area type="monotone" dataKey="wet" stackId="1" fill="url(#chartGradientWet)" stroke="#3b82f6" strokeWidth={2} />
+                  <Area type="monotone" dataKey="dry" stackId="1" fill="url(#chartGradientDry)" stroke="#f59e0b" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
 
-            {/* 2. THROUGHPUT VELOCITY (Area Chart) */}
-            <ChartCard
-              title="Throughput Velocity"
-              className="cursor-pointer hover:border-purple-500/30 transition-all card-modern card-modern-dark h-[320px]"
-              onExpand={() => setExpandedGraph({
-                title: 'Throughput Trends',
-                chart: (
+            {/* 5. Scatter Chart (AI Confidence) */}
+            <div
+              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
+              onClick={() => setExpandedGraph({
+                title: 'AI Confidence Distribution', chart: (
                   <div className="h-full flex flex-col">
-                    <div className="flex justify-end mb-4"><TimeRangeSelector value="all" onChange={() => { }} /></div>
-                    <EnhancedAreaChart data={chartDataHistory} height={400} />
+                    <TimelineScrubber
+                      value={chartHistoryIndex}
+                      onChange={setChartHistoryIndex}
+                      maxHistory={MAX_HISTORY_CYCLES}
+                      snapshots={chartDataHistory}
+                      label="Browse History"
+                    />
+                    <div className="flex-1 min-h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ScatterChart>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                          <XAxis dataKey="time" name="Time" tick={{ fill: '#64748b' }} />
+                          <YAxis dataKey="confidence" name="Confidence" domain={[0, 100]} tick={{ fill: '#64748b' }} />
+                          <Tooltip content={<GlassTooltip />} />
+                          <Scatter data={getHistoricalData('confidenceHistory') || confidenceHistory} fill="#8b5cf6" />
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 )
               })}
             >
-              <div className="h-full pb-2">
-                <EnhancedAreaChart data={chartDataHistory.slice(-10)} height="100%" showLegend={false} />
-              </div>
-            </ChartCard>
+              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">AI Confidence</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <ScatterChart>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" /><XAxis dataKey="time" fontSize={10} tick={{ fill: '#64748b' }} /><YAxis dataKey="confidence" domain={[0, 100]} fontSize={10} tick={{ fill: '#64748b' }} />
+                  <Tooltip content={<GlassTooltip />} />
+                  <Scatter data={confidenceHistory} fill="#8b5cf6" />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
 
-            {/* 3. HISTORICAL COMPARISON (Stacked Bar) */}
-            <ChartCard
-              title="Session vs Average"
-              className="cursor-pointer hover:border-amber-500/30 transition-all card-modern card-modern-dark h-[320px]"
-              onExpand={() => setExpandedGraph({
-                title: 'Historical Comparison',
-                chart: (
-                  <CompareChart
-                    currentData={chartDataHistory}
-                    previousData={chartDataHistory.map(d => ({ ...d, total: d.total * 0.8 }))} // Mock previous
-                    height={400}
-                  />
+            {/* 6. Detection Heatmap by Hour */}
+            <div
+              className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
+              onClick={() => setExpandedGraph({
+                title: 'Detection Heatmap', chart: (
+                  <div className="h-full flex flex-col">
+                    <TimelineScrubber
+                      value={chartHistoryIndex}
+                      onChange={setChartHistoryIndex}
+                      maxHistory={MAX_HISTORY_CYCLES}
+                      snapshots={chartDataHistory}
+                      label="Browse History"
+                    />
+                    <div className="flex-1 min-h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={(getHistoricalData('detectionHours') || detectionHours).map((count, hour) => ({ hour: `${hour}:00`, count }))}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                          <XAxis dataKey="hour" tick={{ fill: '#64748b' }} />
+                          <YAxis tick={{ fill: '#64748b' }} />
+                          <Tooltip content={<GlassTooltip />} />
+                          <Bar dataKey="count" fill="url(#chartGradientIndigo)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 )
               })}
             >
-              <div className="h-full pb-6">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={[
-                    { name: 'Avg', bio: 40, hazard: 10, wet: 60, dry: 30 }, // Mock Baseline
-                    { name: 'Now', bio: processingCounts.bio, hazard: processingCounts.hazard, wet: processingCounts.wet, dry: processingCounts.dry }
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
-                    <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<GlassTooltip />} />
-                    <Bar dataKey="bio" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} />
-                    <Bar dataKey="wet" stackId="a" fill="#3b82f6" />
-                    <Bar dataKey="dry" stackId="a" fill="#f59e0b" />
-                    <Bar dataKey="hazard" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </ChartCard>
-          </div>
-
-          {/* 4. Area Chart (Span 2) */}
-          <div
-            className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
-            onClick={() => setExpandedGraph({
-              title: 'Cumulative Processing', chart: (
-                <div className="h-full flex flex-col">
-                  <TimelineScrubber
-                    value={chartHistoryIndex}
-                    onChange={setChartHistoryIndex}
-                    maxHistory={MAX_HISTORY_CYCLES}
-                    snapshots={chartDataHistory}
-                    label="Browse History"
-                  />
-                  <div className="flex-1 min-h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={getHistoricalData('timeSeriesData') || timeSeriesData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                        <XAxis dataKey="time" tick={{ fill: '#64748b' }} />
-                        <YAxis tick={{ fill: '#64748b' }} />
-                        <Tooltip content={<GlassTooltip />} />
-                        <Legend />
-                        <Area type="monotone" dataKey="bio" stackId="1" fill="url(#chartGradientBio)" stroke="#10b981" strokeWidth={2} />
-                        <Area type="monotone" dataKey="hazard" stackId="1" fill="url(#chartGradientHazard)" stroke="#ef4444" strokeWidth={2} />
-                        <Area type="monotone" dataKey="wet" stackId="1" fill="url(#chartGradientWet)" stroke="#3b82f6" strokeWidth={2} />
-                        <Area type="monotone" dataKey="dry" stackId="1" fill="url(#chartGradientDry)" stroke="#f59e0b" strokeWidth={2} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )
-            })}
-          >
-            <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">Cumulative Processing</h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={timeSeriesData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                <XAxis dataKey="time" fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
-                <YAxis fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
-                <Tooltip content={<GlassTooltip />} />
-                <Area type="monotone" dataKey="bio" stackId="1" fill="url(#chartGradientBio)" stroke="#10b981" strokeWidth={2} />
-                <Area type="monotone" dataKey="hazard" stackId="1" fill="url(#chartGradientHazard)" stroke="#ef4444" strokeWidth={2} />
-                <Area type="monotone" dataKey="wet" stackId="1" fill="url(#chartGradientWet)" stroke="#3b82f6" strokeWidth={2} />
-                <Area type="monotone" dataKey="dry" stackId="1" fill="url(#chartGradientDry)" stroke="#f59e0b" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* 5. Scatter Chart (AI Confidence) */}
-          <div
-            className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
-            onClick={() => setExpandedGraph({
-              title: 'AI Confidence Distribution', chart: (
-                <div className="h-full flex flex-col">
-                  <TimelineScrubber
-                    value={chartHistoryIndex}
-                    onChange={setChartHistoryIndex}
-                    maxHistory={MAX_HISTORY_CYCLES}
-                    snapshots={chartDataHistory}
-                    label="Browse History"
-                  />
-                  <div className="flex-1 min-h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                        <XAxis dataKey="time" name="Time" tick={{ fill: '#64748b' }} />
-                        <YAxis dataKey="confidence" name="Confidence" domain={[0, 100]} tick={{ fill: '#64748b' }} />
-                        <Tooltip content={<GlassTooltip />} />
-                        <Scatter data={getHistoricalData('confidenceHistory') || confidenceHistory} fill="#8b5cf6" />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )
-            })}
-          >
-            <h3 className="text-sm font-bold opacity-70 mb-4 uppercase">AI Confidence</h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <ScatterChart>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" /><XAxis dataKey="time" fontSize={10} tick={{ fill: '#64748b' }} /><YAxis dataKey="confidence" domain={[0, 100]} fontSize={10} tick={{ fill: '#64748b' }} />
-                <Tooltip content={<GlassTooltip />} />
-                <Scatter data={confidenceHistory} fill="#8b5cf6" />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* 6. Detection Heatmap by Hour */}
-          <div
-            className={clsx("p-6 cursor-pointer hover:border-blue-500/50 transition-all lg:col-span-2", "card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light")}
-            onClick={() => setExpandedGraph({
-              title: 'Detection Heatmap', chart: (
-                <div className="h-full flex flex-col">
-                  <TimelineScrubber
-                    value={chartHistoryIndex}
-                    onChange={setChartHistoryIndex}
-                    maxHistory={MAX_HISTORY_CYCLES}
-                    snapshots={chartDataHistory}
-                    label="Browse History"
-                  />
-                  <div className="flex-1 min-h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={(getHistoricalData('detectionHours') || detectionHours).map((count, hour) => ({ hour: `${hour}:00`, count }))}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                        <XAxis dataKey="hour" tick={{ fill: '#64748b' }} />
-                        <YAxis tick={{ fill: '#64748b' }} />
-                        <Tooltip content={<GlassTooltip />} />
-                        <Bar dataKey="count" fill="url(#chartGradientIndigo)" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )
-            })}
-          >
-            <h3 className="text-sm font-bold opacity-70 mb-4 uppercase flex items-center gap-2">
-              Detection Heatmap
-              <span className="text-xs font-normal opacity-50">(Peak: {detectionHours.indexOf(Math.max(...detectionHours))}:00)</span>
-            </h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={detectionHours.map((count, hour) => ({ hour: `${hour}:00`, count }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                <XAxis dataKey="hour" fontSize={9} interval={2} tick={{ fill: '#64748b' }} axisLine={false} />
-                <YAxis fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
-                <Tooltip content={<GlassTooltip />} />
-                <Bar dataKey="count" fill="url(#chartGradientIndigo)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+              <h3 className="text-sm font-bold opacity-70 mb-4 uppercase flex items-center gap-2">
+                Detection Heatmap
+                <span className="text-xs font-normal opacity-50">(Peak: {detectionHours.indexOf(Math.max(...detectionHours))}:00)</span>
+              </h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={detectionHours.map((count, hour) => ({ hour: `${hour}:00`, count }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                  <XAxis dataKey="hour" fontSize={9} interval={2} tick={{ fill: '#64748b' }} axisLine={false} />
+                  <YAxis fontSize={10} tick={{ fill: '#64748b' }} axisLine={false} />
+                  <Tooltip content={<GlassTooltip />} />
+                  <Bar dataKey="count" fill="url(#chartGradientIndigo)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Notifications overlay (if enabled) */}
       {
@@ -2678,7 +2726,7 @@ function App() {
         </div>
       }
 
-    </div >
+    </div>
   );
 }
 
