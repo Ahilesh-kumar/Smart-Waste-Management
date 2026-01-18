@@ -419,49 +419,46 @@ export const TimelineScrubber = ({
     };
 
     return (
-        <div className="relative w-full mt-4 mb-2 p-5 rounded-2xl bg-neutral-900/80 border border-white/10 backdrop-blur-xl overflow-hidden">
-            {/* Animated Background */}
-            <AnimatedBackground />
-
+        <div className="relative w-full mt-4 mb-2 p-6 rounded-2xl card-modern-dark overflow-visible">
             {/* Content */}
             <div className="relative z-10">
                 {/* Header */}
-                <div className="flex items-center justify-between text-sm mb-5">
+                <div className="flex items-center justify-between text-sm mb-6 pr-2">
                     <span className="flex items-center gap-2 text-slate-300">
                         <Clock size={16} className="text-cyan-400" />
-                        <span className="font-semibold">{label}</span>
+                        <span className="font-semibold tracking-wide">{label}</span>
                     </span>
-                    <span className={`font-bold text-base flex items-center gap-2 ${isLive ? 'text-teal-400' : 'text-cyan-400'}`}>
+                    <span className={`font-bold text-base flex items-center gap-2 pr-2 ${isLive ? 'text-teal-400' : 'text-cyan-400'}`}>
                         {isLive ? (
                             <>
-                                <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse shadow-lg shadow-teal-400/60" />
+                                <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse shadow-[0_0_10px_rgba(45,212,191,0.6)]" />
                                 LIVE
                             </>
                         ) : (
-                            <span className="bg-cyan-500/20 px-3 py-1 rounded-full text-sm">{getTimestamp(value)}</span>
+                            <span className="bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full text-sm shadow-lg shadow-cyan-900/20">{getTimestamp(value)}</span>
                         )}
                     </span>
                 </div>
 
                 {/* Slider Container */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-5">
                     {/* Left Arrow */}
                     <button
                         onClick={() => onChange(Math.max(minValue, value - 1))}
                         disabled={value <= minValue || availableSnapshots === 0}
-                        className="p-3 rounded-xl bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 hover:from-neutral-700/80 hover:to-neutral-800/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/10 group"
+                        className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)] disabled:opacity-30 disabled:cursor-not-allowed transition-all group"
                     >
-                        <ChevronLeft size={20} className="text-slate-300 group-hover:text-cyan-400 transition-colors" />
+                        <ChevronLeft size={20} className="text-slate-400 group-hover:text-cyan-300 transition-colors" />
                     </button>
 
                     {/* Slider Track */}
-                    <div className="flex-1 relative py-4">
-                        {/* Track Background */}
-                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-gradient-to-r from-slate-700 via-slate-600 to-slate-700 shadow-inner" />
+                    <div className="flex-1 relative py-4 px-1">
+                        {/* Track Background - Darker Glass Trench */}
+                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-black/40 border border-white/5 shadow-inner" />
 
-                        {/* Progress Fill */}
+                        {/* Progress Fill - Neon Liquid */}
                         <div
-                            className="absolute top-1/2 -translate-y-1/2 h-2 rounded-full bg-gradient-to-r from-cyan-500 via-teal-400 to-teal-500 shadow-lg shadow-teal-500/30"
+                            className="absolute top-1/2 -translate-y-1/2 h-2 rounded-full bg-gradient-to-r from-cyan-600 via-cyan-400 to-teal-400 shadow-[0_0_12px_rgba(6,182,212,0.4)]"
                             style={{
                                 left: 0,
                                 width: availableSnapshots > 0 ? `${((value - minValue) / (0 - minValue)) * 100}%` : '100%'
@@ -481,30 +478,22 @@ export const TimelineScrubber = ({
                                 [&::-webkit-slider-thumb]:w-6
                                 [&::-webkit-slider-thumb]:h-6
                                 [&::-webkit-slider-thumb]:rounded-full
-                                [&::-webkit-slider-thumb]:bg-gradient-to-br
+                                [&::-webkit-slider-thumb]:bg-white
+                                [&::-webkit-slider-thumb]:bg-gradient-to-b
                                 [&::-webkit-slider-thumb]:from-white
-                                [&::-webkit-slider-thumb]:to-slate-200
-                                [&::-webkit-slider-thumb]:shadow-xl
-                                [&::-webkit-slider-thumb]:shadow-black/30
+                                [&::-webkit-slider-thumb]:to-slate-300
+                                [&::-webkit-slider-thumb]:shadow-[0_0_15px_rgba(255,255,255,0.4)]
                                 [&::-webkit-slider-thumb]:border-4
-                                [&::-webkit-slider-thumb]:border-teal-400
+                                [&::-webkit-slider-thumb]:border-cyan-500
                                 [&::-webkit-slider-thumb]:cursor-grab
                                 [&::-webkit-slider-thumb]:active:cursor-grabbing
                                 [&::-webkit-slider-thumb]:transition-all
-                                [&::-webkit-slider-thumb]:duration-150
                                 [&::-webkit-slider-thumb]:hover:scale-110
-                                [&::-webkit-slider-thumb]:hover:border-cyan-400
-                                [&::-webkit-slider-thumb]:active:scale-95
+                                [&::-webkit-slider-thumb]:hover:shadow-[0_0_20px_rgba(6,182,212,0.6)]
                                 [&::-moz-range-thumb]:w-6
                                 [&::-moz-range-thumb]:h-6
-                                [&::-moz-range-thumb]:rounded-full
-                                [&::-moz-range-thumb]:bg-gradient-to-br
-                                [&::-moz-range-thumb]:from-white
-                                [&::-moz-range-thumb]:to-slate-200
                                 [&::-moz-range-thumb]:border-4
-                                [&::-moz-range-thumb]:border-teal-400
-                                [&::-moz-range-thumb]:cursor-grab
-                                [&::-moz-range-track]:bg-transparent"
+                                [&::-moz-range-thumb]:border-cyan-500"
                         />
                     </div>
 
@@ -512,24 +501,24 @@ export const TimelineScrubber = ({
                     <button
                         onClick={() => onChange(Math.min(0, value + 1))}
                         disabled={value >= 0}
-                        className="p-3 rounded-xl bg-gradient-to-br from-neutral-800/80 to-neutral-900/80 hover:from-neutral-700/80 hover:to-neutral-800/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/10 group"
+                        className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)] disabled:opacity-30 disabled:cursor-not-allowed transition-all group"
                     >
-                        <ChevronRight size={20} className="text-slate-300 group-hover:text-cyan-400 transition-colors" />
+                        <ChevronRight size={20} className="text-slate-400 group-hover:text-cyan-300 transition-colors" />
                     </button>
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-between items-center text-xs text-slate-500 mt-4">
-                    <span className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                <div className="flex justify-between items-center text-xs text-slate-500 mt-5 px-1 pr-2">
+                    <span className="flex items-center gap-1.5 font-medium tracking-wide">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
                         Past
                     </span>
-                    <span className="px-3 py-1 rounded-full bg-slate-800/50 text-slate-400 border border-slate-700/50">
-                        {availableSnapshots > 0 ? `${availableSnapshots} snapshots available` : '⏳ Collecting data...'}
+                    <span className="px-3 py-1 rounded-full bg-black/40 text-slate-400 border border-white/5 font-mono text-[10px] uppercase tracking-wider">
+                        {availableSnapshots > 0 ? `${availableSnapshots} SNAPSHOTS` : 'WAITING FOR DATA...'}
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1.5 font-medium tracking-wide text-cyan-200/70">
                         Now
-                        <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
                     </span>
                 </div>
             </div>
