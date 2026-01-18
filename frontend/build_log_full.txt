@@ -1,0 +1,154 @@
+﻿
+> frontend@0.0.0 build
+> vite build
+
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 2799 modules transformed.
+node.exe : 
+[31mΓ£ù[39m Build 
+failed in 1.87s
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Users\Ahilesh 
+Kumar\AppData\ ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: ([31mΓ£   
+ ù[39m Build fai    
+led in 1.87s:Str    
+ing) [], RemoteE    
+xception
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+[31merror during 
+build:
+[31msrc/DashboardGri
+d.jsx (2:21): 
+"WidthProvider" is 
+not exported by "node
+_modules/react-grid-l
+ayout/dist/index.mjs"
+, imported by "src/Da
+shboardGrid.jsx".[31
+m
+file: [36mC:/Users/A
+hilesh 
+Kumar/Downloads/New f
+older/waste-managemen
+t-system/frontend/src
+/DashboardGrid.jsx:2:
+21[31m
+[33m
+1: import React, { 
+useState, useEffect 
+} from 'react';
+2: import { 
+Responsive, 
+WidthProvider } from 
+'react-grid-layout';
+                     
+   ^
+3: import 'react-grid
+-layout/css/styles.cs
+s';
+4: import 'react-resi
+zable/css/styles.css'
+;
+[31m
+    at 
+getRollupError (file:
+///C:/Users/Ahilesh%2
+0Kumar/Downloads/New%
+20folder/waste-manage
+ment-system/frontend/
+node_modules/rollup/d
+ist/es/shared/parseAs
+t.js:401:41)
+    at error (file://
+/C:/Users/Ahilesh%20K
+umar/Downloads/New%20
+folder/waste-manageme
+nt-system/frontend/no
+de_modules/rollup/dis
+t/es/shared/parseAst.
+js:397:42)
+    at Module.error (
+file:///C:/Users/Ahil
+esh%20Kumar/Downloads
+/New%20folder/waste-m
+anagement-system/fron
+tend/node_modules/rol
+lup/dist/es/shared/no
+de-entry.js:17022:16)
+    at 
+Module.traceVariable 
+(file:///C:/Users/Ahi
+lesh%20Kumar/Download
+s/New%20folder/waste-
+management-system/fro
+ntend/node_modules/ro
+llup/dist/es/shared/n
+ode-entry.js:17478:29
+)
+    at ModuleScope.fi
+ndVariable (file:///C
+:/Users/Ahilesh%20Kum
+ar/Downloads/New%20fo
+lder/waste-management
+-system/frontend/node
+_modules/rollup/dist/
+es/shared/node-entry.
+js:15141:39)
+    at 
+Identifier.bind (file
+:///C:/Users/Ahilesh%
+20Kumar/Downloads/New
+%20folder/waste-manag
+ement-system/frontend
+/node_modules/rollup/
+dist/es/shared/node-e
+ntry.js:5462:40)
+    at 
+CallExpression.bind (
+file:///C:/Users/Ahil
+esh%20Kumar/Downloads
+/New%20folder/waste-m
+anagement-system/fron
+tend/node_modules/rol
+lup/dist/es/shared/no
+de-entry.js:2829:23)
+    at 
+CallExpression.bind (
+file:///C:/Users/Ahil
+esh%20Kumar/Downloads
+/New%20folder/waste-m
+anagement-system/fron
+tend/node_modules/rol
+lup/dist/es/shared/no
+de-entry.js:12172:15)
+    at VariableDeclar
+ator.bind (file:///C:
+/Users/Ahilesh%20Kuma
+r/Downloads/New%20fol
+der/waste-management-
+system/frontend/node_
+modules/rollup/dist/e
+s/shared/node-entry.j
+s:2829:23)
+    at VariableDeclar
+ation.bind (file:///C
+:/Users/Ahilesh%20Kum
+ar/Downloads/New%20fo
+lder/waste-management
+-system/frontend/node
+_modules/rollup/dist/
+es/shared/node-entry.
+js:2825:28)[39m
