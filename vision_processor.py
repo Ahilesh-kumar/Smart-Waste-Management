@@ -1,86 +1,73 @@
 """
 Vision Processor for Waste Management System
---------------------------------------------
-1. Captures video from Phone (IP Webcam).
-2. Runs Teachable Machine Model (Keras/TensorFlow).
-3. Sends Classification (0,1,2,3) to Node.js Backend via Socket.io.
+Refactored for Robustness and Maintainability
 """
 
 import os
-# Force Legacy Keras (crucial for Teachable Machine models in TF 2.16+)
-os.environ["TF_USE_LEGACY_KERAS"] = "1"
-
+import time
 import cv2
 import numpy as np
 import socketio
-import tensorflow as tf
-from tensorflow.keras.models import load_model
-
-# CONFIG
-IP_CAM_URL = "http://192.168.1.3:8080/video" # <--- UPDATE THIS
-BACKEND_URL = "http://localhost:3001"
-MODEL_PATH = "keras_model.h5" # Exported from Teachable Machine
-LABELS_PATH = "labels.txt"
-
-# 1. Connect to Backend
-sio = socketio.Client()
-
-@sio.event
-def connect():
-    print("Connected to Backend Server")
-
-@sio.event
-def disconnect():
-    print("Disconnected from Server")
-
-try:
-    sio.connect(BACKEND_URL)
-except Exception as e:
-    print(f"Could not connect to backend: {e}")
-
-# 2. Load Model
-# Disable scientific notation for clarity
-np.set_printoptions(suppress=True)
-
-# Patch for Teachable Machine models in newer TensorFlow versions
-# The 'groups' argument causes an error in DepthwiseConv2D
-from tensorflow.keras.layers import DepthwiseConv2D
-class CustomDepthwiseConv2D(DepthwiseConv2D):
-    def __init__(self, **kwargs):
-        kwargs.pop('groups', None)  # Remove 'groups' if present
-        super().__init__(**kwargs)
-
-# Load the model with the custom layer
-model = load_model(MODEL_PATH, custom_objects={'DepthwiseConv2D': CustomDepthwiseConv2D}, compile=False)
-class_names = open(LABELS_PATH, "r").readlines()
-
-# 3. Start Video Capture
-# 3. Threaded Video Capture
-import time
 import threading
+import datetime
 from collections import deque, Counter
 
+# Force Legacy Keras
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+from tensorflow.keras.layers import DepthwiseConv2D
+
+# --- CONFIGURATION ---
+class Config:
+    IP_CAM_URL = os.getenv("IP_CAM_URL", "http://192.168.1.3:8080/video")
+    BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:3001")
+    MODEL_PATH = "keras_model.h5"
+    LABELS_PATH = "labels.txt"
+    AI_INTERVAL = 3
+    MOVEMENT_THRESHOLD = 2.0
+    STATIONARY_THRESHOLD = 5
+
+# --- HELPER CLASSES ---
+
+class CustomDepthwiseConv2D(DepthwiseConv2D):
+    """Patch for Teachable Machine models in newer TF versions"""
+    def __init__(self, **kwargs):
+        kwargs.pop('groups', None)
+        super().__init__(**kwargs)
+
 class VideoStream:
-    """Reading frames in a separate thread to prevent I/O blocking"""
+    """Reading frames in a separate thread"""
     def __init__(self, src=0):
         self.stream = cv2.VideoCapture(src)
-        if not self.stream.isOpened():
-            print("❌ ERROR: Could not open camera stream!")
-            self.stop()
-            exit()
-        (self.grabbed, self.frame) = self.stream.read()
+        self.src = src
         self.stopped = False
-
+        self.grabbed = False
+        self.frame = None
+        
+        if self.stream.isOpened():
+             (self.grabbed, self.frame) = self.stream.read()
+    
     def start(self):
-        threading.Thread(target=self.update, args=()).start()
+        threading.Thread(target=self.update, args=(), daemon=True).start()
         return self
 
     def update(self):
         while not self.stopped:
             if not self.stream.isOpened():
-                self.stop()
-                return
-            (self.grabbed, self.frame) = self.stream.read()
+                print(f"Stream disconnected, retrying {self.src}...")
+                self.stream.release()
+                time.sleep(2)
+                self.stream = cv2.VideoCapture(self.src)
+                continue
+                
+            (grabbed, frame) = self.stream.read()
+            if grabbed:
+                self.grabbed = grabbed
+                self.frame = frame
+            else:
+                # End of stream or error
+                pass
 
     def read(self):
         return self.frame
@@ -89,297 +76,286 @@ class VideoStream:
         self.stopped = True
         self.stream.release()
 
-last_sorted_time = 0
-frame_count = 0
-AI_INTERVAL = 5 # Run AI more frequently (every 5 frames) due to threading speedup
-prediction_history = deque(maxlen=3) 
-last_emit_time = 0 
+# --- MAIN CLASSIFIER CLASS ---
 
-# Caching for frames between AI runs
-cached_class = "Scanning..."
-cached_conf = 0.0
-cached_label_id = -1
+class WasteClassifier:
+    def __init__(self):
+        self.sio = socketio.Client()
+        self.stopped = False
+        
+        # Tracking State
+        self.prediction_history = deque(maxlen=5)
+        self.frame_count = 0
+        self.last_emit_time = 0
+        self.last_sorted_time = 0
+        
+        # Motion Detection
+        self.last_centroid = None
+        self.frames_stationary = 0
+        self.is_moving = False
+        
+        # Box Smoothing
+        self.prev_box = None
+        
+        # Analytics
+        self.hourly_detections = {h: 0 for h in range(24)}
+        self.bin_fill_levels = {0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0}
+        
+        # Init components
+        self.setup_socket()
+        self.load_model_data()
+        
+    def setup_socket(self):
+        @self.sio.event
+        def connect():
+            print("✅ Connected to Backend Server")
 
-# Box Smoothing
-prev_box = None
-SMOOTHING_FACTOR = 0.5 
-
-print(f"Connecting to Camera at: {IP_CAM_URL} ...")
-vs = VideoStream(IP_CAM_URL).start()
-print("✅ Camera Connected! Starting Video Feed...")
-time.sleep(2.0) # Warmup
-
-# Centroid Tracking for Motion Detection
-last_centroid = None
-frames_stationary = 0
-IS_MOVING = False
-STATIONARY_THRESHOLD = 5 # Frames to wait before declaring stationary
-MOVEMENT_THRESHOLD = 2.0 # Pixels (in % or relative units) to consider "moving"
-
-# ===== WEIGHT ESTIMATION CONFIG =====
-# Category-based density factors (grams per pixel² area)
-# These are calibrated estimates based on typical waste item sizes
-WEIGHT_DENSITY_FACTORS = {
-    'bio': 0.025,      # Bio-medical (gloves, masks) - light
-    'hazard': 0.08,    # Hazardous (batteries, chemicals) - heavy
-    'haz': 0.08,       # Alternative name
-    'dry': 0.015,      # Dry recyclables (paper, plastic) - very light
-    'rec': 0.015,      # Recyclables
-    'wet': 0.05,       # Wet organic waste - medium density
-    'org': 0.05,       # Organics
-    'met': 0.12,       # Metal items - very heavy
-    'e-waste': 0.10,   # Electronics - heavy
-    'default': 0.03    # Unknown items
-}
-
-# Reference frame area (assumes 640x480 camera resolution scaled)
-REFERENCE_AREA = 640 * 480 * 0.4 * 0.4  # Scaled frame size
-MIN_WEIGHT = 1.0    # Minimum weight in grams
-MAX_WEIGHT = 500.0  # Maximum weight cap in grams
-
-# --- REAL AI: Analytics Tracking ---
-import datetime
-
-# 1. Heatmap: Track detection counts per hour (0-23)
-hourly_detections = {h: 0 for h in range(24)}
-last_hour_check = datetime.datetime.now().hour
-
-# 2. Predictive: Track fill rates (grams per minute)
-fill_rate_history = deque(maxlen=60) # Last 60 seconds
-bin_fill_levels = {0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0} # Simulated total grams per bin
-BIN_CAPACITY_GRAMS = 5000.0 # 5kg capacity per bin for simulation
-
-def estimate_weight(class_name: str, box_width_pct: float, box_height_pct: float) -> float:
-    """
-    Estimate object weight based on bounding box size and category density.
-    
-    Args:
-        class_name: Detected class name (e.g., 'bio medical', 'hazardous')
-        box_width_pct: Bounding box width as percentage of frame (0-100)
-        box_height_pct: Bounding box height as percentage of frame (0-100)
-    
-    Returns:
-        Estimated weight in grams (capped between MIN_WEIGHT and MAX_WEIGHT)
-    """
-    # Calculate approximate pixel area from percentages
-    pixel_width = (box_width_pct / 100) * 640 * 0.4  # Scaled width
-    pixel_height = (box_height_pct / 100) * 480 * 0.4  # Scaled height
-    area = pixel_width * pixel_height
-    
-    # Find the appropriate density factor based on class name
-    class_lower = class_name.lower()
-    density = WEIGHT_DENSITY_FACTORS.get('default')
-    
-    for key, factor in WEIGHT_DENSITY_FACTORS.items():
-        if key in class_lower:
-            density = factor
-            break
-    
-    # Calculate weight = area * density
-    raw_weight = area * density
-    
-    # Apply min/max caps and round to 1 decimal place
-    estimated_weight = max(MIN_WEIGHT, min(MAX_WEIGHT, raw_weight))
-    return round(estimated_weight, 1)
-
-# Track estimated weight for emission
-cached_weight = 0.0
-
-while True:
-    frame = vs.read()
-    if frame is None:
-        break
-
-    # Show the Feed (Optional - comment out for speed)
-    cv2.imshow("Waste Classifier", frame)
-    frame_count += 1
-    
-    # --- 1. FAST OBJECT TRACKING (Run EVERY Frame) ---
-    small_frame = cv2.resize(frame, (0, 0), fx=0.4, fy=0.4) 
-    height, width, _ = small_frame.shape
-    
-    # Define Detection Zone
-    margin_x = int(width * 0.2)
-    margin_y = int(height * 0.2)
-    roi = small_frame[margin_y:height-margin_y, margin_x:width-margin_x]
-    
-    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
-    box_data = None
-    object_present = False
-    
-    if contours:
-        largest_contour = max(contours, key=cv2.contourArea)
-        if cv2.contourArea(largest_contour) > 1500:
-            object_present = True
-            x, y, w, h = cv2.boundingRect(largest_contour)
+        @self.sio.event
+        def disconnect():
+            print("❌ Disconnected from Server")
             
-            # Centroid Calculation (Relative to ROI)
-            cx = x + w / 2
-            cy = y + h / 2
-            
-            # Check Motion
-            if last_centroid:
-                # Euclidean distance
-                dist = np.sqrt((cx - last_centroid[0])**2 + (cy - last_centroid[1])**2)
-                if dist > MOVEMENT_THRESHOLD:
-                    frames_stationary = 0
-                    IS_MOVING = True
-                    cached_class = "Moving..." # Generic label
-                    cached_conf = 0.0
-                else:
-                    frames_stationary += 1
-                    if frames_stationary > STATIONARY_THRESHOLD:
-                        IS_MOVING = False
-            
-            last_centroid = (cx, cy)
+        @self.sio.event
+        def connect_error(data):
+            pass # Suppress noise
 
-            # Offset coordinates
-            x += margin_x
-            y += margin_y
-            
-            # Convert to percentage
-            pct_x = (x / width) * 100
-            pct_y = (y / height) * 100
-            pct_w = (w / width) * 100
-            pct_h = (h / height) * 100
-            
-            new_box = {'x': pct_x, 'y': pct_y, 'w': pct_w, 'h': pct_h}
-            
-            if prev_box:
-                box_data = {
-                    'x': prev_box['x'] * SMOOTHING_FACTOR + new_box['x'] * (1 - SMOOTHING_FACTOR),
-                    'y': prev_box['y'] * SMOOTHING_FACTOR + new_box['y'] * (1 - SMOOTHING_FACTOR),
-                    'w': prev_box['w'] * SMOOTHING_FACTOR + new_box['w'] * (1 - SMOOTHING_FACTOR),
-                    'h': prev_box['h'] * SMOOTHING_FACTOR + new_box['h'] * (1 - SMOOTHING_FACTOR),
-                }
-            else:
-                box_data = new_box
-            prev_box = box_data
-    else:
-        # No object found
-        frames_stationary = 0
-        IS_MOVING = False
-        last_centroid = None
+    def connect_backend(self):
+        while not self.stopped:
+            try:
+                self.sio.connect(Config.BACKEND_URL)
+                break
+            except Exception:
+                print(f"Connecting to Backend at {Config.BACKEND_URL}...")
+                time.sleep(3)
+
+    def load_model_data(self):
+        print("Loading AI Model...")
+        np.set_printoptions(suppress=True)
+        try:
+            self.model = load_model(Config.MODEL_PATH, custom_objects={'DepthwiseConv2D': CustomDepthwiseConv2D}, compile=False)
+            self.class_names = [line.strip() for line in open(Config.LABELS_PATH, "r").readlines()]
+            print(f"✅ Model Loaded. Categories: {self.class_names}")
+        except Exception as e:
+            print(f"❌ Failed to load model: {e}")
+            exit(1)
+
+    def process_frame(self, frame):
+        self.frame_count += 1
+        
+        # 1. Resize/Preprocessing
+        small_frame = cv2.resize(frame, (0, 0), fx=0.4, fy=0.4)
+        height, width, _ = small_frame.shape
+        margin_x = int(width * 0.2)
+        margin_y = int(height * 0.2)
+        
+        # Motion ROI
+        roi = small_frame[margin_y:height-margin_y, margin_x:width-margin_x]
+        
+        # Motion Logic
+        self.detect_motion(roi, width, height, margin_x, margin_y)
+        
         cached_class = "Scanning..."
+        cached_conf = 0.0
+        cached_label_id = -1
+        cached_weight = 0.0
+        
+        # 2. AI Inference
+        if self.object_present and not self.is_moving and self.frame_count % Config.AI_INTERVAL == 0:
+             cached_class, cached_conf, cached_label_id = self.run_inference(frame)
+             
+             # Weight Estimation
+             if self.box_data:
+                 cached_weight = self.estimate_weight(cached_class, self.box_data['w'], self.box_data['h'])
+        
+        # 3. Emit Data
+        self.emit_realtime_data(cached_class, cached_conf, cached_label_id, cached_weight)
+        
+        # 4. Sorting Logic
+        if not self.is_moving and cached_conf > 90:
+            self.handle_sorting(cached_class, cached_conf, cached_weight)
 
+    def detect_motion(self, roi, width, height, margin_x, margin_y):
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        self.object_present = False
+        self.box_data = None
+        
+        if contours:
+            largest = max(contours, key=cv2.contourArea)
+            if cv2.contourArea(largest) > 1500:
+                self.object_present = True
+                x, y, w, h = cv2.boundingRect(largest)
+                cx, cy = x + w/2, y + h/2
+                
+                # Check movement
+                if self.last_centroid:
+                    dist = np.sqrt((cx - self.last_centroid[0])**2 + (cy - self.last_centroid[1])**2)
+                    if dist > Config.MOVEMENT_THRESHOLD:
+                        self.frames_stationary = 0
+                        self.is_moving = True
+                    else:
+                        self.frames_stationary += 1
+                        if self.frames_stationary > Config.STATIONARY_THRESHOLD:
+                            self.is_moving = False
+                            
+                self.last_centroid = (cx, cy)
+                
+                # Box processing
+                x += margin_x
+                y += margin_y
+                new_box = {
+                    'x': (x/width)*100, 'y': (y/height)*100,
+                    'w': (w/width)*100, 'h': (h/height)*100
+                }
+                
+                # Smooth box
+                if self.prev_box:
+                    s = 0.5 
+                    self.box_data = {
+                        k: self.prev_box[k]*s + new_box[k]*(1-s) for k in new_box
+                    }
+                else:
+                    self.box_data = new_box
+                self.prev_box = self.box_data
+        else:
+             self.frames_stationary = 0
+             self.is_moving = False
+             self.last_centroid = None
 
-    # --- 2. AI CLASSIFICATION (Only if STATIONARY) ---
-    # We obey user rule: "if sliding, ai should not detect"
-    if object_present and not IS_MOVING and frame_count % AI_INTERVAL == 0:
-        # Preprocess
+    def run_inference(self, frame):
         image = cv2.resize(frame, (224, 224), interpolation=cv2.INTER_AREA)
         image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
         image = (image / 127.5) - 1
-
-        # Predict
-        prediction = model.predict(image)
-        index = np.argmax(prediction)
-        raw_class_name = class_names[index].strip()
-        confidence_score = prediction[0][index]
         
-        if confidence_score > 0.4:
-            prediction_history.append(raw_class_name)
+        prediction = self.model.predict(image, verbose=0)
+        idx = np.argmax(prediction)
         
-        if prediction_history:
-            cached_class = Counter(prediction_history).most_common(1)[0][0]
-        else:
-            cached_class = raw_class_name
+        conf = float(prediction[0][idx])
+        label = self.class_names[idx]
+        
+        if conf > 0.4:
+            self.prediction_history.append(label)
             
-        cached_conf = float(confidence_score) * 100
-        cached_label_id = int(index)
-        
-        # Estimate weight based on bounding box size and category
-        if box_data:
-            cached_weight = estimate_weight(cached_class, box_data['w'], box_data['h'])
+        if self.prediction_history:
+            # Persistence Logic: Only confirm if > 3 occurrences in last 5
+            counts = Counter(self.prediction_history)
+            most_common = counts.most_common(1)[0]
+            if most_common[1] >= 3:
+                final_label = most_common[0]
+            else:
+                final_label = "Scanning..."
         else:
-            cached_weight = 0.0
+            final_label = label
+            
+        return final_label, conf * 100, int(idx)
 
-    # --- 3. EMIT DATA ---
-    current_time = time.time()
-    # Throttle: Max 15 updates per second to preventing frontend lag
-    if current_time - last_emit_time > 0.066: 
-        try:
+    def estimate_weight(self, class_name, w_pct, h_pct):
+         # Simplified density map
+         densities = {
+             'bio': 0.025, 'hazard': 0.08, 'haz': 0.08, 'wet': 0.05, 
+             'dry': 0.015, 'metal': 0.12, 'default': 0.03
+         }
+         
+         density = densities['default']
+         for k, v in densities.items():
+             if k in class_name.lower(): 
+                 density = v
+                 break
+                 
+         # Area relative to 640x480 scale
+         area = (w_pct/100 * 640 * 0.4) * (h_pct/100 * 480 * 0.4)
+         weight = area * density
+         return round(max(1.0, min(500.0, weight)), 1)
+
+    def emit_realtime_data(self, cls, conf, label_id, weight):
+        now = time.time()
+        # Increased to ~24 FPS cap for smoother camera
+        if now - self.last_emit_time > 0.04: 
             payload = {
-                'class': cached_class if not IS_MOVING else "Moving...",
-                'confidence': cached_conf if not IS_MOVING else 0,
-                'label_id': cached_label_id if not IS_MOVING else -1,
-                'box': box_data,
-                'is_moving': IS_MOVING,     # Flag for Frontend
-                'object_present': object_present, # Flag for Frontend
-                'estimated_weight': cached_weight if not IS_MOVING else 0  # Weight in grams
+                'class': cls if not self.is_moving else "Moving...",
+                'confidence': conf if not self.is_moving else 0,
+                'label_id': label_id if not self.is_moving else -1,
+                'box': self.box_data,
+                'is_moving': self.is_moving,
+                'object_present': self.object_present,
+                'estimated_weight': weight if not self.is_moving else 0
             }
-            sio.emit('ai_inference', payload)
-            last_emit_time = current_time
-        except Exception:
-            pass     
-    
-    # Tiny sleep to yield CPU if loop is spinning too fast
-    time.sleep(0.001)     
+            try:
+                self.sio.emit('ai_inference', payload)
+                self.last_emit_time = now
+            except:
+                pass
 
-    # --- 4. SORTING LOGIC ---
-    if not IS_MOVING and cached_conf > 90:
-        dashboard_bin_id = -1
-        name_lower = cached_class.lower()
-        if "bio" in name_lower: dashboard_bin_id = 2
-        elif "haz" in name_lower: dashboard_bin_id = 3
-        elif "rec" in name_lower or "dry" in name_lower: dashboard_bin_id = 1
-        elif "wet" in name_lower or "org" in name_lower: dashboard_bin_id = 0
-        elif "met" in name_lower or "e-waste" in name_lower: dashboard_bin_id = 1
+    def handle_sorting(self, cls, conf, weight):
+        now = time.time()
+        if now - self.last_sorted_time > 2.0:
+            # Map class to bin
+            bin_id = -1
+            name = cls.lower()
+            if "bio" in name: bin_id = 2
+            elif "haz" in name: bin_id = 3
+            elif "rec" in name or "dry" in name: bin_id = 1
+            elif "wet" in name or "org" in name: bin_id = 0
+            elif "met" in name or "e-waste" in name: bin_id = 1
             
-        if dashboard_bin_id != -1:
-            current_time = time.time()
-            if current_time - last_sorted_time > 2.0:
-                print(f"SORTING: {cached_class} ({cached_conf:.1f}%) -> Bin {dashboard_bin_id}")
-                sio.emit('item_sorted', {'type': dashboard_bin_id}) 
-                last_sorted_time = current_time
-
-                # --- REAL AI UPDATE: Heatmap ---
-                current_hour = datetime.datetime.now().hour
-                hourly_detections[current_hour] += 1
+            if bin_id != -1:
+                print(f"SORTING: {cls} -> Bin {bin_id}")
+                self.sio.emit('item_sorted', {'type': bin_id})
+                self.last_sorted_time = now
                 
-                # Emit Heatmap Update
-                heatmap_payload = [
-                    {'hour': f"{h:02d}:00", 'value': count} 
-                    for h, count in hourly_detections.items() 
-                    if count > 0 # Optimize payload, only send active hours or send full list 
-                ]
-                # Send full 24h list simplified or just top active
-                # For UI simplicty let's send top 6 active or a subset range
-                # Sending full daily stat event
-                sio.emit('heatmap_update', {'hourly': heatmap_payload})
-
-                # --- REAL AI UPDATE: Predictive Fill ---
-                # Add estimated weight to bin
-                weight = cached_weight if cached_weight > 0 else 50.0 # Fallback
-                bin_fill_levels[dashboard_bin_id] += weight
+                # Update Stats
+                h = datetime.datetime.now().hour
+                self.hourly_detections[h] += 1
+                self.bin_fill_levels[bin_id] += weight
                 
-                # Calculate simple velocity (grams added in last minute - smoothed)
-                # Since this is event based, we just broadcast new fill %
+                # Emit Heatmap & Predictions
+                self.emit_analytics()
+
+    def emit_analytics(self):
+         heatmap = [{'hour': f"{h:02d}:00", 'value': c} for h, c in self.hourly_detections.items() if c > 0]
+         self.sio.emit('heatmap_update', {'hourly': heatmap})
+         
+         predictions = {}
+         CAPACITY = 5000.0
+         for bid, grams in self.bin_fill_levels.items():
+             remaining = CAPACITY - grams
+             if remaining <= 0: predictions[bid] = "FULL"
+             else: predictions[bid] = f"{int(remaining/100.0)}m"
+             
+         self.sio.emit('prediction_update', {'predictions': predictions})
+
+    def run(self):
+        print(f"Opening Camera: {Config.IP_CAM_URL}")
+        vs = VideoStream(Config.IP_CAM_URL).start()
+        print("Waiting for camera warmup...")
+        time.sleep(2.0)
+        
+        self.connect_backend()
+        
+        print("✅ System Ready. Press ESC to stop.")
+        try:
+            while not self.stopped:
+                frame = vs.read()
+                if frame is None:
+                    time.sleep(0.1)
+                    continue
                 
-                predictions = {}
-                for b_id, grams in bin_fill_levels.items():
-                    current_pct = min(100.0, (grams / BIN_CAPACITY_GRAMS) * 100)
-                    
-                    # Naive prediction: constant inflow assumption (1 item every 5 mins per bin avg)
-                    # Real algo would use fill_rate_history
-                    remaining_grams = BIN_CAPACITY_GRAMS - grams
-                    if remaining_grams <= 0:
-                        predictions[b_id] = "FULL"
-                    else:
-                        # Estimate Time to Full (TTF)
-                        # Assume avg inflow 100g/min active time
-                        ttf_min = remaining_grams / 100.0 
-                        predictions[b_id] = f"{int(ttf_min)}m"
+                self.process_frame(frame)
+                
+                # Optional: Show feed
+                # cv2.imshow("Waste AI", frame)
+                # if cv2.waitKey(1) == 27: break
+                
+                time.sleep(0.001)
+        except KeyboardInterrupt:
+            print("Stopping...")
+        finally:
+            vs.stop()
+            self.sio.disconnect()
+            cv2.destroyAllWindows()
 
-                sio.emit('prediction_update', {'predictions': predictions})
-
-    if cv2.waitKey(1) == 27:
-        break
-
-vs.stop()
-cv2.destroyAllWindows()
-sio.disconnect()
+if __name__ == "__main__":
+    app = WasteClassifier()
+    app.run()

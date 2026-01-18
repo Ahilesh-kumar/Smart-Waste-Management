@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { io } from 'socket.io-client';
 import { Power, Activity, AlertTriangle, Webcam, Settings, Trash2, Zap, Sun, Moon, TrendingUp, BarChart2, PieChart, Recycle, Clock, ArrowUpRight, Download, BellRing, BellOff, Database, Sliders, Volume2, VolumeX, Pause, Play, Leaf, Droplets } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ScatterChart, Scatter, ZAxis } from 'recharts';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedCounter, ProgressRing, Sparkline, LiveIndicator, TiltCard } from './UIComponents';
+import { AnimatedCounter, ProgressRing, Sparkline, LiveIndicator, TiltCard, MouseGlow, RippleButton } from './UIComponents';
 import { LiveActivityFeed, useSwipeGesture, PullRefreshIndicator } from './AdvancedComponents';
 import {
   EnhancedAreaChart, TimeRangeSelector, ChartModal,
@@ -245,21 +245,33 @@ function App() {
     setHistoryValue(0); // Reset to live
   };
 
-  const runs = generateMockHistory(); // Generate usage history
+  const runs = useMemo(() => generateMockHistory(), []); // Generate usage history only once
   const getModalContent = () => {
     switch (activeModal) {
       case 'composition':
+        // Pie Chart for Composition
+        const pieCounts = historyValue !== 0 && runs[10 - Math.abs(historyValue)]?.data
+          ? runs[10 - Math.abs(historyValue)].data
+          : processingCounts;
+
+        return <PremiumPieChart data={[
+          { name: 'Bio', value: pieCounts.bio || 0 },
+          { name: 'Hazard', value: pieCounts.hazard || 0 },
+          { name: 'Wet', value: pieCounts.wet || 0 },
+          { name: 'Dry', value: pieCounts.dry || 0 }
+        ]} height={400} />;
+
       case 'radar':
-        // Use history counts if historyValue < 0
-        const currentCounts = historyValue !== 0 && runs[10 - Math.abs(historyValue)]?.data
+        // Radar Chart
+        const radarCounts = historyValue !== 0 && runs[10 - Math.abs(historyValue)]?.data
           ? runs[10 - Math.abs(historyValue)].data
           : processingCounts;
 
         return <PremiumRadarChart data={[
-          { subject: 'Bio', A: currentCounts.bio || 0, fullMark: 100 },
-          { subject: 'Hazard', A: currentCounts.hazard || 0, fullMark: 100 },
-          { subject: 'Wet', A: currentCounts.wet || 0, fullMark: 100 },
-          { subject: 'Dry', A: currentCounts.dry || 0, fullMark: 100 },
+          { subject: 'Bio', A: radarCounts.bio || 0, fullMark: 100 },
+          { subject: 'Hazard', A: radarCounts.hazard || 0, fullMark: 100 },
+          { subject: 'Wet', A: radarCounts.wet || 0, fullMark: 100 },
+          { subject: 'Dry', A: radarCounts.dry || 0, fullMark: 100 },
         ]} height={400} />;
       case 'throughput':
         // Mock history variation for throughput
@@ -294,10 +306,13 @@ function App() {
       case 'hourly':
         return <HourlyStackedBarChart data={hourlyData} height={400} />;
       case 'confidence':
-        // Shift confidence distribution for history
+        // Shift confidence distribution for history or use mock distribution
         const confData = [
           { range: '0-20%', count: 2 + Math.abs(historyValue) },
-          { range: '80-100%', count: 15 - Math.abs(historyValue) }
+          { range: '20-40%', count: 5 + Math.abs(historyValue) },
+          { range: '40-60%', count: 8 + Math.abs(historyValue) },
+          { range: '60-80%', count: 12 + Math.abs(historyValue) },
+          { range: '80-100%', count: 25 - Math.abs(historyValue) }
         ];
         return <ConfidenceHistogram data={confData} height={400} />;
       case 'predictive':
@@ -538,7 +553,12 @@ function App() {
     });
 
     socket.on('ai_inference', (data) => {
-      setAiData(data);
+      // Throttle updates to ~15 FPS to prevent React render thrashing
+      const now = Date.now();
+      if (now - (window.lastAiUpdate || 0) > 60) {
+        setAiData(data);
+        window.lastAiUpdate = now;
+      }
     });
 
     // --- REAL AI LISTENERS (Phase 4) ---
@@ -1306,11 +1326,11 @@ function App() {
             <button onClick={() => setDisplayMode('full')} className="p-1 hover:bg-white/10 rounded"><ArrowUpRight size={16} /></button>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-emerald-500/20 p-3 rounded-xl border border-emerald-500/30 text-center">
+            <div className="bg-bio/20 p-3 rounded-xl border border-emerald-500/30 text-center">
               <div className="text-[10px] uppercase font-bold text-emerald-400">Total</div>
               <div className="text-2xl font-black">{processingCounts.total}</div>
             </div>
-            <div className="bg-blue-500/20 p-3 rounded-xl border border-blue-500/30 text-center">
+            <div className="bg-wet/20 p-3 rounded-xl border border-blue-500/30 text-center">
               <div className="text-[10px] uppercase font-bold text-blue-400">Revenue</div>
               <div className="text-xl font-black">${(processingCounts.total * 0.05).toFixed(2)}</div>
             </div>
@@ -1318,7 +1338,7 @@ function App() {
           <div className="space-y-2">
             {['Bio', 'Hazard', 'Wet', 'Dry'].map(cat => {
               const val = cat === 'Bio' ? processingCounts.bio : cat === 'Hazard' ? processingCounts.hazard : cat === 'Wet' ? processingCounts.wet : processingCounts.dry;
-              const color = cat === 'Bio' ? 'bg-emerald-500' : cat === 'Hazard' ? 'bg-rose-500' : cat === 'Wet' ? 'bg-blue-500' : 'bg-amber-500';
+              const color = cat === 'Bio' ? 'bg-bio' : cat === 'Hazard' ? 'bg-hazard' : cat === 'Wet' ? 'bg-wet' : 'bg-dry';
               return (
                 <div key={cat} className="flex justify-between text-xs font-bold items-center">
                   <span className="opacity-70">{cat}</span>
@@ -1408,8 +1428,8 @@ function App() {
                 "px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border flex items-center gap-2 text-sm font-medium pointer-events-auto",
                 toast.type === 'success' && "bg-green-500/90 border-green-400 text-white",
                 toast.type === 'error' && "bg-red-500/90 border-red-400 text-white",
-                toast.type === 'warning' && "bg-amber-500/90 border-amber-400 text-white",
-                toast.type === 'info' && "bg-blue-500/90 border-blue-400 text-white"
+                toast.type === 'warning' && "bg-dry/90 border-amber-400 text-white",
+                toast.type === 'info' && "bg-wet/90 border-blue-400 text-white"
               )}
             >
               {toast.type === 'success' && '✓'}
@@ -1472,7 +1492,7 @@ function App() {
                   <kbd className="px-2 py-1 bg-neutral-800 rounded text-xs font-mono">?</kbd>
                 </div>
               </div>
-              <button onClick={() => setShowKeyboardHelp(false)} className="mt-4 w-full py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition">
+              <button onClick={() => setShowKeyboardHelp(false)} className="mt-4 w-full py-2 bg-wet text-white rounded-lg font-bold hover:bg-blue-600 transition">
                 Got it!
               </button>
             </motion.div>
@@ -1566,7 +1586,7 @@ function App() {
                   </div>
                 )}
               </div>
-              <button onClick={() => { setShowSettings(false); addToast('Settings saved', 'success'); }} className="mt-6 w-full py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition">
+              <button onClick={() => { setShowSettings(false); addToast('Settings saved', 'success'); }} className="mt-6 w-full py-2 bg-wet text-white rounded-lg font-bold hover:bg-blue-600 transition">
                 Save & Close
               </button>
             </motion.div>
@@ -1663,7 +1683,7 @@ function App() {
                     className={clsx(
                       "px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all",
                       historyFilter === filter
-                        ? "bg-blue-500 text-white"
+                        ? "bg-wet text-white"
                         : theme === 'dark' ? "bg-neutral-800 text-neutral-400 hover:bg-neutral-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     )}
                   >
@@ -1764,7 +1784,7 @@ function App() {
                           <td className="p-3 text-right flex gap-2 justify-end">
                             <button
                               onClick={() => setSelectedHistorySession(session)}
-                              className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all text-xs font-bold"
+                              className="px-3 py-1 bg-wet/20 text-blue-400 rounded-lg hover:bg-wet hover:text-white transition-all text-xs font-bold"
                             >
                               View
                             </button>
@@ -1810,7 +1830,7 @@ function App() {
               <div className="flex justify-between items-center mb-6 border-b pb-4 border-slate-700/50">
                 <div>
                   <h2 className="text-3xl font-black flex items-center gap-3">
-                    <Clock size={28} className="text-blue-500" />
+                    <Clock size={28} className="text-wet" />
                     Session Analysis
                   </h2>
                   <div className="flex gap-4 text-sm opacity-60 font-mono mt-1">
@@ -2061,7 +2081,7 @@ function App() {
                       >
                         <Zap size={18} className={isTorchOn ? "fill-white" : ""} />
                       </button>
-                      <button onClick={() => { playClick(); setRotation(r => (r + 90) % 360); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-blue-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => { playClick(); setRotation(r => (r + 90) % 360); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-wet rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
                         <Settings size={18} className="rotate-45" />
                       </button>
                       <button onClick={() => { playClick(); setCamUrl(''); }} className="p-2 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
@@ -2114,8 +2134,8 @@ function App() {
               <div className="flex items-center justify-between">
                 {/* Left Group: Connection & Model */}
                 <div className="flex items-center gap-3 flex-wrap">
-                  <div className={clsx("px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2", isConnected ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400")}>
-                    <div className={clsx("w-2 h-2 rounded-full", isConnected ? "bg-emerald-500 animate-pulse" : "bg-rose-500")} />
+                  <div className={clsx("px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2", isConnected ? "bg-bio/10 border-emerald-500/20 text-emerald-400" : "bg-hazard/10 border-rose-500/20 text-rose-400")}>
+                    <div className={clsx("w-2 h-2 rounded-full", isConnected ? "bg-bio animate-pulse" : "bg-hazard")} />
                     {isConnected ? "SYSTEM ONLINE" : "DISCONNECTED"}
                   </div>
 
@@ -2341,7 +2361,7 @@ function App() {
                     onClick={() => setIsPaused(!isPaused)}
                     className={clsx(
                       "w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
-                      isPaused ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30" : "bg-neutral-800 hover:bg-neutral-700"
+                      isPaused ? "bg-dry hover:bg-amber-600 shadow-amber-500/30" : "bg-neutral-800 hover:bg-neutral-700"
                     )}
                     title={isPaused ? "Resume" : "Pause"}
                   >
@@ -2351,7 +2371,7 @@ function App() {
                     onClick={togglePower}
                     className={clsx(
                       "w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95",
-                      data.isOn ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/30" : "bg-teal-500 hover:bg-teal-600 shadow-teal-500/30"
+                      data.isOn ? "bg-hazard hover:bg-rose-600 shadow-rose-500/30" : "bg-teal-500 hover:bg-teal-600 shadow-teal-500/30"
                     )}
                   >
                     <Power size={28} className="text-white" />
@@ -2386,10 +2406,10 @@ function App() {
                     exit={{ opacity: 0, y: -20, scale: 0.8 }}
                     className={clsx(
                       "absolute -top-12 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full font-bold text-white shadow-lg",
-                      categoryFlash.category === 'Bio-medical' && "bg-emerald-500",
-                      categoryFlash.category === 'Hazardous' && "bg-rose-500",
+                      categoryFlash.category === 'Bio-medical' && "bg-bio",
+                      categoryFlash.category === 'Hazardous' && "bg-hazard",
                       categoryFlash.category === 'Wet Waste' && "bg-cyan-500",
-                      categoryFlash.category === 'Dry Waste' && "bg-amber-500"
+                      categoryFlash.category === 'Dry Waste' && "bg-dry"
                     )}
                   >
                     +1 {categoryFlash.category}
@@ -2420,7 +2440,7 @@ function App() {
               )}>
                 <div className="flex justify-between items-start">
                   <div className="stat-label text-emerald-600 dark:text-emerald-400">Impact</div>
-                  <Leaf size={14} className="text-emerald-500" />
+                  <Leaf size={14} className="text-bio" />
                 </div>
                 <div>
                   <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
@@ -2433,11 +2453,11 @@ function App() {
               </TiltCard>
 
               {/* Revenue Card - Featured */}
-              <div className="card-modern card-modern-dark glow-primary">
+              <MouseGlow className="card-modern card-modern-dark glow-primary">
                 <div className="stat-label mb-2 opacity-70">Revenue</div>
                 <div className="stat-number text-teal-400">${(processingCounts.total * 0.05).toFixed(2)}</div>
                 <TrendingUp className="absolute bottom-3 right-3 text-white/5" size={48} />
-              </div>
+              </MouseGlow>
             </div>
 
             {/* Category Cards with Icons - Staggered Entrance */}
@@ -2451,7 +2471,7 @@ function App() {
                   <Recycle size={18} className="text-white" />
                 </div>
                 <div className="stat-label text-emerald-400">Bio-medical</div>
-                <AnimatedCounter value={processingCounts.bio} className="stat-number-sm text-emerald-500" />
+                <AnimatedCounter value={processingCounts.bio} className="stat-number-sm text-bio" />
               </div>
 
               {/* Hazard Card */}
@@ -2463,7 +2483,7 @@ function App() {
                   <AlertTriangle size={18} className="text-white" />
                 </div>
                 <div className="stat-label text-rose-400">Hazardous</div>
-                <AnimatedCounter value={processingCounts.hazard} className="stat-number-sm text-rose-500" />
+                <AnimatedCounter value={processingCounts.hazard} className="stat-number-sm text-hazard" />
               </div>
 
               {/* Wet Card */}
@@ -2487,13 +2507,12 @@ function App() {
                   <Trash2 size={18} className="text-white" />
                 </div>
                 <div className="stat-label text-amber-400">Dry Waste</div>
-                <AnimatedCounter value={processingCounts.dry} className="stat-number-sm text-amber-500" />
+                <AnimatedCounter value={processingCounts.dry} className="stat-number-sm text-dry" />
               </div>
             </div>
 
-            {/* Quick Actions */}
             <div className="grid grid-cols-2 gap-4">
-              <button
+              <RippleButton
                 onClick={exportToCSV}
                 className={clsx(
                   "p-4 rounded-xl border flex flex-col items-center gap-2 hover:scale-[1.02] transition-transform",
@@ -2502,9 +2521,10 @@ function App() {
               >
                 <Download size={20} className="text-blue-500" />
                 <span className="text-xs font-bold">Export Report</span>
-              </button>
-              <button
-                onClick={enableNotifications}
+              </RippleButton>
+
+              <RippleButton
+                onClick={() => exportReport(displayMode === 'split')}
                 className={clsx(
                   "p-4 rounded-xl border flex flex-col items-center gap-2 hover:scale-[1.02] transition-transform",
                   notificationEnabled
@@ -2514,7 +2534,7 @@ function App() {
               >
                 {notificationEnabled ? <BellRing size={20} className="text-yellow-500" /> : <BellOff size={20} className="text-slate-500" />}
                 <span className="text-xs font-bold">{notificationEnabled ? "Alerts On" : "Enable Alerts"}</span>
-              </button>
+              </RippleButton>
             </div>
 
             {/* ===== ENHANCED CHARTS (Phase 1 & 3) ===== */}

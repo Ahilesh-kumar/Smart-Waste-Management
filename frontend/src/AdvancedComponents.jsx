@@ -53,7 +53,7 @@ export const LiveActivityFeed = ({ events = [], maxItems = 5, onClose, onDismiss
             const timers = latestEvents.map((event, index) => {
                 return setTimeout(() => {
                     setVisibleEvents(prev => prev.filter(e => e.id !== event.id));
-                }, 5000 + (index * 500)); // Stagger dismissal slightly
+                }, 4000 + (index * 500)); // Stagger dismissal slightly
             });
 
             return () => timers.forEach(timer => clearTimeout(timer));
@@ -76,7 +76,7 @@ export const LiveActivityFeed = ({ events = [], maxItems = 5, onClose, onDismiss
     };
 
     return (
-        <div className="fixed right-4 top-24 z-40 w-72 space-y-2 pointer-events-none">
+        <div className="fixed right-4 bottom-4 z-50 w-72 space-y-2 pointer-events-none flex flex-col-reverse">
             <AnimatePresence mode="popLayout">
                 {visibleEvents.map((event, index) => {
                     const style = getCategoryStyle(event.category);

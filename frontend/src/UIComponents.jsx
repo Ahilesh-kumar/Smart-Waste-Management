@@ -2,39 +2,42 @@ import React, { useState, useEffect, useRef } from 'react';
 
 // ===== ANIMATED COUNTER =====
 // Smoothly animates number changes with optional flash effect
-export const AnimatedCounter = ({ value, duration = 500, className = '' }) => {
+export const AnimatedCounter = ({ value, duration = 800, className = '' }) => {
     const [displayValue, setDisplayValue] = useState(value);
-    const [isAnimating, setIsAnimating] = useState(false);
-    const prevValue = useRef(value);
+    const frameRef = useRef();
+    const startTimeRef = useRef();
+    const startValueRef = useRef(value);
 
     useEffect(() => {
-        if (prevValue.current !== value) {
-            setIsAnimating(true);
-            const startValue = prevValue.current;
-            const endValue = value;
-            const startTime = Date.now();
+        startValueRef.current = displayValue;
+        startTimeRef.current = null;
 
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                // Ease-out cubic
-                const eased = 1 - Math.pow(1 - progress, 3);
-                const current = Math.round(startValue + (endValue - startValue) * eased);
-                setDisplayValue(current);
+        const animate = (timestamp) => {
+            if (!startTimeRef.current) startTimeRef.current = timestamp;
+            const progress = timestamp - startTimeRef.current;
+            const percentage = Math.min(progress / duration, 1);
 
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    setIsAnimating(false);
-                    prevValue.current = value;
-                }
-            };
-            requestAnimationFrame(animate);
+            // Ease out expo
+            const ease = percentage === 1 ? 1 : 1 - Math.pow(2, -10 * percentage);
+
+            const nextValue = Math.round(startValueRef.current + (value - startValueRef.current) * ease);
+            setDisplayValue(nextValue);
+
+            if (percentage < 1) {
+                frameRef.current = requestAnimationFrame(animate);
+            }
+        };
+
+        if (value !== displayValue) {
+            cancelAnimationFrame(frameRef.current);
+            frameRef.current = requestAnimationFrame(animate);
         }
+
+        return () => cancelAnimationFrame(frameRef.current);
     }, [value, duration]);
 
     return (
-        <span className={`${className} ${isAnimating ? 'count-pulse text-teal-400' : ''}`}>
+        <span className={`${className} tabular-nums relative inline-block`}>
             {displayValue}
         </span>
     );
@@ -54,13 +57,18 @@ export const ProgressRing = ({
     const offset = circumference - (percent / 100) * circumference;
 
     const getColor = () => {
-        if (percent >= 95) return '#f43f5e'; // Critical - rose
-        if (percent >= 85) return '#f59e0b'; // Warning - amber
-        if (percent >= 70) return '#a855f7'; // Medium - violet
-        return '#14b8a6'; // Good - teal
+        if (percent >= 95) return '#f43f5e'; // Critical - hazard (rose)
+        if (percent >= 85) return '#f59e0b'; // Warning - dry (amber)
+        if (percent >= 70) return '#a855f7'; // Medium - accent (violet)
+        return '#14b8a6'; // Good - primary (teal)
     };
 
-    const actualColor = color === 'auto' ? getColor() : `var(--${color}-500)`;
+    const actualColor = color === 'auto' ? getColor() :
+        color === 'bio' ? 'var(--bio-color)' :
+            color === 'dry' ? 'var(--dry-color)' :
+                color === 'wet' ? 'var(--wet-color)' :
+                    color === 'hazard' ? 'var(--hazard-color)' :
+                        `var(--${color}-500)`;
 
     return (
         <div className="relative inline-flex items-center justify-center">
@@ -73,7 +81,7 @@ export const ProgressRing = ({
                     fill="none"
                     stroke="currentColor"
                     strokeWidth={strokeWidth}
-                    className="text-white/10"
+                    className="text-white/5"
                 />
                 {/* Progress arc */}
                 <circle
@@ -86,8 +94,9 @@ export const ProgressRing = ({
                     strokeLinecap="round"
                     strokeDasharray={circumference}
                     strokeDashoffset={offset}
-                    className="transition-all duration-700 ease-out"
+                    className="transition-all duration-1000 ease-out"
                     style={{
+                        stroke: actualColor,
                         filter: percent >= 85 ? `drop-shadow(0 0 6px ${actualColor})` : 'none'
                     }}
                 />
@@ -173,6 +182,50 @@ export const LiveIndicator = ({ status = 'online', size = 8 }) => (
     />
 );
 
+// ===== MOUSE GLOW CARD =====
+// A wrapper that adds a glowing border effect following the mouse
+export const MouseGlow = ({ children, className = '', intensity = 'medium' }) => {
+    const containerRef = useRef(null);
+
+    const handleMouseMove = (e) => {
+        const container = containerRef.current;
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        container.style.setProperty('--mouse-x', `${x}px`);
+        container.style.setProperty('--mouse-y', `${y}px`);
+    };
+
+    return (
+        <div
+            ref={containerRef}
+            onMouseMove={handleMouseMove}
+            className={`group relative overflow-hidden rounded-3xl border border-white/5 bg-white/5 backdrop-blur-md transition-colors hover:border-white/10 ${className}`}
+        >
+            <div
+                className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100"
+                style={{
+                    background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(20, 184, 166, 0.15), transparent 40%)`
+                }}
+            />
+            <div
+                className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100"
+                style={{
+                    background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(20, 184, 166, 0.4), transparent 40%)`,
+                    maskImage: 'linear-gradient(#fff, #fff)',
+                    WebkitMaskClip: 'content-box',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude',
+                    padding: '1px' // Border width
+                }}
+            />
+            <div className="relative h-full">{children}</div>
+        </div>
+    );
+};
+
 // ===== RIPPLE BUTTON =====
 // Button with material design ripple effect & haptic scale
 export const RippleButton = ({ children, onClick, className = '', ...props }) => {
@@ -181,20 +234,19 @@ export const RippleButton = ({ children, onClick, className = '', ...props }) =>
     const handleClick = (e) => {
         const button = buttonRef.current;
         const rect = button.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const size = Math.max(rect.width, rect.height);
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
 
-        // Create ripple element
         const ripple = document.createElement('span');
-        ripple.className = 'absolute bg-white/30 rounded-full animate-ping pointer-events-none transform -translate-x-1/2 -translate-y-1/2';
-        ripple.style.width = `${Math.max(rect.width, rect.height)}px`;
-        ripple.style.height = `${Math.max(rect.width, rect.height)}px`;
+        ripple.className = 'absolute rounded-full bg-white/30 animate-ping pointer-events-none';
+        ripple.style.width = `${size}px`;
+        ripple.style.height = `${size}px`;
         ripple.style.left = `${x}px`;
         ripple.style.top = `${y}px`;
 
         button.appendChild(ripple);
 
-        // Haptic feedback simulation (if supported)
         if (navigator.vibrate) navigator.vibrate(5);
 
         setTimeout(() => ripple.remove(), 600);
@@ -205,7 +257,7 @@ export const RippleButton = ({ children, onClick, className = '', ...props }) =>
         <button
             ref={buttonRef}
             onClick={handleClick}
-            className={`relative overflow-hidden active:scale-95 transition-transform duration-100 ${className}`}
+            className={`relative overflow-hidden active:scale-95 transition-all duration-200 ${className}`}
             {...props}
         >
             {children}
