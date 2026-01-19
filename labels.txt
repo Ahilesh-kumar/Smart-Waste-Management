@@ -1,11 +1,4 @@
-0 dry-1
-1 haz-1
-2 haz-2
-3 haz-3
-4 bio-1
-5 dry-2
-6 bio-2
-7 bio-3
-8 wet-1
-9 wet-2
-10 haz-4
+0 Wet
+1 Dry
+2 Recyclable
+3 Nothing

@@ -9,3 +9,8 @@
     at Module._load (node:internal/modules/cjs/loader:1300:12)
     at TracingChannel.traceSync (node:diagnostics_channel:328:14)
     at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+2026-01-19 10:07:29 [ERROR]: TypeError: Cannot read properties of undefined (reading 'push')
+    at Object.addTimeSeriesPoint (C:\Users\Ahilesh Kumar\Downloads\New folder\waste-management-system\backend\services\stateStore.js:77:13)
+    at Timeout._onTimeout (C:\Users\Ahilesh Kumar\Downloads\New folder\waste-management-system\backend\services\socketService.js:120:24)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)

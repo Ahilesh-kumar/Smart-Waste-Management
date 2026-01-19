@@ -26,6 +26,119 @@ const binColors = {
   3: { main: '#f43f5e', gradient: ['#f43f5e', '#e11d48'] }  // Hazard (Rose)
 };
 
+// ===== CINEMATIC LOADING SCREEN WITH WATER RIPPLES =====
+const CinematicLoader = ({ progress, status }) => (
+  <div className="fixed inset-0 z-[9999] bg-[#030303] flex flex-col items-center justify-center overflow-hidden">
+    {/* Subtle ambient glow */}
+    <div className="absolute inset-0">
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-teal-500/5 blur-3xl"
+        style={{ width: '800px', height: '800px', borderRadius: '50%' }}
+      />
+    </div>
+
+    {/* Central Orb with Water Ripples */}
+    <div className="relative flex items-center justify-center mb-16" style={{ width: '400px', height: '400px' }}>
+
+      {/* Water Ripple Rings - CIRCULAR with inline borderRadius */}
+      {[1, 2, 3, 4, 5, 6].map((ring) => (
+        <motion.div
+          key={ring}
+          className="absolute"
+          style={{
+            width: '100px',
+            height: '100px',
+            borderRadius: '50%',
+            border: '2px solid rgba(45, 212, 191, 0.6)',
+            boxShadow: '0 0 20px rgba(45, 212, 191, 0.4), inset 0 0 15px rgba(45, 212, 191, 0.2)',
+          }}
+          animate={{
+            width: ['100px', '380px'],
+            height: ['100px', '380px'],
+            opacity: [0.9, 0],
+            borderWidth: ['3px', '1px'],
+          }}
+          transition={{
+            duration: 2.5,
+            repeat: Infinity,
+            delay: ring * 0.4,
+            ease: 'easeOut',
+          }}
+        />
+      ))}
+
+      {/* Static glow behind logo */}
+      <div
+        className="absolute bg-teal-500/30 blur-2xl"
+        style={{ width: '120px', height: '120px', borderRadius: '50%' }}
+      />
+
+      {/* Circular Logo Container - PERFECT CIRCLE */}
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5, type: 'spring', stiffness: 200 }}
+        className="relative z-10 flex items-center justify-center"
+        style={{
+          width: '100px',
+          height: '100px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 50%, #0d9488 100%)',
+          boxShadow: '0 0 50px rgba(20, 184, 166, 0.6), 0 0 100px rgba(20, 184, 166, 0.3)',
+        }}
+      >
+        {/* Inner dark circle */}
+        <div
+          className="flex items-center justify-center bg-[#0a0a0a]"
+          style={{ width: '84px', height: '84px', borderRadius: '50%' }}
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+          >
+            <Recycle className="w-10 h-10 text-teal-400" />
+          </motion.div>
+        </div>
+      </motion.div>
+    </div>
+
+    {/* Title */}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.3 }}
+      className="relative z-10 text-center mb-8"
+    >
+      <h1 className="text-3xl font-bold text-white mb-1">
+        <span className="text-teal-400">Smart</span> Waste Management
+      </h1>
+      <p className="text-slate-500 text-sm">Intelligent Classification System</p>
+    </motion.div>
+
+    {/* Progress Bar */}
+    <motion.div
+      initial={{ opacity: 0, scaleX: 0 }}
+      animate={{ opacity: 1, scaleX: 1 }}
+      transition={{ duration: 0.5, delay: 0.5 }}
+      className="relative z-10 w-64"
+    >
+      <div className="h-1 bg-slate-800/80 overflow-hidden" style={{ borderRadius: '9999px' }}>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.4 }}
+          className="h-full bg-gradient-to-r from-teal-500 to-cyan-400"
+          style={{ borderRadius: '9999px', boxShadow: '0 0 15px rgba(20, 184, 166, 0.6)' }}
+        />
+      </div>
+      <div className="flex justify-between mt-3 text-xs">
+        <span className="text-slate-400">{status}</span>
+        <span className="text-teal-400 font-mono">{progress}%</span>
+      </div>
+    </motion.div>
+  </div>
+);
+
 const CustomTooltip = ({ active, payload, label, theme, binId }) => {
   if (active && payload && payload.length) {
     const color = binColors[binId]?.main || '#8884d8';
@@ -67,6 +180,12 @@ function App() {
 
   const [alert, setAlert] = useState(null);
   const [isConnected, setIsConnected] = useState(socket.connected);
+
+  // Loading Screen State
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStatus, setLoadingStatus] = useState('Initializing...');
+  const [loadingExpanding, setLoadingExpanding] = useState(false);
 
   // Load Camera URL from Settings or Default
   const [camUrl, setCamUrl] = useState(() => {
@@ -202,11 +321,7 @@ function App() {
   const [showLiveFeed, setShowLiveFeed] = useState(true);
   const [recentDetections, setRecentDetections] = useState([]);
 
-  // Loading screen state
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingStatus, setLoadingStatus] = useState('Initializing...');
-  const [loadingExpanding, setLoadingExpanding] = useState(false);
+
 
 
   // Chart enhancement state (Phase 1 & 3)
@@ -1475,47 +1590,19 @@ function App() {
       <AnimatedBackground />
 
       {/* Cinematic Reveal Loading Screen */}
-      {isLoading && (
-        <div className={`cinematic-screen ${loadingExpanding ? 'fade-out' : ''} ${theme === 'light' ? 'light-mode' : ''}`}>
-          {/* Background with gradient */}
-          <div className="cinematic-bg"></div>
-
-          {/* Center content */}
-          <div className="cinematic-center">
-            {/* Logo with ripple rings emanating from center */}
-            <div className={`cinematic-logo ${loadingProgress > 10 ? 'visible' : ''} ${loadingProgress > 80 ? 'expanded' : ''}`}>
-              {/* Ripple rings - inside logo for exact centering */}
-              <div className={`ripple-ring ripple-1 ${loadingProgress > 10 ? 'active' : ''}`}></div>
-              <div className={`ripple-ring ripple-2 ${loadingProgress > 10 ? 'active' : ''}`}></div>
-              <div className={`ripple-ring ripple-3 ${loadingProgress > 10 ? 'active' : ''}`}></div>
-
-              <div className="cinematic-logo-bg"></div>
-              <Recycle size={56} className="cinematic-logo-icon" />
-            </div>
-
-            {/* Title reveals after logo */}
-            <div className={`cinematic-title-wrap ${loadingProgress > 50 ? 'visible' : ''}`}>
-              <h1 className="cinematic-title">Smart Waste AI</h1>
-              <p className={`cinematic-subtitle ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                Intelligent Classification System
-              </p>
-            </div>
-
-            {/* Progress indicator */}
-            <div className={`cinematic-progress ${loadingProgress > 30 ? 'visible' : ''}`}>
-              <div className="cinematic-progress-track">
-                <div
-                  className="cinematic-progress-fill"
-                  style={{ width: `${loadingProgress}%` }}
-                ></div>
-              </div>
-              <span className={`cinematic-status ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-                {loadingStatus}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Cinematic Reveal Loading Screen */}
+      <AnimatePresence mode="wait">
+        {isLoading && (
+          <motion.div
+            key="loader"
+            exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
+            transition={{ duration: 0.8 }}
+            className="fixed inset-0 z-[9999]"
+          >
+            <CinematicLoader progress={loadingProgress} status={loadingStatus} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Toast Notifications Container */}
       <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2 pointer-events-none">
@@ -2162,7 +2249,7 @@ function App() {
       ) : (
         /* BENTO GRID LAYOUT */
         <div className={clsx(
-          "bento-grid",
+          "grid grid-cols-12 gap-6",
           displayMode === 'compact' && "gap-3"
         )}>
 

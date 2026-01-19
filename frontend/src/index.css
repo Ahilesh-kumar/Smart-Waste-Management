@@ -5,8 +5,35 @@
 @tailwind utilities;
 
 @layer base {
+
+  /* ===== SMOOTH THEME TRANSITION ===== */
   body {
-    @apply font-sans transition-colors duration-500 antialiased;
+    @apply font-sans antialiased;
+    transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Apply smooth transitions to ALL elements during theme switch */
+  *,
+  *::before,
+  *::after {
+    transition: background-color 0.5s ease-out,
+      border-color 0.5s ease-out,
+      box-shadow 0.5s ease-out,
+      fill 0.5s ease-out,
+      stroke 0.5s ease-out;
+  }
+
+  /* Exclude animations from theme transitions to prevent jank */
+  .animate-pulse,
+  .animate-spin,
+  .animate-ping,
+  .animate-bounce,
+  [class*="motion-"],
+  motion,
+  [data-motion] {
+    transition: background-color 0.5s ease-out,
+      border-color 0.5s ease-out !important;
   }
 
   /* ===== ACCESSIBILITY FOCUS STATES ===== */
