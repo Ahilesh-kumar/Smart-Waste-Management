@@ -173,11 +173,12 @@ const initSocket = (io) => {
         const state = StateStore.getState();
         if (state.isOn) {
             // Log current category counts as a time series point
+            // Bin order: 0=Recyclable, 1=Wet Waste, 2=Hazardous, 3=Dry Waste
             StateStore.addTimeSeriesPoint({
-                wet: state.bins[0].itemsCount,
-                dry: state.bins[1].itemsCount,
-                bio: state.bins[2].itemsCount,
-                hazard: state.bins[3].itemsCount,
+                recyclable: state.bins[0].itemsCount,
+                wet: state.bins[1].itemsCount,
+                hazardous: state.bins[2].itemsCount,
+                dry: state.bins[3].itemsCount,
                 total: state.bins.reduce((sum, b) => sum + b.itemsCount, 0)
             });
 
