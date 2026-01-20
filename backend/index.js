@@ -72,7 +72,8 @@ startSimulation(broadcastState);
 // SPA fallback - must be AFTER socket.io is initialized
 const indexPath = path.join(publicPath, 'index.html');
 if (fs.existsSync(indexPath)) {
-    app.get('*', (req, res) => {
+    // Use regex to match all routes (fixes Express 5 'Missing parameter name' error)
+    app.get(/.*/, (req, res) => {
         res.sendFile(indexPath);
     });
     console.log('SPA fallback enabled');
