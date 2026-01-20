@@ -31,6 +31,9 @@ const defaultHistory = {
 // Initialize DB
 db.defaults({ systemState: defaultState, history: defaultHistory }).write();
 
+// ALWAYS start with system OFF - user must click power button to turn on
+db.set('systemState.isOn', false).write();
+
 const StateStore = {
     // Get full system state
     getState: () => {
