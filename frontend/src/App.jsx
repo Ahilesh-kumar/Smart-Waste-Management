@@ -824,11 +824,11 @@ function App() {
         const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const newPoint = {
           time: now,
-          // General Volume
-          recyclable: newState.bins[0].volume,
+          // General Volume - use bin index directly since backend order matches
+          dry: newState.bins[0].volume,
           wet: newState.bins[1].volume,
           hazardous: newState.bins[2].volume,
-          dry: newState.bins[3].volume,
+          recyclable: newState.bins[3].volume,
           // Individual Bin Details (we can filter from this history in the modal)
           bin0_vol: newState.bins[0].volume, bin0_items: newState.bins[0].itemsCount || 0,
           bin1_vol: newState.bins[1].volume, bin1_items: newState.bins[1].itemsCount || 0,
@@ -846,17 +846,17 @@ function App() {
       const totalItems = newState.bins.reduce((sum, b) => sum + (b.itemsCount || 0), 0);
       setProcessingCounts({
         total: totalItems,
-        recyclable: newState.bins[0]?.itemsCount || 0,
+        dry: newState.bins[0]?.itemsCount || 0,
         wet: newState.bins[1]?.itemsCount || 0,
         hazardous: newState.bins[2]?.itemsCount || 0,
-        dry: newState.bins[3]?.itemsCount || 0
+        recyclable: newState.bins[3]?.itemsCount || 0
       });
     });
 
     // --- ESP32 ITEM SORTED EVENT (Primary counting source) ---
     socket.on('esp_item_sorted', (data) => {
-      // data: { type: 0-3, category: 'Recyclable'/'Wet Waste'/'Hazardous'/'Dry Waste' }
-      const categoryMap = { 0: 'Recyclable', 1: 'Wet Waste', 2: 'Hazardous', 3: 'Dry Waste' };
+      // data: { type: 0-3, category: 'Dry Waste'/'Wet Waste'/'Hazardous'/'Recyclable' }
+      const categoryMap = { 0: 'Dry Waste', 1: 'Wet Waste', 2: 'Hazardous', 3: 'Recyclable' };
       const cat = data.category || categoryMap[data.type] || 'Unknown';
 
       console.log(`[ESP32] Item sorted: ${cat}`);
@@ -977,18 +977,9 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- THEME SCHEDULER (Phase 4) ---
-  useEffect(() => {
-    const checkTime = () => {
-      const hour = new Date().getHours();
-      // Dark mode between 7 PM (19) and 7 AM (7)
-      const shouldBeDark = hour >= 19 || hour < 7;
-      setTheme(shouldBeDark ? 'dark' : 'light');
-    };
-    checkTime(); // Initial check
-    const interval = setInterval(checkTime, 60000); // Check every minute
-    return () => clearInterval(interval);
-  }, []);
+  // --- THEME SCHEDULER (Phase 4) - REMOVED ---
+  // This was causing theme to change even when isAutoTheme was OFF
+  // The correct auto-theme logic is handled above in the isAutoTheme useEffect
 
   // Chart History Capture - save snapshots every 5 seconds
   useEffect(() => {
