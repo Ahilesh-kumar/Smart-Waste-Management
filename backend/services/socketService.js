@@ -1,5 +1,16 @@
 const StateStore = require('./stateStore');
 const logger = require('./logger');
+const fs = require('fs');
+const path = require('path');
+
+// Load shared config.json (single source of truth for IP)
+let sharedConfig = { camera: { ip: '192.0.0.4', port: '8080' } };
+try {
+    const configPath = path.join(__dirname, '..', '..', 'config.json');
+    sharedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+} catch (e) {
+    console.log('Using default config, config.json not found');
+}
 
 const LIMIT_WARNING = 90;
 const LIMIT_STOP = 99;
@@ -16,9 +27,9 @@ const initSocket = (io) => {
         // Send initial state
         socket.emit('system_state', StateStore.getState());
 
-        // Send camera configuration (from environment variables set in start_all.bat)
-        const camIp = process.env.IP_CAM_IP || '192.168.128.114';
-        const camPort = process.env.IP_CAM_PORT || '8080';
+        // Send camera configuration (from config.json, with env var fallback)
+        const camIp = process.env.IP_CAM_IP || sharedConfig.camera?.ip || '192.0.0.4';
+        const camPort = process.env.IP_CAM_PORT || sharedConfig.camera?.port || '8080';
         socket.emit('camera_config', {
             ip: camIp,
             port: camPort,
@@ -96,7 +107,11 @@ const initSocket = (io) => {
         socket.on('item_sorted', (data) => {
             const typeIdx = parseInt(data.type);
             if (typeIdx >= 0 && typeIdx < 4) {
-                logger.info(`Item sorted into Bin ${typeIdx}`);
+                const categoryMap = { 0: 'Recyclable', 1: 'Wet Waste', 2: 'Hazardous', 3: 'Dry Waste' };
+                const category = categoryMap[typeIdx];
+
+                logger.info(`[ESP32] Item sorted: ${category} (Bin ${typeIdx})`);
+
                 const state = StateStore.getState();
                 const bin = state.bins[typeIdx];
 
@@ -107,6 +122,13 @@ const initSocket = (io) => {
                 };
                 StateStore.updateBin(typeIdx, updates);
                 broadcastState();
+
+                // Notify frontend for +1 notification and category flash
+                io.emit('esp_item_sorted', {
+                    type: typeIdx,
+                    category: category,
+                    confidence: data.confidence || null
+                });
             }
         });
 

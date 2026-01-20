@@ -19,8 +19,23 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import DepthwiseConv2D
 
 # --- CONFIGURATION ---
+# Load from shared config.json (single source of truth for IP)
+def load_config():
+    config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+    try:
+        import json
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except:
+        return {}
+
+_shared_config = load_config()
+
 class Config:
-    IP_CAM_URL = os.getenv("IP_CAM_URL", "http://192.168.128.114:8080/video")
+    # Read IP from config.json, fallback to env var, then default
+    _cam_ip = _shared_config.get('camera', {}).get('ip', '192.0.0.4')
+    _cam_port = _shared_config.get('camera', {}).get('port', '8080')
+    IP_CAM_URL = os.getenv("IP_CAM_URL", f"http://{_cam_ip}:{_cam_port}/video")
     BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:3001")
     MODEL_PATH = "keras_model.h5"
     LABELS_PATH = "labels.txt"
@@ -166,12 +181,11 @@ class WasteClassifier:
              if self.box_data:
                  cached_weight = self.estimate_weight(cached_class, self.box_data['w'], self.box_data['h'])
         
-        # 3. Emit Data
+        # 3. Emit Data (Display only - no counting)
         self.emit_realtime_data(cached_class, cached_conf, cached_label_id, cached_weight)
         
-        # 4. Sorting Logic
-        if not self.is_moving and cached_conf > 90:
-            self.handle_sorting(cached_class, cached_conf, cached_weight)
+        # NOTE: Sorting/counting is now handled by ESP32, not AI vision
+        # ESP32 sends 'item_sorted' events directly to backend
 
     def detect_motion(self, roi, width, height, margin_x, margin_y):
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)

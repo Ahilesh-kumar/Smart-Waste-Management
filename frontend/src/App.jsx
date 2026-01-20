@@ -191,7 +191,7 @@ function App() {
   // Load Camera URL from Settings or Default
   const [camUrl, setCamUrl] = useState(() => {
     const saved = localStorage.getItem('waste_settings');
-    return saved ? JSON.parse(saved).camUrl : '192.168.128.114:8080';
+    return saved ? JSON.parse(saved).camUrl : '192.0.0.4:8080';
   });
 
   // Migration: Auto-update old IP to new one
@@ -199,11 +199,11 @@ function App() {
     const saved = localStorage.getItem('waste_settings');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.camUrl.includes('10.205.209.232') || parsed.camUrl.includes('192.168.1.3') || parsed.camUrl.includes('10.63.6.215')) {
+      if (parsed.camUrl.includes('10.205.209.232') || parsed.camUrl.includes('192.168.1.3') || parsed.camUrl.includes('10.63.6.215') || parsed.camUrl.includes('192.168.128.114') || parsed.camUrl.includes('10.50.211.74') || parsed.camUrl.includes('192.168.128.206')) {
         console.log("Migrating old IP to new default...");
-        const newSettings = { ...parsed, camUrl: '192.168.128.114:8080' };
+        const newSettings = { ...parsed, camUrl: '192.0.0.4:8080' };
         localStorage.setItem('waste_settings', JSON.stringify(newSettings));
-        setCamUrl('192.168.128.114:8080');
+        setCamUrl('192.0.0.4:8080');
       }
     }
   }, []);
@@ -417,7 +417,7 @@ function App() {
   const runs = useMemo(() => generateMockHistory(), []); // Generate usage history only once
   const getModalContent = () => {
     switch (activeModal) {
-      case 'composition':
+      case 'composition': {
         // Pie Chart for Composition
         const pieCounts = historyValue !== 0 && runs[10 - Math.abs(historyValue)]?.data
           ? runs[10 - Math.abs(historyValue)].data
@@ -429,8 +429,9 @@ function App() {
           { name: 'Hazardous', value: pieCounts.hazardous || 0 },
           { name: 'Dry', value: pieCounts.dry || 0 }
         ]} height={400} />;
+      }
 
-      case 'radar':
+      case 'radar': {
         // Radar Chart
         const radarCounts = historyValue !== 0 && runs[10 - Math.abs(historyValue)]?.data
           ? runs[10 - Math.abs(historyValue)].data
@@ -442,7 +443,8 @@ function App() {
           { subject: 'Hazardous', A: radarCounts.hazardous || 0, fullMark: 100 },
           { subject: 'Dry', A: radarCounts.dry || 0, fullMark: 100 },
         ]} height={400} />;
-      case 'throughput':
+      }
+      case 'throughput': {
         // Enhanced Category Trends Modal with Controls
         const trendData = timeSeriesData.length > 0 ? timeSeriesData : [];
         const currentTotal = trendData[trendData.length - 1]?.total || 0;
@@ -509,7 +511,8 @@ function App() {
             </div>
           </div>
         );
-      case 'session':
+      }
+      case 'session': {
         // Mock history for session comparison
         const histFactor = 1 + (historyValue * 0.1);
         return (
@@ -531,9 +534,10 @@ function App() {
             </BarChart>
           </ResponsiveContainer>
         );
+      }
       case 'hourly':
         return <HourlyStackedBarChart data={hourlyData} height={400} />;
-      case 'confidence':
+      case 'confidence': {
         // Shift confidence distribution for history or use mock distribution
         const confData = [
           { range: '0-20%', count: 2 + Math.abs(historyValue) },
@@ -543,7 +547,8 @@ function App() {
           { range: '80-100%', count: 25 - Math.abs(historyValue) }
         ];
         return <ConfidenceHistogram data={confData} height={400} />;
-      case 'predictive':
+      }
+      case 'predictive': {
         // Shift prediction curve
         const offset = Math.abs(historyValue) * 5;
         const predictiveData = [
@@ -555,7 +560,8 @@ function App() {
           { time: '15:00', actual: null, predicted: 92 - offset, threshold: 80 },
         ];
         return <PredictiveLineChart data={predictiveData} height={400} />;
-      case 'heatmap':
+      }
+      case 'heatmap': {
         // Shift peak hour based on history, OR use real data if live (historyValue == 0)
         let baseHeatmap = [];
 
@@ -581,6 +587,7 @@ function App() {
         }));
 
         return <UsageHeatmap data={heatmapData} height={400} />;
+      }
       case 'sustainability':
         return <SustainabilityGauge score={87 - Math.abs(historyValue) * 2} height={400} />;
       default:
@@ -620,7 +627,7 @@ function App() {
     const report = {
       generatedAt: new Date().toISOString(),
       sessionDuration: sessionDuration,
-      systemStatus: isOn ? 'Online' : 'Offline',
+      systemStatus: data.isOn ? 'Online' : 'Offline',
       processingCounts: processingCounts,
       bins: data?.bins || [],
       ecoMetrics: ecoMetrics,
@@ -810,6 +817,74 @@ function App() {
         if (newHistory.length > 50) return newHistory.slice(1); // Keep last 50 for detail graphs
         return newHistory;
       });
+
+      // Update processing counts from backend state (ESP32 is source of truth)
+      const totalItems = newState.bins.reduce((sum, b) => sum + (b.itemsCount || 0), 0);
+      setProcessingCounts({
+        total: totalItems,
+        recyclable: newState.bins[0]?.itemsCount || 0,
+        wet: newState.bins[1]?.itemsCount || 0,
+        hazardous: newState.bins[2]?.itemsCount || 0,
+        dry: newState.bins[3]?.itemsCount || 0
+      });
+    });
+
+    // --- ESP32 ITEM SORTED EVENT (Primary counting source) ---
+    socket.on('esp_item_sorted', (data) => {
+      // data: { type: 0-3, category: 'Recyclable'/'Wet Waste'/'Hazardous'/'Dry Waste' }
+      const categoryMap = { 0: 'Recyclable', 1: 'Wet Waste', 2: 'Hazardous', 3: 'Dry Waste' };
+      const cat = data.category || categoryMap[data.type] || 'Unknown';
+
+      console.log(`[ESP32] Item sorted: ${cat}`);
+
+      // Play detection sound
+      playDetectionSound(cat);
+
+      // Show category flash (+1 notification)
+      setCategoryFlash({ category: cat, time: Date.now() });
+      setTimeout(() => setCategoryFlash(null), 1500);
+
+      // Log to event log
+      const logEntry = {
+        id: Date.now(),
+        time: new Date().toLocaleTimeString('en-US', { hour12: false }),
+        rawClass: cat,
+        category: cat,
+        confidence: data.confidence || 'ESP32'
+      };
+      setEventLog(prev => [logEntry, ...prev].slice(0, 50));
+
+      // Update detection hour heatmap
+      const currentHour = new Date().getHours();
+      setDetectionHours(prev => {
+        const updated = [...prev];
+        updated[currentHour]++;
+        localStorage.setItem('waste_detection_hours', JSON.stringify(updated));
+        return updated;
+      });
+
+      // Update Time Series Data for charts
+      const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      setTimeSeriesData(prev => {
+        const newPoint = {
+          time: now,
+          recyclable: cat === 'Recyclable' ? 1 : 0,
+          hazardous: cat === 'Hazardous' ? 1 : 0,
+          wet: cat === 'Wet Waste' ? 1 : 0,
+          dry: cat === 'Dry Waste' ? 1 : 0,
+          total: 1
+        };
+        if (prev.length > 0 && prev[prev.length - 1].time === now) {
+          const last = { ...prev[prev.length - 1] };
+          last.recyclable = (last.recyclable || 0) + newPoint.recyclable;
+          last.hazardous = (last.hazardous || 0) + newPoint.hazardous;
+          last.wet = (last.wet || 0) + newPoint.wet;
+          last.dry = (last.dry || 0) + newPoint.dry;
+          last.total = (last.total || 0) + 1;
+          return [...prev.slice(0, -1), last].slice(-30);
+        }
+        return [...prev, newPoint].slice(-30);
+      });
     });
 
     socket.on('alert', (alertMsg) => {
@@ -868,12 +943,14 @@ function App() {
       socket.off('disconnect');
       socket.off('camera_config');
       socket.off('system_state');
+      socket.off('esp_item_sorted');
       socket.off('alert');
       socket.off('ai_inference');
       socket.off('prediction_update');
       socket.off('heatmap_update');
       socket.off('timeseries_update');
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- THEME SCHEDULER (Phase 4) ---
@@ -987,6 +1064,7 @@ function App() {
       setActiveSeconds(0); // Reset session timer
       localStorage.removeItem('waste_session_current');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.isOn]); // Runs when power state changes
 
   // Bin Full Alert - Auto turn off system if any bin reaches 100%
@@ -1102,6 +1180,7 @@ function App() {
     }, 10000); // 10s update cycle for stability
 
     return () => clearInterval(calcInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.bins, data.isOn, aiData]);
 
   // Export Event Log to CSV
@@ -1279,6 +1358,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
@@ -1399,168 +1479,25 @@ function App() {
         if (inferenceTime - lastInferenceTime.current < 30) return; // 30ms Throttle ~33FPS
         lastInferenceTime.current = inferenceTime;
 
-        if (!data.isOn) return; // Ignore if system matches "Off"
+        if (!data.isOn) return; // Ignore if system is "Off"
 
+        // DISPLAY ONLY - Update AI visualization state
+        // Counting is now handled by ESP32 'item_sorted' events, not AI
         setAiData(inferenceData);
 
         // Auto-torch logic (Simulated brightness check)
         if (autoTorch && inferenceData.brightness !== undefined) {
-          const BRIGHTNESS_THRESHOLD = 30; // 0-100
+          const BRIGHTNESS_THRESHOLD = 30;
           if (inferenceData.brightness < BRIGHTNESS_THRESHOLD) {
-            // Low light - turn on torch (mock)
-            // socket.emit('toggle_torch', true);
+            // Low light - would trigger torch (mock)
           }
-        }
-
-        // If Paused, show visualization but DO NOT COUNT
-        if (isPaused) return; // Skip all counting/logging logic below
-        const { is_moving, object_present, class: detectedClass, confidence, box } = inferenceData;
-
-        // 1. Object left camera view - RESET for next detection
-        if (!object_present) {
-          // Only log if we had processed an object (shows it left)
-          if (itemProcessedRef.current) {
-            console.log('[AI] Object left camera view - ready for next detection');
-          }
-          itemProcessedRef.current = false; // Reset so next object can be counted
-          return;
-        }
-
-        // 2. Object is moving through frame - track it but don't re-count
-        if (is_moving) {
-          // Keep showing bounding box while moving (handled by boxPos state)
-          // Don't reset itemProcessedRef - same object is still in frame
-          return;
-        }
-
-        // 3. Thresholds
-        let threshold = 80;
-        if (sensitivity === 'Medium') threshold = 70;
-        if (sensitivity === 'Low') threshold = 60;
-
-        // 4. Low Confidence (Transparency)
-        // If stable but low confidence, and NOT yet handled
-        if (!itemProcessedRef.current && confidence > 40 && confidence < threshold) {
-          const now = new Date().toLocaleTimeString('en-US', { hour12: false });
-          setEventLog(prev => {
-            // Prevent spam: Don't log if the last entry was also "Low Confidence" for the same item
-            if (prev.length > 0 && prev[0].category === 'Low Confidence' && prev[0].rawClass === detectedClass) {
-              return prev;
-            }
-            return [{
-              id: Date.now(),
-              time: now,
-              rawClass: detectedClass,
-              category: 'Low Confidence',
-              confidence: confidence.toFixed(1)
-            }, ...prev].slice(0, 50);
-          });
-        }
-
-        // 5. Valid Detection - with cooldown to prevent rapid counting
-        const now = Date.now();
-        const timeSinceLastCount = now - lastCountTimeRef.current;
-        const cooldownPassed = timeSinceLastCount >= DETECTION_COOLDOWN_MS;
-
-        if (!itemProcessedRef.current && cooldownPassed && confidence >= threshold && detectedClass !== 'Unknown' && detectedClass !== 'Scanning...') {
-          itemProcessedRef.current = true;
-          lastCountTimeRef.current = now; // Record this count time
-
-          // Voice removed per user request (only system state/errors)
-          // speak(`${detectedClass} detected.`);
-
-          // Categorize (updated for new AI model: Recyclable, Wet, Hazardous, Dry)
-          let cat = 'Dry Waste';
-          const lower = detectedClass.toLowerCase();
-          if (lower.includes('rec')) cat = 'Recyclable';
-          else if (lower.includes('haz')) cat = 'Hazardous';
-          else if (lower.includes('wet') || lower.includes('org')) cat = 'Wet Waste';
-
-          // Log
-          const logEntry = {
-            id: Date.now(),
-            time: new Date().toLocaleTimeString('en-US', { hour12: false }),
-            rawClass: detectedClass,
-            category: cat,
-            confidence: confidence.toFixed(1)
-          };
-          setEventLog(prev => [logEntry, ...prev].slice(0, 50));
-
-          // Play detection sound
-          playDetectionSound(cat);
-
-          // Show category flash (+1 Recyclable, +1 Haz, etc.)
-          setCategoryFlash({ category: cat, time: Date.now() });
-          setTimeout(() => setCategoryFlash(null), 1500);
-
-          // Update detection hour heatmap
-          const currentHour = new Date().getHours();
-          setDetectionHours(prev => {
-            const updated = [...prev];
-            updated[currentHour]++;
-            localStorage.setItem('waste_detection_hours', JSON.stringify(updated));
-            return updated;
-          });
-
-          // Update Counts (using correct state keys: recyclable, hazardous, wet, dry)
-          setProcessingCounts(prev => {
-            const next = { ...prev, total: prev.total + 1 };
-            if (cat === 'Recyclable') next.recyclable++;
-            else if (cat === 'Hazardous') next.hazardous++;
-            else if (cat === 'Wet Waste') next.wet++;
-            else next.dry++;
-
-            // Update Time Series Data for charts (using correct field names)
-            const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-            setTimeSeriesData(prev => {
-              const newPoint = {
-                time: now,
-                recyclable: cat === 'Recyclable' ? 1 : 0,
-                hazardous: cat === 'Hazardous' ? 1 : 0,
-                wet: cat === 'Wet Waste' ? 1 : 0,
-                dry: cat === 'Dry Waste' ? 1 : 0
-              };
-              // Merge with last point if same time, otherwise add new
-              if (prev.length > 0 && prev[prev.length - 1].time === now) {
-                const last = { ...prev[prev.length - 1] };
-                last.recyclable = (last.recyclable || 0) + newPoint.recyclable;
-                last.hazardous = (last.hazardous || 0) + newPoint.hazardous;
-                last.wet = (last.wet || 0) + newPoint.wet;
-                last.dry = (last.dry || 0) + newPoint.dry;
-                return [...prev.slice(0, -1), last].slice(-30);
-              }
-              return [...prev, newPoint].slice(-30);
-            });
-
-            // Update Confidence History for scatter chart
-            setConfidenceHistory(prev => [...prev, {
-              time: now,
-              confidence: parseFloat(confidence.toFixed(1)),
-              category: cat
-            }].slice(-50));
-
-            // Increase bin volume by 0.5% for the detected category
-            // Bin mapping: 0=Recyclable, 1=Wet, 2=Hazardous, 3=Dry
-            setData(prev => {
-              const binIdMap = { 'Recyclable': 0, 'Wet Waste': 1, 'Hazardous': 2, 'Dry Waste': 3 };
-              const binId = binIdMap[cat];
-              if (binId !== undefined) {
-                const updatedBins = prev.bins.map(bin =>
-                  bin.id === binId ? { ...bin, volume: Math.min(100, bin.volume + 0.5) } : bin
-                );
-                return { ...prev, bins: updatedBins };
-              }
-              return prev;
-            });
-
-            return next;
-          });
         }
       } catch (e) { console.error(e); }
     };
 
     socket.on('ai_inference', handleInference);
     return () => socket.off('ai_inference', handleInference);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.isOn, sensitivity]);
 
   // Set Box Position with 4-Second Persistence

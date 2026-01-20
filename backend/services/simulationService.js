@@ -21,9 +21,7 @@ const startSimulation = (broadcastCallback) => {
                     hasChanges = true;
                 }
 
-                // 2. Signal Fluctuation (90-100%) - This changes often, so always update?
-                // Actually, let's only update if it crosses a threshold to avoid spamming DB?
-                // But frontend likes live values.
+                // 2. Signal Fluctuation (90-100%)
                 bin.health.signal = 90 + Math.floor(Math.random() * 10);
 
                 // 3. Sensor Cleanliness
@@ -36,21 +34,8 @@ const startSimulation = (broadcastCallback) => {
                 bin.health.battery = parseFloat(bin.health.battery.toFixed(1));
                 bin.health.clean = parseFloat(bin.health.clean.toFixed(1));
 
-                // Simulate random increase
-                if (Math.random() > 0.7) {
-                    const increase = Math.random() * 0.5;
-                    let newVol = bin.volume + increase;
-                    if (newVol > 89) newVol = 89;
-
-                    if (newVol > bin.volume) {
-                        bin.itemsCount += 1;
-                    }
-                    bin.volume = parseFloat(newVol.toFixed(1));
-
-                    let newWeight = bin.weight + (increase * 0.2);
-                    bin.weight = parseFloat(newWeight.toFixed(2));
-                    hasChanges = true;
-                }
+                // NOTE: Item counting is now ONLY handled by ESP32 'item_sorted' events
+                // The simulation no longer auto-increments counts
             });
 
             if (hasChanges || true) { // Always broadcast for signal fluctuation

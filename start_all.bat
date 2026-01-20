@@ -2,20 +2,21 @@
 TITLE Waste Management Launcher
 
 REM ============================================
-REM       CENTRALIZED CONFIGURATION
+REM    CONFIG IS NOW IN config.json
+REM    Edit config.json to change camera IP
 REM ============================================
-REM Change this IP address to match your phone's IP Webcam URL
-REM Your phone will show: http://192.168.X.X:8080
-SET IP_CAM_IP=192.168.128.114
-SET IP_CAM_PORT=8080
+
+REM Read config from config.json using PowerShell
+for /f "delims=" %%i in ('powershell -Command "(Get-Content config.json | ConvertFrom-Json).camera.ip"') do set IP_CAM_IP=%%i
+for /f "delims=" %%i in ('powershell -Command "(Get-Content config.json | ConvertFrom-Json).camera.port"') do set IP_CAM_PORT=%%i
 SET IP_CAM_URL=http://%IP_CAM_IP%:%IP_CAM_PORT%/video
-REM ============================================
 
 ECHO.
 ECHO ============================================
 ECHO    Smart Waste Management System
 ECHO ============================================
 ECHO    Camera IP: %IP_CAM_IP%:%IP_CAM_PORT%
+ECHO    (Edit config.json to change)
 ECHO ============================================
 ECHO.
 
