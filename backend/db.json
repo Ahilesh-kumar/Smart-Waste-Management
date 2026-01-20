@@ -16,29 +16,29 @@
         "id": 0,
         "name": "Wet Waste",
         "type": "wet",
-        "weight": 0.63,
-        "volume": 7.6,
-        "itemsCount": 3,
+        "weight": 0.38,
+        "volume": 6.8,
+        "itemsCount": 5,
         "isSimulated": false,
         "health": {
           "battery": 92.3,
-          "signal": 90,
+          "signal": 94,
           "motor": 100,
           "sensor": 100,
-          "clean": 97.8
+          "clean": 97.7
         }
       },
       {
         "id": 1,
         "name": "Dry Waste",
         "type": "dry",
-        "weight": 0,
-        "volume": 5,
-        "itemsCount": 0,
+        "weight": 0.05,
+        "volume": 5.2,
+        "itemsCount": 1,
         "isSimulated": true,
         "health": {
           "battery": 88,
-          "signal": 92,
+          "signal": 93,
           "motor": 98,
           "sensor": 99,
           "clean": 92.3
@@ -54,7 +54,7 @@
         "isSimulated": false,
         "health": {
           "battery": 93.2,
-          "signal": 91,
+          "signal": 94,
           "motor": 100,
           "sensor": 100,
           "clean": 96.1
@@ -64,13 +64,13 @@
         "id": 3,
         "name": "Hazardous",
         "type": "hazard",
-        "weight": 0.1,
-        "volume": 5.5,
-        "itemsCount": 2,
+        "weight": 0.39,
+        "volume": 6.9,
+        "itemsCount": 8,
         "isSimulated": true,
         "health": {
-          "battery": 78.5,
-          "signal": 92,
+          "battery": 78.4,
+          "signal": 93,
           "motor": 95,
           "sensor": 97,
           "clean": 77.4
@@ -136075,6 +136075,30 @@
         "hazard": 1,
         "total": 3,
         "timestamp": "2026-01-20T04:25:28.181Z"
+      },
+      {
+        "wet": 2,
+        "dry": 1,
+        "bio": 0,
+        "hazard": 3,
+        "total": 6,
+        "timestamp": "2026-01-20T04:48:51.313Z"
+      },
+      {
+        "wet": 4,
+        "dry": 1,
+        "bio": 0,
+        "hazard": 5,
+        "total": 10,
+        "timestamp": "2026-01-20T04:49:01.326Z"
+      },
+      {
+        "wet": 5,
+        "dry": 1,
+        "bio": 0,
+        "hazard": 7,
+        "total": 13,
+        "timestamp": "2026-01-20T04:49:11.337Z"
       }
     ]
   }
