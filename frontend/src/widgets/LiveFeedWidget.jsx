@@ -47,14 +47,14 @@ export const LiveFeedWidget = ({
             ) : (
                 /* Enhanced Offline/Error State */
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900/90 backdrop-blur-md">
-                    <div className="p-4 rounded-full bg-white/5 border border-white/10 shadow-[0_0_30px_rgba(244,63,94,0.2)] mb-4 animate-pulse">
-                        <Camera size={48} className="text-rose-400 opacity-80" />
+                    <div className="p-4 rounded-full bg-white/5 border border-white/10 shadow-[0_0_30px_rgba(100,116,139,0.2)] mb-4 animate-pulse">
+                        <Camera size={48} className="text-slate-400 opacity-80" />
                     </div>
-                    <p className="font-mono text-sm tracking-widest uppercase text-rose-400 font-bold mb-1">Feed Unavailable</p>
+                    <p className="font-mono text-sm tracking-widest uppercase text-slate-400 font-bold mb-1">Feed Unavailable</p>
                     <p className="text-xs text-slate-500">Check connection to {camUrl}</p>
                     <button
                         onClick={() => setHasFeedError(false)}
-                        className="mt-6 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-cyan-400 transition-colors flex items-center gap-2"
+                        className="mt-6 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-teal-400 transition-colors flex items-center gap-2"
                     >
                         <RotateCw size={12} />
                         RETRY CONNECTION
@@ -65,15 +65,15 @@ export const LiveFeedWidget = ({
             {/* Connecting Overlay (when not errored but not connected) */}
             {!isConnected && !hasFeedError && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm z-10 pointer-events-none">
-                    <div className="w-12 h-12 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin mb-4" />
-                    <p className="font-mono text-xs tracking-widest uppercase text-emerald-400">System Connecting...</p>
+                    <div className="w-12 h-12 rounded-full border-2 border-teal-500/30 border-t-teal-500 animate-spin mb-4" />
+                    <p className="font-mono text-xs tracking-widest uppercase text-teal-400">System Connecting...</p>
                 </div>
             )}
 
             {/* AI Bounding Box Overlay */}
             {boxPos && (
                 <div
-                    className="absolute border-2 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.6)] z-10 transition-all duration-100 ease-linear rounded-lg"
+                    className="absolute border-2 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.6)] z-10 transition-all duration-50 ease-out rounded-lg"
                     style={{
                         left: `${boxPos.x}px`,
                         top: `${boxPos.y}px`,

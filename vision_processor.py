@@ -20,11 +20,11 @@ from tensorflow.keras.layers import DepthwiseConv2D
 
 # --- CONFIGURATION ---
 class Config:
-    IP_CAM_URL = os.getenv("IP_CAM_URL", "http://192.168.1.3:8080/video")
+    IP_CAM_URL = os.getenv("IP_CAM_URL", "http://10.205.209.232:8080/video")
     BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:3001")
     MODEL_PATH = "keras_model.h5"
     LABELS_PATH = "labels.txt"
-    AI_INTERVAL = 3
+    AI_INTERVAL = 1
     MOVEMENT_THRESHOLD = 2.0
     STATIONARY_THRESHOLD = 5
 

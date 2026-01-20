@@ -19,7 +19,21 @@ const initSocket = (io) => {
         // --- EVENTS FROM DASHBOARD ---
         socket.on('toggle_power', (isOn) => {
             logger.info(`System Power: ${isOn}`);
-            StateStore.updateState({ isOn });
+
+            const updates = { isOn };
+
+            // Reset bins if turning ON
+            if (isOn) {
+                const currentBins = StateStore.getState().bins.map(bin => ({
+                    ...bin,
+                    volume: 5, // Reset to 5% as requested
+                    weight: 0,
+                    itemsCount: 0
+                }));
+                updates.bins = currentBins;
+            }
+
+            StateStore.updateState(updates);
             broadcastState();
             io.emit('esp_control', { command: 'power', value: isOn });
         });

@@ -8,12 +8,12 @@ import {
 } from 'recharts';
 import { X, Maximize2, ArrowLeftRight, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 
-// ===== CATEGORY COLORS =====
+// ===== CATEGORY COLORS ===== (Premium Slate/Teal Theme)
 const CATEGORY_COLORS = {
-    bio: { main: '#10b981', gradient: 'url(#gradientBio)' },
-    hazard: { main: '#f43f5e', gradient: 'url(#gradientHazard)' },
-    wet: { main: '#06b6d4', gradient: 'url(#gradientWet)' },
-    dry: { main: '#f59e0b', gradient: 'url(#gradientDry)' }
+    bio: { main: '#14b8a6', gradient: 'url(#gradientBio)' },       // Teal
+    hazard: { main: '#64748b', gradient: 'url(#gradientHazard)' }, // Slate
+    wet: { main: '#2dd4bf', gradient: 'url(#gradientWet)' },       // Teal Light
+    dry: { main: '#94a3b8', gradient: 'url(#gradientDry)' }        // Slate Light
 };
 
 // ===== MODERN GLASSMORPHISM TOOLTIP =====
@@ -98,20 +98,20 @@ export const EnhancedAreaChart = ({
                     {/* Gradient Definitions */}
                     <defs>
                         <linearGradient id="gradientBio" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.5} />
-                            <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                            <stop offset="0%" stopColor="#14b8a6" stopOpacity={0.5} />
+                            <stop offset="100%" stopColor="#14b8a6" stopOpacity={0.02} />
                         </linearGradient>
                         <linearGradient id="gradientHazard" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.5} />
-                            <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.02} />
+                            <stop offset="0%" stopColor="#64748b" stopOpacity={0.5} />
+                            <stop offset="100%" stopColor="#64748b" stopOpacity={0.02} />
                         </linearGradient>
                         <linearGradient id="gradientWet" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.5} />
-                            <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.02} />
+                            <stop offset="0%" stopColor="#2dd4bf" stopOpacity={0.5} />
+                            <stop offset="100%" stopColor="#2dd4bf" stopOpacity={0.02} />
                         </linearGradient>
                         <linearGradient id="gradientDry" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.5} />
-                            <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.02} />
+                            <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.5} />
+                            <stop offset="100%" stopColor="#94a3b8" stopOpacity={0.02} />
                         </linearGradient>
                         {/* Glow filter */}
                         <filter id="glow">
@@ -165,7 +165,7 @@ export const EnhancedAreaChart = ({
 };
 
 // ===== EXPANDABLE CHART MODAL =====
-export const ChartModal = ({ isOpen, onClose, title, children }) => {
+export const ChartModal = ({ isOpen, onClose, title, children, description }) => {
     if (!isOpen) return null;
 
     return (
@@ -187,7 +187,23 @@ export const ChartModal = ({ isOpen, onClose, title, children }) => {
                 >
                     {/* Modal Header */}
                     <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                        <h2 className="text-lg font-bold text-white">{title}</h2>
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-lg font-bold text-white">{title}</h2>
+                            {description && (
+                                <div className="relative group">
+                                    <button className="p-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <path d="M12 16v-4" />
+                                            <path d="M12 8h.01" />
+                                        </svg>
+                                    </button>
+                                    <div className="absolute left-0 top-full mt-2 w-64 p-3 bg-slate-800 border border-white/10 rounded-xl text-xs text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-2xl">
+                                        {description}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                         <button
                             onClick={onClose}
                             className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
@@ -376,9 +392,9 @@ export const AnimatedBackground = () => {
             {/* The Liquid Orb */}
             <div
                 ref={orbRef}
-                className="absolute w-[800px] h-[800px] rounded-full blur-[120px] opacity-20"
+                className="absolute w-[400px] h-[400px] rounded-full blur-[100px] opacity-15"
                 style={{
-                    background: 'conic-gradient(from 0deg, #06b6d4, #8b5cf6, #ec4899, #06b6d4)',
+                    background: 'conic-gradient(from 0deg, #14b8a6, #64748b, #2dd4bf, #94a3b8, #14b8a6)',
                     top: 0,
                     left: 0,
                     willChange: 'transform'
@@ -571,8 +587,8 @@ export const PremiumRadarChart = ({ data, height = 300 }) => {
     );
 };
 
-// ===== PIE CHART CATEGORY COLORS =====
-const PIE_COLORS = ['#10b981', '#f43f5e', '#06b6d4', '#f59e0b', '#8b5cf6', '#ec4899'];
+// ===== PIE CHART CATEGORY COLORS ===== (Premium Slate/Teal)
+const PIE_COLORS = ['#14b8a6', '#64748b', '#2dd4bf', '#94a3b8', '#0d9488', '#475569'];
 
 // ===== ACTIVE SHAPE FOR PIE CHART =====
 const renderActiveShape = (props) => {
@@ -786,10 +802,10 @@ export const HourlyStackedBarChart = ({ data = [], height = 180 }) => {
                         iconSize={6}
                         wrapperStyle={{ paddingTop: '5px' }}
                     />
-                    <Bar dataKey="bio" name="Bio" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="hazard" name="Hazard" stackId="a" fill="#f43f5e" />
-                    <Bar dataKey="wet" name="Wet" stackId="a" fill="#06b6d4" />
-                    <Bar dataKey="dry" name="Dry" stackId="a" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="bio" name="Bio" stackId="a" fill="#14b8a6" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="hazard" name="Hazard" stackId="a" fill="#64748b" />
+                    <Bar dataKey="wet" name="Wet" stackId="a" fill="#2dd4bf" />
+                    <Bar dataKey="dry" name="Dry" stackId="a" fill="#94a3b8" radius={[4, 4, 0, 0]} />
                 </BarChart>
             </ResponsiveContainer>
         </div>

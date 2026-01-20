@@ -19,11 +19,12 @@ import { AnalyticsDeckWidget } from './widgets/AnalyticsDeckWidget';
 const socket = io('http://localhost:3001');
 
 // --- Graph Enhancement Components ---
+// Premium 2-Color Theme: Slate + Teal
 const binColors = {
-  0: { main: '#06b6d4', gradient: ['#06b6d4', '#0891b2'] }, // Wet (Cyan)
-  1: { main: '#f59e0b', gradient: ['#f59e0b', '#d97706'] }, // Dry (Amber)
-  2: { main: '#10b981', gradient: ['#10b981', '#059669'] }, // Bio (Emerald)
-  3: { main: '#f43f5e', gradient: ['#f43f5e', '#e11d48'] }  // Hazard (Rose)
+  0: { main: '#14b8a6', gradient: ['#14b8a6', '#0d9488'] }, // Teal (Primary)
+  1: { main: '#64748b', gradient: ['#64748b', '#475569'] }, // Slate
+  2: { main: '#2dd4bf', gradient: ['#2dd4bf', '#14b8a6'] }, // Teal Light
+  3: { main: '#94a3b8', gradient: ['#94a3b8', '#64748b'] }  // Slate Light
 };
 
 // ===== CINEMATIC LOADING SCREEN WITH WATER RIPPLES =====
@@ -190,8 +191,22 @@ function App() {
   // Load Camera URL from Settings or Default
   const [camUrl, setCamUrl] = useState(() => {
     const saved = localStorage.getItem('waste_settings');
-    return saved ? JSON.parse(saved).camUrl : '192.168.1.3:8080';
+    return saved ? JSON.parse(saved).camUrl : '10.205.209.232:8080';
   });
+
+  // Migration: Auto-update old IP to new one
+  useEffect(() => {
+    const saved = localStorage.getItem('waste_settings');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.camUrl.includes('192.168.1.3')) {
+        console.log("Migrating old IP to new default...");
+        const newSettings = { ...parsed, camUrl: '10.205.209.232:8080' };
+        localStorage.setItem('waste_settings', JSON.stringify(newSettings));
+        setCamUrl('10.205.209.232:8080');
+      }
+    }
+  }, []);
 
   const [hourlyData, setHourlyData] = useState([]); // Hourly stacked bar data
   const [showComparisonMode, setShowComparisonMode] = useState(false); // Toggle for comparison view
@@ -211,6 +226,7 @@ function App() {
   const itemProcessedRef = useRef(false); // Track if current item is counted
   const hideTimerRef = useRef(null); // Timer for box persistence
   const lastCountTimeRef = useRef(0); // Cooldown to prevent rapid counting
+  const lastInferenceTime = useRef(0); // Throttle for AI inference
   const DETECTION_COOLDOWN_MS = 2000; // Minimum 2 seconds between counts
 
   const [history, setHistory] = useState([]);
@@ -218,8 +234,33 @@ function App() {
     // Default to 'dark' for premium black look
     return localStorage.getItem('theme') || 'dark';
   });
+  const [isAutoTheme, setIsAutoTheme] = useState(() => {
+    return localStorage.getItem('isAutoTheme') === 'true';
+  });
   const [graphType, setGraphType] = useState('line');
   const [selectedBin, setSelectedBin] = useState(null);
+
+  // Auto Day/Night Theme Effect
+  useEffect(() => {
+    if (!isAutoTheme) return;
+
+    const checkTimeAndSetTheme = () => {
+      const hour = new Date().getHours();
+      // Day: 6 AM - 6 PM = light, Night: 6 PM - 6 AM = dark
+      const shouldBeDark = hour < 6 || hour >= 18;
+      setTheme(shouldBeDark ? 'dark' : 'light');
+    };
+
+    checkTimeAndSetTheme();
+    // Check every minute
+    const interval = setInterval(checkTimeAndSetTheme, 60000);
+    return () => clearInterval(interval);
+  }, [isAutoTheme]);
+
+  // Save auto theme preference
+  useEffect(() => {
+    localStorage.setItem('isAutoTheme', isAutoTheme.toString());
+  }, [isAutoTheme]);
 
   // Load Session Data from LocalStorage
   const [eventLog, setEventLog] = useState(() => {
@@ -353,6 +394,19 @@ function App() {
         total: Math.floor(Math.random() * 200) + 100
       }
     })).reverse();
+  };
+
+  // Graph Info Descriptions for hover tooltips
+  const MODAL_DESCRIPTIONS = {
+    composition: "Shows the distribution of waste across categories (Bio, Hazard, Wet, Dry). Helps identify which waste types are most common in your facility.",
+    radar: "Displays waste category distribution in a radar/spider chart format. Useful for comparing relative quantities across all categories at a glance.",
+    throughput: "Tracks waste detection velocity over time. Shows how processing rates change throughout the day and helps identify peak hours.",
+    session: "Compares current session performance against historical averages. Helps track whether you're processing more or less waste than usual.",
+    hourly: "Stacked bar chart showing hourly breakdown of waste by category. Identifies busy periods and category distribution patterns.",
+    confidence: "Histogram showing AI detection confidence distribution. Higher values mean more accurate classifications.",
+    predictive: "Forecasts expected waste volume based on historical patterns. Helps anticipate bin fill levels and plan collection schedules.",
+    heatmap: "Visual heatmap showing activity intensity by hour. Darker colors indicate busier periods.",
+    sustainability: "Environmental impact score measuring CO2 offset, trees equivalent, and energy savings from proper waste segregation."
   };
 
   const handleExpandChart = (chartType) => {
@@ -651,14 +705,16 @@ function App() {
     threshold: 80
   });
 
-  // Theme with persistence
+  // Theme with persistence - also disables auto theme when user manually switches
   const toggleTheme = () => {
     playClick();
-    setTheme(prev => {
-      const newTheme = prev === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('waste_theme', newTheme);
-      return newTheme;
-    });
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    // Disable auto theme when user manually toggles
+    if (isAutoTheme) {
+      setIsAutoTheme(false);
+    }
   };
 
   // Sound Effect Logic
@@ -1320,9 +1376,15 @@ function App() {
       window.speechSynthesis.speak(utterance);
     };
 
+    // Ref moved to top level
+
     const handleInference = (inferenceData) => {
       try {
         if (!inferenceData) return;
+        const inferenceTime = Date.now();
+        if (inferenceTime - lastInferenceTime.current < 30) return; // 30ms Throttle ~33FPS
+        lastInferenceTime.current = inferenceTime;
+
         if (!data.isOn) return; // Ignore if system matches "Off"
 
         setAiData(inferenceData);
@@ -1463,6 +1525,19 @@ function App() {
               category: cat
             }].slice(-50));
 
+            // Increase bin volume by 0.5% for the detected category
+            setData(prev => {
+              const binIdMap = { 'Wet Waste': 0, 'Dry Waste': 1, 'Bio-medical': 2, 'Hazardous': 3 };
+              const binId = binIdMap[cat];
+              if (binId !== undefined) {
+                const updatedBins = prev.bins.map(bin =>
+                  bin.id === binId ? { ...bin, volume: Math.min(100, bin.volume + 0.5) } : bin
+                );
+                return { ...prev, bins: updatedBins };
+              }
+              return prev;
+            });
+
             return next;
           });
         }
@@ -1499,10 +1574,37 @@ function App() {
 
   }, [aiData]);
 
+  // Flashlight Control
+  const toggleTorch = async () => {
+    try {
+      playClick();
+      const mode = isTorchOn ? 'off' : 'on';
+      const endpoint = isTorchOn ? 'disabletorch' : 'enabletorch';
+      const url = camUrl.startsWith('http') ? `${camUrl}/${endpoint}` : `http://${camUrl}/${endpoint}`;
+
+      await fetch(url, { mode: 'no-cors' });
+
+      setIsTorchOn(!isTorchOn);
+      addToast(`Flashlight ${mode.toUpperCase()}`, 'info');
+    } catch (e) {
+      console.error("Torch error", e);
+      // Optimistic update
+      setIsTorchOn(!isTorchOn);
+    }
+  };
+
   const togglePower = () => {
     playClick();
     const newState = !data.isOn;
     socket.emit('toggle_power', newState);
+
+    // Reset bin volumes to 5% when system turns ON
+    if (newState) {
+      setData(prev => ({
+        ...prev,
+        bins: prev.bins.map(bin => ({ ...bin, volume: 5 }))
+      }));
+    }
 
     // Voice Feedback for System State
     if (isVoiceEnabled && window.speechSynthesis) {
@@ -1755,6 +1857,20 @@ function App() {
                     className={clsx("w-12 h-6 rounded-full transition flex-shrink-0", isVoiceEnabled ? "bg-green-500" : "bg-slate-600")}
                   >
                     <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", isVoiceEnabled ? "translate-x-6" : "translate-x-0.5")} />
+                  </button>
+                </div>
+
+                {/* Auto Day/Night Theme */}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <span className="font-medium">Auto Day/Night Theme</span>
+                    <p className="text-xs text-slate-400 mt-0.5">Light mode 6AM-6PM, Dark mode 6PM-6AM</p>
+                  </div>
+                  <button
+                    onClick={() => setIsAutoTheme(!isAutoTheme)}
+                    className={clsx("w-12 h-6 rounded-full transition flex-shrink-0", isAutoTheme ? "bg-teal-500" : "bg-slate-600")}
+                  >
+                    <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", isAutoTheme ? "translate-x-6" : "translate-x-0.5")} />
                   </button>
                 </div>
 
@@ -2211,7 +2327,7 @@ function App() {
             {isVoiceEnabled ? <Volume2 size={18} className={theme === 'dark' ? "text-slate-300" : "text-slate-600"} /> : <VolumeX size={18} className="text-slate-500" />}
           </button>
 
-          <button onClick={toggleTheme} className="p-2.5 rounded-xl hover:bg-slate-500/10 transition">
+          <button onClick={toggleTheme} className="p-2.5 rounded-xl hover:bg-slate-500/10 transition" title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
             {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-600" />}
           </button>
 
@@ -2231,6 +2347,8 @@ function App() {
             processingCounts={processingCounts}
             systemHealth={{ latency: 12, fps: 60, memoryUsage: 45 }} // Mock health if not available
             togglePower={togglePower}
+            toggleTorch={toggleTorch}
+            isTorchOn={isTorchOn}
             // Controls
             speed={speed}
             setSpeed={setSpeed} // pass wrapper if needed
@@ -2291,13 +2409,7 @@ function App() {
                     {/* Camera Controls Overlay */}
                     <div className="absolute top-4 right-4 flex gap-2">
                       <button
-                        onClick={() => {
-                          playClick();
-                          const mode = !isTorchOn ? 'enabletorch' : 'disabletorch';
-                          fetch(`${camUrl}/${mode}`, { mode: 'no-cors' })
-                            .then(() => setIsTorchOn(!isTorchOn))
-                            .catch(err => console.error("Torch error", err));
-                        }}
+                        onClick={toggleTorch}
                         className={clsx("p-2 rounded-full text-white transition-opacity backdrop-blur-md border border-white/20", isTorchOn ? "bg-yellow-500/90 hover:bg-yellow-600" : "bg-black/40 hover:bg-yellow-500 opacity-0 group-hover:opacity-100")}
                       >
                         <Zap size={18} className={isTorchOn ? "fill-white" : ""} />
@@ -2322,7 +2434,7 @@ function App() {
                     <div className="flex gap-2 max-w-xs mx-auto">
                       <input
                         type="text"
-                        placeholder="http://192.168.1.x:8080"
+                        placeholder="http://10.205.209.232:8080"
                         className="flex-1 rounded-lg bg-neutral-900 border-white/10 text-white px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
                         onKeyDown={(e) => e.key === 'Enter' && setCamUrl(e.currentTarget.value)}
                       />
@@ -2691,8 +2803,8 @@ function App() {
                 <div className="category-icon category-icon-bio">
                   <Recycle size={18} className="text-white" />
                 </div>
-                <div className="stat-label text-emerald-400">Bio-medical</div>
-                <AnimatedCounter value={processingCounts.bio} className="stat-number-sm text-bio" />
+                <div className="stat-label text-slate-400">Bio-medical</div>
+                <AnimatedCounter value={processingCounts.bio} className="stat-number-sm text-slate-300" />
               </div>
 
               {/* Hazard Card */}
@@ -2703,8 +2815,8 @@ function App() {
                 <div className="category-icon category-icon-hazard">
                   <AlertTriangle size={18} className="text-white" />
                 </div>
-                <div className="stat-label text-rose-400">Hazardous</div>
-                <AnimatedCounter value={processingCounts.hazard} className="stat-number-sm text-hazard" />
+                <div className="stat-label text-slate-400">Hazardous</div>
+                <AnimatedCounter value={processingCounts.hazard} className="stat-number-sm text-slate-300" />
               </div>
 
               {/* Wet Card */}
@@ -2715,8 +2827,8 @@ function App() {
                 <div className="category-icon category-icon-wet">
                   <Activity size={18} className="text-white" />
                 </div>
-                <div className="stat-label text-cyan-400">Wet Waste</div>
-                <AnimatedCounter value={processingCounts.wet} className="stat-number-sm text-cyan-500" />
+                <div className="stat-label text-slate-400">Wet Waste</div>
+                <AnimatedCounter value={processingCounts.wet} className="stat-number-sm text-slate-300" />
               </div>
 
               {/* Dry Card */}
@@ -2727,8 +2839,8 @@ function App() {
                 <div className="category-icon category-icon-dry">
                   <Trash2 size={18} className="text-white" />
                 </div>
-                <div className="stat-label text-amber-400">Dry Waste</div>
-                <AnimatedCounter value={processingCounts.dry} className="stat-number-sm text-dry" />
+                <div className="stat-label text-slate-400">Dry Waste</div>
+                <AnimatedCounter value={processingCounts.dry} className="stat-number-sm text-slate-300" />
               </div>
             </div>
 

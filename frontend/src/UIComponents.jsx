@@ -207,13 +207,13 @@ export const MouseGlow = ({ children, className = '', intensity = 'medium' }) =>
             <div
                 className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100"
                 style={{
-                    background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(20, 184, 166, 0.15), transparent 40%)`
+                    background: `radial-gradient(300px circle at var(--mouse-x) var(--mouse-y), rgba(20, 184, 166, 0.15), transparent 40%)`
                 }}
             />
             <div
                 className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100"
                 style={{
-                    background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(20, 184, 166, 0.4), transparent 40%)`,
+                    background: `radial-gradient(300px circle at var(--mouse-x) var(--mouse-y), rgba(20, 184, 166, 0.4), transparent 40%)`,
                     maskImage: 'linear-gradient(#fff, #fff)',
                     WebkitMaskClip: 'content-box',
                     WebkitMaskComposite: 'xor',

@@ -70,15 +70,16 @@ export const LiveActivityFeed = ({ events = [], maxItems = 5, onClose, onDismiss
     }, [events, maxItems]);
 
     const getCategoryStyle = (category) => {
+        // Premium 2-Color Theme: Slate + Teal (All categories use same unified style)
         switch (category) {
             case 'Bio-medical':
-                return { bg: 'bg-emerald-500/20', border: 'border-emerald-500/50', text: 'text-emerald-400', icon: Recycle };
+                return { bg: 'bg-teal-500/20', border: 'border-teal-500/50', text: 'text-teal-400', icon: Recycle };
             case 'Hazardous':
-                return { bg: 'bg-rose-500/20', border: 'border-rose-500/50', text: 'text-rose-400', icon: AlertTriangle };
+                return { bg: 'bg-slate-500/20', border: 'border-slate-500/50', text: 'text-slate-300', icon: AlertTriangle };
             case 'Wet Waste':
-                return { bg: 'bg-cyan-500/20', border: 'border-cyan-500/50', text: 'text-cyan-400', icon: Activity };
+                return { bg: 'bg-teal-600/20', border: 'border-teal-600/50', text: 'text-teal-300', icon: Activity };
             case 'Dry Waste':
-                return { bg: 'bg-amber-500/20', border: 'border-amber-500/50', text: 'text-amber-400', icon: Trash2 };
+                return { bg: 'bg-slate-600/20', border: 'border-slate-600/50', text: 'text-slate-400', icon: Trash2 };
             default:
                 return { bg: 'bg-slate-500/20', border: 'border-slate-500/50', text: 'text-slate-400', icon: Activity };
         }
