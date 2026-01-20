@@ -5,7 +5,7 @@ import { ChartCard, PremiumRadarChart } from '../ChartEnhancements';
 
 export const WasteCompositionWidget = ({
     theme,
-    processingCounts = { total: 0, bio: 0, hazard: 0, wet: 0, dry: 0 }
+    processingCounts = { total: 0, recyclable: 0, hazardous: 0, wet: 0, dry: 0 }
 }) => {
     const radarData = [
         { subject: 'Recyclable', A: processingCounts.recyclable, fullMark: 100 },

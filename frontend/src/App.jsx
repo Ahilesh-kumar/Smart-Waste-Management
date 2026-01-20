@@ -387,8 +387,8 @@ function App() {
       timestamp: i === 0 ? "NOW" : new Date(Date.now() - i * 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       data: i === 0 ? null : { // 0 is live, others are mocks
         // Fake data generation
-        bio: Math.floor(Math.random() * 50) + 10,
-        hazard: Math.floor(Math.random() * 30) + 5,
+        recyclable: Math.floor(Math.random() * 50) + 10,
+        hazardous: Math.floor(Math.random() * 30) + 5,
         wet: Math.floor(Math.random() * 60) + 20,
         dry: Math.floor(Math.random() * 80) + 30,
         total: Math.floor(Math.random() * 200) + 100
@@ -1266,7 +1266,7 @@ function App() {
         togglePower();
       }
       if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey) { // R = reset session
-        setProcessingCounts({ total: 0, bio: 0, hazard: 0, wet: 0, dry: 0 });
+        setProcessingCounts({ total: 0, recyclable: 0, hazardous: 0, wet: 0, dry: 0 });
         setEventLog([]);
         addToast('Session reset', 'success');
       }

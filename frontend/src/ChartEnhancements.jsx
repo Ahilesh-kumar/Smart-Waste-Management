@@ -10,10 +10,10 @@ import { X, Maximize2, ArrowLeftRight, Clock, ChevronLeft, ChevronRight } from '
 
 // ===== CATEGORY COLORS ===== (Premium Slate/Teal Theme)
 const CATEGORY_COLORS = {
-    bio: { main: '#14b8a6', gradient: 'url(#gradientBio)' },       // Teal
-    hazard: { main: '#64748b', gradient: 'url(#gradientHazard)' }, // Slate
-    wet: { main: '#2dd4bf', gradient: 'url(#gradientWet)' },       // Teal Light
-    dry: { main: '#94a3b8', gradient: 'url(#gradientDry)' }        // Slate Light
+    recyclable: { main: '#14b8a6', gradient: 'url(#gradientRecyclable)' },   // Teal
+    hazardous: { main: '#64748b', gradient: 'url(#gradientHazardous)' },     // Slate
+    wet: { main: '#2dd4bf', gradient: 'url(#gradientWet)' },                 // Teal Light
+    dry: { main: '#94a3b8', gradient: 'url(#gradientDry)' }                  // Slate Light
 };
 
 // ===== MODERN GLASSMORPHISM TOOLTIP =====
@@ -72,7 +72,7 @@ export const TimeRangeSelector = ({ value, onChange }) => {
 // ===== GRADIENT AREA CHART (Enhanced) =====
 export const EnhancedAreaChart = ({
     data = [],
-    categories = ['bio', 'hazard', 'wet', 'dry'],
+    categories = ['recyclable', 'hazardous', 'wet', 'dry'],
     height = 200,
     timeRange = 'all',
     showLegend = true
@@ -97,11 +97,11 @@ export const EnhancedAreaChart = ({
                 <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     {/* Gradient Definitions */}
                     <defs>
-                        <linearGradient id="gradientBio" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="gradientRecyclable" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#14b8a6" stopOpacity={0.5} />
                             <stop offset="100%" stopColor="#14b8a6" stopOpacity={0.02} />
                         </linearGradient>
-                        <linearGradient id="gradientHazard" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="gradientHazardous" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#64748b" stopOpacity={0.5} />
                             <stop offset="100%" stopColor="#64748b" stopOpacity={0.02} />
                         </linearGradient>
@@ -651,8 +651,8 @@ export const PremiumPieChart = ({ data = [], height = 200, showLegend = true }) 
     const chartData = useMemo(() => {
         if (!data || data.length === 0) {
             return [
-                { name: 'Bio', value: 0 },
-                { name: 'Hazard', value: 0 },
+                { name: 'Recyclable', value: 0 },
+                { name: 'Hazardous', value: 0 },
                 { name: 'Wet', value: 0 },
                 { name: 'Dry', value: 0 }
             ];
@@ -774,7 +774,7 @@ export const HourlyStackedBarChart = ({ data = [], height = 180 }) => {
             // Default empty hours
             return Array.from({ length: 12 }, (_, i) => ({
                 hour: `${i + 8}:00`,
-                bio: 0, hazard: 0, wet: 0, dry: 0
+                recyclable: 0, hazardous: 0, wet: 0, dry: 0
             }));
         }
         return data;
@@ -802,8 +802,8 @@ export const HourlyStackedBarChart = ({ data = [], height = 180 }) => {
                         iconSize={6}
                         wrapperStyle={{ paddingTop: '5px' }}
                     />
-                    <Bar dataKey="bio" name="Bio" stackId="a" fill="#14b8a6" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="hazard" name="Hazard" stackId="a" fill="#64748b" />
+                    <Bar dataKey="recyclable" name="Recyclable" stackId="a" fill="#14b8a6" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="hazardous" name="Hazardous" stackId="a" fill="#64748b" />
                     <Bar dataKey="wet" name="Wet" stackId="a" fill="#2dd4bf" />
                     <Bar dataKey="dry" name="Dry" stackId="a" fill="#94a3b8" radius={[4, 4, 0, 0]} />
                 </BarChart>
