@@ -25,10 +25,10 @@ const socket = io(SOCKET_URL);
 // --- Graph Enhancement Components ---
 // Premium 2-Color Theme: Slate + Teal
 const binColors = {
-  0: { main: '#14b8a6', gradient: ['#14b8a6', '#0d9488'] }, // Teal (Recyclable)
+  0: { main: '#64748b', gradient: ['#64748b', '#475569'] }, // Slate (Dry)
   1: { main: '#2dd4bf', gradient: ['#2dd4bf', '#14b8a6'] }, // Teal Light (Wet)
   2: { main: '#f43f5e', gradient: ['#f43f5e', '#e11d48'] }, // Rose (Hazardous)
-  3: { main: '#64748b', gradient: ['#64748b', '#475569'] }  // Slate (Dry)
+  3: { main: '#14b8a6', gradient: ['#14b8a6', '#0d9488'] }  // Teal (Recyclable)
 };
 
 // ===== CINEMATIC LOADING SCREEN WITH WATER RIPPLES =====
@@ -176,10 +176,10 @@ function App() {
     revenue: 0,
     manualServo: { 0: 0, 1: 0, 2: 0, 3: 0 },
     bins: [
-      { id: 0, name: "Recyclable", type: "recyclable", weight: 0, volume: 0 },
+      { id: 0, name: "Dry Waste", type: "dry", weight: 0, volume: 0 },
       { id: 1, name: "Wet Waste", type: "wet", weight: 0, volume: 0 },
       { id: 2, name: "Hazardous", type: "hazard", weight: 0, volume: 0 },
-      { id: 3, name: "Dry Waste", type: "dry", weight: 0, volume: 0 }
+      { id: 3, name: "Recyclable", type: "recyclable", weight: 0, volume: 0 }
     ]
   });
 

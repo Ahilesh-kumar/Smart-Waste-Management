@@ -117,7 +117,7 @@ const initSocket = (io) => {
         socket.on('item_sorted', (data) => {
             const typeIdx = parseInt(data.type);
             if (typeIdx >= 0 && typeIdx < 4) {
-                const categoryMap = { 0: 'Recyclable', 1: 'Wet Waste', 2: 'Hazardous', 3: 'Dry Waste' };
+                const categoryMap = { 0: 'Dry Waste', 1: 'Wet Waste', 2: 'Hazardous', 3: 'Recyclable' };
                 const category = categoryMap[typeIdx];
 
                 logger.info(`[ESP32] Item sorted: ${category} (Bin ${typeIdx})`);
