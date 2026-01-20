@@ -18,7 +18,6 @@ const SpeedTooltip = ({ active, payload, label }) => {
 };
 
 export const ThroughputVelocityWidget = ({
-    theme,
     chartTimeRange = '5m',
     setChartTimeRange = () => { },
     timeSeriesData = []

@@ -1,10 +1,8 @@
 
 import React, { useState } from 'react';
 import clsx from 'clsx';
-import { TrendingUp, PieChart, BarChart2, Activity } from 'lucide-react';
-import { ChartCard, EnhancedAreaChart, PremiumRadarChart, PremiumPieChart, ConfidenceHistogram, HourlyStackedBarChart, PredictiveLineChart, UsageHeatmap, SustainabilityGauge } from '../ChartEnhancements';
-import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { GlassTooltip } from '../ChartEnhancements';
+import { TrendingUp, PieChart, Activity } from 'lucide-react';
+import { ChartCard, EnhancedAreaChart, PremiumRadarChart, PremiumPieChart, ConfidenceHistogram, PredictiveLineChart, UsageHeatmap, SustainabilityGauge } from '../ChartEnhancements';
 
 export const AnalyticsDeckWidget = ({
     theme,
@@ -12,10 +10,6 @@ export const AnalyticsDeckWidget = ({
     setChartTimeRange = () => { },
     timeSeriesData = [],
     processingCounts = { total: 0, recyclable: 0, hazardous: 0, wet: 0, dry: 0 },
-    chartDataHistory = [],
-    showComparisonMode = false,
-    setShowComparisonMode = () => { },
-    hourlyData = [],
     confidenceData = [],
     recentDetections = [],
     onExpandChart = () => { }
@@ -36,13 +30,6 @@ export const AnalyticsDeckWidget = ({
         { subject: 'Wet', A: processingCounts.wet || 0, fullMark: 100 },
         { subject: 'Hazardous', A: processingCounts.hazardous || 0, fullMark: 100 },
         { subject: 'Dry', A: processingCounts.dry || 0, fullMark: 100 },
-    ];
-
-    // Comparison data
-    const getComparisonData = () => [
-        { name: 'Total', current: processingCounts.total, average: processingCounts.total * 0.8 },
-        { name: 'Rec', current: processingCounts.recyclable, average: processingCounts.recyclable * 0.9 },
-        { name: 'Wet', current: processingCounts.wet, average: processingCounts.wet * 0.7 }
     ];
 
     // Compute confidence histogram from recent detections

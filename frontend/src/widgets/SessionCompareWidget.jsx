@@ -1,11 +1,9 @@
 import React from 'react';
-import clsx from 'clsx';
 import { BarChart2 } from 'lucide-react';
 import { ChartCard, GlassTooltip } from '../ChartEnhancements';
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const SessionCompareWidget = ({
-    theme,
     processingCounts = { total: 0, recyclable: 0, hazardous: 0, wet: 0, dry: 0 },
     showComparisonMode = false,
     setShowComparisonMode = () => { }

@@ -63,6 +63,7 @@ export const SimpleDashboard = ({
     // #region agent log
     React.useEffect(() => {
         fetch('http://127.0.0.1:7242/ingest/c0c5c7b0-5bce-477f-bf1e-04964705fac6', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'SimpleDashboard.jsx:47', message: 'SimpleDashboard component mounted', data: { theme, isEditMode, hasOnLayoutSave: !!onLayoutSave, hasOnLayoutReset: !!onLayoutReset, propsKeys: Object.keys(props) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     // #endregion
 
@@ -71,8 +72,8 @@ export const SimpleDashboard = ({
         try {
             const saved = localStorage.getItem('simple_dashboard_layout');
             return saved ? JSON.parse(saved) : DEFAULT_LAYOUTS;
-        } catch (e) {
-            console.error("Layout load error", e);
+        } catch {
+            console.error("Layout load error");
             return DEFAULT_LAYOUTS;
         }
     });
@@ -81,7 +82,7 @@ export const SimpleDashboard = ({
         try {
             const saved = localStorage.getItem('simple_dashboard_hidden');
             return saved ? JSON.parse(saved) : [];
-        } catch (e) {
+        } catch {
             return [];
         }
     });
@@ -91,7 +92,7 @@ export const SimpleDashboard = ({
         try {
             const saved = localStorage.getItem('simple_dashboard_text_labels');
             return saved ? JSON.parse(saved) : [];
-        } catch (e) {
+        } catch {
             return [];
         }
     });

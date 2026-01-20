@@ -19,8 +19,7 @@ export const LiveFeedWidget = ({
     rotation = 0,
     setRotation = () => { },
     fps = 0,
-    latency = 0,
-    theme
+    latency = 0
 }) => {
     const [hasFeedError, setHasFeedError] = React.useState(false);
 

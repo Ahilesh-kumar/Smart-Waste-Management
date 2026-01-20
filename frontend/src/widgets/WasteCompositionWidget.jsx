@@ -1,10 +1,8 @@
 import React from 'react';
-import clsx from 'clsx';
 import { PieChart } from 'lucide-react';
 import { ChartCard, PremiumRadarChart } from '../ChartEnhancements';
 
 export const WasteCompositionWidget = ({
-    theme,
     processingCounts = { total: 0, recyclable: 0, hazardous: 0, wet: 0, dry: 0 }
 }) => {
     const radarData = [
