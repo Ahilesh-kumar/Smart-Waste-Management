@@ -4,12 +4,22 @@ const fs = require('fs');
 const path = require('path');
 
 // Load shared config.json (single source of truth for IP)
-let sharedConfig = { camera: { ip: '192.0.0.4', port: '8080' } };
+let sharedConfig = { camera: { ip: '10.50.211.74', port: '8080' } };
 try {
-    const configPath = path.join(__dirname, '..', '..', 'config.json');
-    sharedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    // Try multiple paths (local dev vs Docker)
+    const paths = [
+        path.join(__dirname, '..', 'config.json'),      // Docker: /app/config.json
+        path.join(__dirname, '..', '..', 'config.json') // Local: project-root/config.json
+    ];
+    for (const configPath of paths) {
+        if (fs.existsSync(configPath)) {
+            sharedConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            console.log(`Loaded config from: ${configPath}`);
+            break;
+        }
+    }
 } catch (e) {
-    console.log('Using default config, config.json not found');
+    console.log('Using default config');
 }
 
 const LIMIT_WARNING = 90;
