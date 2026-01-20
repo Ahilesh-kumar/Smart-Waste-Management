@@ -1819,7 +1819,12 @@ function App() {
                   <select
                     value={sensitivity}
                     onChange={(e) => setSensitivity(e.target.value)}
-                    className="px-3 py-1 rounded-lg bg-neutral-800 border border-white/10 text-sm flex-shrink-0"
+                    className={clsx(
+                      "px-3 py-1 rounded-lg text-sm flex-shrink-0 border",
+                      theme === 'dark'
+                        ? "bg-neutral-800 border-white/10 text-white"
+                        : "bg-white border-slate-300 text-slate-900"
+                    )}
                   >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
@@ -1855,6 +1860,22 @@ function App() {
                   </button>
                 </div>
 
+                {/* Manual Theme Override - Show ONLY when Auto is OFF */}
+                {!isAutoTheme && (
+                  <div className="flex justify-between items-start animate-in fade-in slide-in-from-top-2">
+                    <div className="flex-1">
+                      <span className="font-medium">Dark Mode</span>
+                      <p className="text-xs text-slate-400 mt-0.5">Manually toggle between Light and Dark themes</p>
+                    </div>
+                    <button
+                      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                      className={clsx("w-12 h-6 rounded-full transition flex-shrink-0", theme === 'dark' ? "bg-indigo-500" : "bg-slate-400")}
+                    >
+                      <div className={clsx("w-5 h-5 bg-white rounded-full shadow transition-transform", theme === 'dark' ? "translate-x-6" : "translate-x-0.5")} />
+                    </button>
+                  </div>
+                )}
+
                 {/* Auto Torch */}
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -1878,7 +1899,12 @@ function App() {
                   <select
                     value={displayMode}
                     onChange={(e) => setDisplayMode(e.target.value)}
-                    className="px-3 py-1 rounded-lg bg-slate-700 border border-slate-600 text-sm capitalize flex-shrink-0"
+                    className={clsx(
+                      "px-3 py-1 rounded-lg text-sm capitalize flex-shrink-0 border",
+                      theme === 'dark'
+                        ? "bg-neutral-800 border-white/10 text-white"
+                        : "bg-white border-slate-300 text-slate-900"
+                    )}
                   >
                     <option value="full">Full Dashboard</option>
                     <option value="kiosk">Kiosk Mode</option>

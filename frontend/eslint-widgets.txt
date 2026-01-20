@@ -1,0 +1,32 @@
+﻿
+C:\Users\Ahilesh Kumar\Downloads\New folder\waste-management-system\frontend\src\ChartEnhancements.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Ahilesh Kumar\Downloads\New folder\waste-management-system\frontend\src\SimpleDashboard.jsx
+  66:8   warning  React Hook React.useEffect has missing dependencies: 'isEditMode', 'onLayoutReset', 'onLayoutSave', 'props', and 'theme'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  84:18  error    'e' is defined but never used                                                                                                                                                 no-unused-vars
+  94:18  error    'e' is defined but never used                                                                                                                                                 no-unused-vars
+
+C:\Users\Ahilesh Kumar\Downloads\New folder\waste-management-system\frontend\src\widgets\AnalyticsDeckWidget.jsx
+  15:5   error  'chartDataHistory' is assigned a value but never used                                              no-unused-vars
+  16:5   error  'showComparisonMode' is assigned a value but never used                                            no-unused-vars
+  17:5   error  'setShowComparisonMode' is assigned a value but never used                                         no-unused-vars
+  18:5   error  'hourlyData' is assigned a value but never used                                                    no-unused-vars
+  42:11  error  'getComparisonData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Ahilesh Kumar\Downloads\New folder\waste-management-system\frontend\src\widgets\LiveFeedWidget.jsx
+  23:5  error  'theme' is defined but never used  no-unused-vars
+
+C:\Users\Ahilesh Kumar\Downloads\New folder\waste-management-system\frontend\src\widgets\SessionCompareWidget.jsx
+  2:8  error  'clsx' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  8:5  error  'theme' is defined but never used                                            no-unused-vars
+
+C:\Users\Ahilesh Kumar\Downloads\New folder\waste-management-system\frontend\src\widgets\ThroughputVelocityWidget.jsx
+  21:5  error  'theme' is defined but never used  no-unused-vars
+
+C:\Users\Ahilesh Kumar\Downloads\New folder\waste-management-system\frontend\src\widgets\WasteCompositionWidget.jsx
+  2:8  error  'clsx' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  7:5  error  'theme' is defined but never used                                            no-unused-vars
+
+Γ£û 15 problems (14 errors, 1 warning)
+

@@ -1,6 +1,6 @@
 {
   "systemState": {
-    "isOn": true,
+    "isOn": false,
     "conveyorSpeed": "medium",
     "conveyorDirection": "Backward",
     "maintenanceMode": false,
@@ -21,11 +21,11 @@
         "itemsCount": 0,
         "isSimulated": false,
         "health": {
-          "battery": 85.8,
-          "signal": 90,
+          "battery": 82.8,
+          "signal": 98,
           "motor": 100,
           "sensor": 100,
-          "clean": 94.4
+          "clean": 93.3
         }
       },
       {
@@ -37,11 +37,11 @@
         "itemsCount": 0,
         "isSimulated": true,
         "health": {
-          "battery": 81.1,
-          "signal": 93,
+          "battery": 78,
+          "signal": 94,
           "motor": 98,
           "sensor": 99,
-          "clean": 88.9
+          "clean": 87.4
         }
       },
       {
@@ -53,11 +53,11 @@
         "itemsCount": 0,
         "isSimulated": false,
         "health": {
-          "battery": 86.4,
-          "signal": 93,
+          "battery": 83.9,
+          "signal": 97,
           "motor": 100,
           "sensor": 100,
-          "clean": 93.7
+          "clean": 93
         }
       },
       {
@@ -69,11 +69,11 @@
         "itemsCount": 0,
         "isSimulated": true,
         "health": {
-          "battery": 70.4,
-          "signal": 95,
+          "battery": 67.8,
+          "signal": 91,
           "motor": 95,
           "sensor": 97,
-          "clean": 74.4
+          "clean": 73.7
         }
       }
     ]
@@ -169575,1438 +169575,6 @@
     "sessions": [],
     "timeSeriesLog": [
       {
-        "wet": 49,
-        "dry": 37,
-        "bio": 0,
-        "hazard": 25,
-        "total": 111,
-        "timestamp": "2026-01-19T20:29:13.498Z"
-      },
-      {
-        "wet": 51,
-        "dry": 39,
-        "bio": 0,
-        "hazard": 27,
-        "total": 117,
-        "timestamp": "2026-01-19T20:29:23.511Z"
-      },
-      {
-        "wet": 53,
-        "dry": 41,
-        "bio": 0,
-        "hazard": 28,
-        "total": 122,
-        "timestamp": "2026-01-19T20:29:33.513Z"
-      },
-      {
-        "wet": 53,
-        "dry": 41,
-        "bio": 0,
-        "hazard": 28,
-        "total": 122,
-        "timestamp": "2026-01-19T20:29:43.519Z"
-      },
-      {
-        "wet": 55,
-        "dry": 41,
-        "bio": 0,
-        "hazard": 30,
-        "total": 126,
-        "timestamp": "2026-01-19T20:29:53.520Z"
-      },
-      {
-        "wet": 56,
-        "dry": 43,
-        "bio": 0,
-        "hazard": 31,
-        "total": 130,
-        "timestamp": "2026-01-19T20:30:03.534Z"
-      },
-      {
-        "wet": 58,
-        "dry": 44,
-        "bio": 0,
-        "hazard": 33,
-        "total": 135,
-        "timestamp": "2026-01-19T20:30:13.547Z"
-      },
-      {
-        "wet": 59,
-        "dry": 44,
-        "bio": 0,
-        "hazard": 34,
-        "total": 137,
-        "timestamp": "2026-01-19T20:30:23.557Z"
-      },
-      {
-        "wet": 60,
-        "dry": 45,
-        "bio": 0,
-        "hazard": 34,
-        "total": 139,
-        "timestamp": "2026-01-19T20:30:33.566Z"
-      },
-      {
-        "wet": 62,
-        "dry": 46,
-        "bio": 0,
-        "hazard": 36,
-        "total": 144,
-        "timestamp": "2026-01-19T20:30:43.574Z"
-      },
-      {
-        "wet": 64,
-        "dry": 46,
-        "bio": 0,
-        "hazard": 36,
-        "total": 146,
-        "timestamp": "2026-01-19T20:30:53.592Z"
-      },
-      {
-        "wet": 66,
-        "dry": 49,
-        "bio": 0,
-        "hazard": 36,
-        "total": 151,
-        "timestamp": "2026-01-19T20:31:03.604Z"
-      },
-      {
-        "wet": 66,
-        "dry": 50,
-        "bio": 0,
-        "hazard": 36,
-        "total": 152,
-        "timestamp": "2026-01-19T20:31:13.607Z"
-      },
-      {
-        "wet": 66,
-        "dry": 51,
-        "bio": 0,
-        "hazard": 36,
-        "total": 153,
-        "timestamp": "2026-01-19T20:31:23.621Z"
-      },
-      {
-        "wet": 67,
-        "dry": 51,
-        "bio": 0,
-        "hazard": 37,
-        "total": 155,
-        "timestamp": "2026-01-19T20:31:33.637Z"
-      },
-      {
-        "wet": 69,
-        "dry": 51,
-        "bio": 0,
-        "hazard": 38,
-        "total": 158,
-        "timestamp": "2026-01-19T20:31:43.649Z"
-      },
-      {
-        "wet": 70,
-        "dry": 51,
-        "bio": 0,
-        "hazard": 40,
-        "total": 161,
-        "timestamp": "2026-01-19T20:31:53.663Z"
-      },
-      {
-        "wet": 71,
-        "dry": 52,
-        "bio": 0,
-        "hazard": 41,
-        "total": 164,
-        "timestamp": "2026-01-19T20:32:03.670Z"
-      },
-      {
-        "wet": 72,
-        "dry": 52,
-        "bio": 0,
-        "hazard": 42,
-        "total": 166,
-        "timestamp": "2026-01-19T20:32:13.672Z"
-      },
-      {
-        "wet": 73,
-        "dry": 54,
-        "bio": 0,
-        "hazard": 43,
-        "total": 170,
-        "timestamp": "2026-01-19T20:32:23.681Z"
-      },
-      {
-        "wet": 74,
-        "dry": 55,
-        "bio": 0,
-        "hazard": 44,
-        "total": 173,
-        "timestamp": "2026-01-19T20:32:33.705Z"
-      },
-      {
-        "wet": 74,
-        "dry": 55,
-        "bio": 0,
-        "hazard": 47,
-        "total": 176,
-        "timestamp": "2026-01-19T20:32:43.714Z"
-      },
-      {
-        "wet": 76,
-        "dry": 57,
-        "bio": 0,
-        "hazard": 47,
-        "total": 180,
-        "timestamp": "2026-01-19T20:32:53.722Z"
-      },
-      {
-        "wet": 79,
-        "dry": 57,
-        "bio": 0,
-        "hazard": 48,
-        "total": 184,
-        "timestamp": "2026-01-19T20:33:03.727Z"
-      },
-      {
-        "wet": 79,
-        "dry": 59,
-        "bio": 0,
-        "hazard": 49,
-        "total": 187,
-        "timestamp": "2026-01-19T20:33:13.729Z"
-      },
-      {
-        "wet": 82,
-        "dry": 59,
-        "bio": 0,
-        "hazard": 49,
-        "total": 190,
-        "timestamp": "2026-01-19T20:33:23.738Z"
-      },
-      {
-        "wet": 84,
-        "dry": 59,
-        "bio": 0,
-        "hazard": 50,
-        "total": 193,
-        "timestamp": "2026-01-19T20:33:33.748Z"
-      },
-      {
-        "wet": 85,
-        "dry": 59,
-        "bio": 0,
-        "hazard": 50,
-        "total": 194,
-        "timestamp": "2026-01-19T20:33:43.760Z"
-      },
-      {
-        "wet": 86,
-        "dry": 60,
-        "bio": 0,
-        "hazard": 52,
-        "total": 198,
-        "timestamp": "2026-01-19T20:33:53.779Z"
-      },
-      {
-        "wet": 87,
-        "dry": 60,
-        "bio": 0,
-        "hazard": 53,
-        "total": 200,
-        "timestamp": "2026-01-19T20:34:03.787Z"
-      },
-      {
-        "wet": 88,
-        "dry": 61,
-        "bio": 0,
-        "hazard": 53,
-        "total": 202,
-        "timestamp": "2026-01-19T20:34:13.795Z"
-      },
-      {
-        "wet": 88,
-        "dry": 62,
-        "bio": 0,
-        "hazard": 54,
-        "total": 204,
-        "timestamp": "2026-01-19T20:34:23.812Z"
-      },
-      {
-        "wet": 88,
-        "dry": 63,
-        "bio": 0,
-        "hazard": 55,
-        "total": 206,
-        "timestamp": "2026-01-19T20:34:33.826Z"
-      },
-      {
-        "wet": 90,
-        "dry": 65,
-        "bio": 0,
-        "hazard": 55,
-        "total": 210,
-        "timestamp": "2026-01-19T20:34:43.840Z"
-      },
-      {
-        "wet": 90,
-        "dry": 67,
-        "bio": 0,
-        "hazard": 55,
-        "total": 212,
-        "timestamp": "2026-01-19T20:34:53.855Z"
-      },
-      {
-        "wet": 94,
-        "dry": 70,
-        "bio": 0,
-        "hazard": 57,
-        "total": 221,
-        "timestamp": "2026-01-19T20:35:03.866Z"
-      },
-      {
-        "wet": 95,
-        "dry": 71,
-        "bio": 0,
-        "hazard": 59,
-        "total": 225,
-        "timestamp": "2026-01-19T20:35:13.871Z"
-      },
-      {
-        "wet": 95,
-        "dry": 72,
-        "bio": 0,
-        "hazard": 60,
-        "total": 227,
-        "timestamp": "2026-01-19T20:35:23.883Z"
-      },
-      {
-        "wet": 97,
-        "dry": 73,
-        "bio": 0,
-        "hazard": 62,
-        "total": 232,
-        "timestamp": "2026-01-19T20:35:33.902Z"
-      },
-      {
-        "wet": 97,
-        "dry": 74,
-        "bio": 0,
-        "hazard": 63,
-        "total": 234,
-        "timestamp": "2026-01-19T20:35:43.930Z"
-      },
-      {
-        "wet": 99,
-        "dry": 76,
-        "bio": 0,
-        "hazard": 63,
-        "total": 238,
-        "timestamp": "2026-01-19T20:35:53.934Z"
-      },
-      {
-        "wet": 100,
-        "dry": 76,
-        "bio": 0,
-        "hazard": 64,
-        "total": 240,
-        "timestamp": "2026-01-19T20:36:03.940Z"
-      },
-      {
-        "wet": 101,
-        "dry": 77,
-        "bio": 0,
-        "hazard": 65,
-        "total": 243,
-        "timestamp": "2026-01-19T20:36:13.944Z"
-      },
-      {
-        "wet": 101,
-        "dry": 77,
-        "bio": 0,
-        "hazard": 65,
-        "total": 243,
-        "timestamp": "2026-01-19T20:36:23.957Z"
-      },
-      {
-        "wet": 101,
-        "dry": 78,
-        "bio": 0,
-        "hazard": 67,
-        "total": 246,
-        "timestamp": "2026-01-19T20:36:33.966Z"
-      },
-      {
-        "wet": 107,
-        "dry": 78,
-        "bio": 0,
-        "hazard": 67,
-        "total": 252,
-        "timestamp": "2026-01-19T20:36:43.970Z"
-      },
-      {
-        "wet": 109,
-        "dry": 80,
-        "bio": 0,
-        "hazard": 69,
-        "total": 258,
-        "timestamp": "2026-01-19T20:36:53.981Z"
-      },
-      {
-        "wet": 110,
-        "dry": 81,
-        "bio": 0,
-        "hazard": 71,
-        "total": 262,
-        "timestamp": "2026-01-19T20:37:03.996Z"
-      },
-      {
-        "wet": 113,
-        "dry": 83,
-        "bio": 0,
-        "hazard": 72,
-        "total": 268,
-        "timestamp": "2026-01-19T20:37:14.006Z"
-      },
-      {
-        "wet": 117,
-        "dry": 83,
-        "bio": 0,
-        "hazard": 73,
-        "total": 273,
-        "timestamp": "2026-01-19T20:37:24.006Z"
-      },
-      {
-        "wet": 117,
-        "dry": 84,
-        "bio": 0,
-        "hazard": 74,
-        "total": 275,
-        "timestamp": "2026-01-20T01:18:45.844Z"
-      },
-      {
-        "wet": 117,
-        "dry": 84,
-        "bio": 0,
-        "hazard": 76,
-        "total": 277,
-        "timestamp": "2026-01-20T01:28:15.188Z"
-      },
-      {
-        "wet": 117,
-        "dry": 85,
-        "bio": 0,
-        "hazard": 78,
-        "total": 280,
-        "timestamp": "2026-01-20T01:28:35.206Z"
-      },
-      {
-        "wet": 117,
-        "dry": 87,
-        "bio": 0,
-        "hazard": 79,
-        "total": 283,
-        "timestamp": "2026-01-20T01:28:45.209Z"
-      },
-      {
-        "wet": 117,
-        "dry": 87,
-        "bio": 0,
-        "hazard": 80,
-        "total": 284,
-        "timestamp": "2026-01-20T01:28:55.217Z"
-      },
-      {
-        "wet": 117,
-        "dry": 88,
-        "bio": 0,
-        "hazard": 81,
-        "total": 286,
-        "timestamp": "2026-01-20T01:29:05.222Z"
-      },
-      {
-        "wet": 117,
-        "dry": 89,
-        "bio": 0,
-        "hazard": 82,
-        "total": 288,
-        "timestamp": "2026-01-20T01:29:15.228Z"
-      },
-      {
-        "wet": 117,
-        "dry": 90,
-        "bio": 0,
-        "hazard": 83,
-        "total": 290,
-        "timestamp": "2026-01-20T01:29:25.232Z"
-      },
-      {
-        "wet": 117,
-        "dry": 92,
-        "bio": 0,
-        "hazard": 85,
-        "total": 294,
-        "timestamp": "2026-01-20T01:29:35.242Z"
-      },
-      {
-        "wet": 117,
-        "dry": 93,
-        "bio": 0,
-        "hazard": 86,
-        "total": 296,
-        "timestamp": "2026-01-20T01:29:45.242Z"
-      },
-      {
-        "wet": 117,
-        "dry": 94,
-        "bio": 0,
-        "hazard": 87,
-        "total": 298,
-        "timestamp": "2026-01-20T01:29:55.244Z"
-      },
-      {
-        "wet": 117,
-        "dry": 94,
-        "bio": 0,
-        "hazard": 87,
-        "total": 298,
-        "timestamp": "2026-01-20T01:30:05.247Z"
-      },
-      {
-        "wet": 117,
-        "dry": 95,
-        "bio": 0,
-        "hazard": 89,
-        "total": 301,
-        "timestamp": "2026-01-20T01:30:15.251Z"
-      },
-      {
-        "wet": 117,
-        "dry": 95,
-        "bio": 0,
-        "hazard": 90,
-        "total": 302,
-        "timestamp": "2026-01-20T01:30:25.259Z"
-      },
-      {
-        "wet": 117,
-        "dry": 95,
-        "bio": 0,
-        "hazard": 92,
-        "total": 304,
-        "timestamp": "2026-01-20T01:30:35.265Z"
-      },
-      {
-        "wet": 117,
-        "dry": 97,
-        "bio": 0,
-        "hazard": 94,
-        "total": 308,
-        "timestamp": "2026-01-20T01:30:45.265Z"
-      },
-      {
-        "wet": 117,
-        "dry": 98,
-        "bio": 0,
-        "hazard": 94,
-        "total": 309,
-        "timestamp": "2026-01-20T01:30:55.269Z"
-      },
-      {
-        "wet": 117,
-        "dry": 99,
-        "bio": 0,
-        "hazard": 96,
-        "total": 312,
-        "timestamp": "2026-01-20T01:31:05.280Z"
-      },
-      {
-        "wet": 117,
-        "dry": 99,
-        "bio": 0,
-        "hazard": 97,
-        "total": 313,
-        "timestamp": "2026-01-20T01:31:15.283Z"
-      },
-      {
-        "wet": 117,
-        "dry": 101,
-        "bio": 0,
-        "hazard": 97,
-        "total": 315,
-        "timestamp": "2026-01-20T01:31:25.291Z"
-      },
-      {
-        "wet": 117,
-        "dry": 102,
-        "bio": 0,
-        "hazard": 97,
-        "total": 316,
-        "timestamp": "2026-01-20T01:31:35.294Z"
-      },
-      {
-        "wet": 117,
-        "dry": 102,
-        "bio": 0,
-        "hazard": 98,
-        "total": 317,
-        "timestamp": "2026-01-20T01:31:45.302Z"
-      },
-      {
-        "wet": 117,
-        "dry": 102,
-        "bio": 0,
-        "hazard": 99,
-        "total": 318,
-        "timestamp": "2026-01-20T01:31:55.310Z"
-      },
-      {
-        "wet": 117,
-        "dry": 103,
-        "bio": 0,
-        "hazard": 100,
-        "total": 320,
-        "timestamp": "2026-01-20T01:32:05.312Z"
-      },
-      {
-        "wet": 117,
-        "dry": 106,
-        "bio": 0,
-        "hazard": 101,
-        "total": 324,
-        "timestamp": "2026-01-20T01:32:15.324Z"
-      },
-      {
-        "wet": 117,
-        "dry": 106,
-        "bio": 0,
-        "hazard": 101,
-        "total": 324,
-        "timestamp": "2026-01-20T02:30:48.351Z"
-      },
-      {
-        "wet": 117,
-        "dry": 106,
-        "bio": 0,
-        "hazard": 101,
-        "total": 324,
-        "timestamp": "2026-01-20T02:51:17.759Z"
-      },
-      {
-        "wet": 117,
-        "dry": 108,
-        "bio": 0,
-        "hazard": 102,
-        "total": 327,
-        "timestamp": "2026-01-20T02:51:27.766Z"
-      },
-      {
-        "wet": 117,
-        "dry": 109,
-        "bio": 0,
-        "hazard": 102,
-        "total": 328,
-        "timestamp": "2026-01-20T02:51:37.767Z"
-      },
-      {
-        "wet": 0,
-        "dry": 0,
-        "bio": 0,
-        "hazard": 0,
-        "total": 0,
-        "timestamp": "2026-01-20T02:58:31.966Z"
-      },
-      {
-        "wet": 1,
-        "dry": 0,
-        "bio": 0,
-        "hazard": 1,
-        "total": 2,
-        "timestamp": "2026-01-20T04:25:18.170Z"
-      },
-      {
-        "wet": 2,
-        "dry": 0,
-        "bio": 0,
-        "hazard": 1,
-        "total": 3,
-        "timestamp": "2026-01-20T04:25:28.181Z"
-      },
-      {
-        "wet": 2,
-        "dry": 1,
-        "bio": 0,
-        "hazard": 3,
-        "total": 6,
-        "timestamp": "2026-01-20T04:48:51.313Z"
-      },
-      {
-        "wet": 4,
-        "dry": 1,
-        "bio": 0,
-        "hazard": 5,
-        "total": 10,
-        "timestamp": "2026-01-20T04:49:01.326Z"
-      },
-      {
-        "wet": 5,
-        "dry": 1,
-        "bio": 0,
-        "hazard": 7,
-        "total": 13,
-        "timestamp": "2026-01-20T04:49:11.337Z"
-      },
-      {
-        "wet": 1,
-        "dry": 0,
-        "bio": 3,
-        "hazard": 1,
-        "total": 5,
-        "timestamp": "2026-01-20T05:42:02.046Z"
-      },
-      {
-        "wet": 4,
-        "dry": 1,
-        "bio": 9,
-        "hazard": 2,
-        "total": 16,
-        "timestamp": "2026-01-20T05:42:12.049Z"
-      },
-      {
-        "wet": 4,
-        "dry": 1,
-        "bio": 17,
-        "hazard": 4,
-        "total": 26,
-        "timestamp": "2026-01-20T05:42:22.079Z"
-      },
-      {
-        "wet": 5,
-        "dry": 4,
-        "bio": 21,
-        "hazard": 4,
-        "total": 34,
-        "timestamp": "2026-01-20T05:42:32.085Z"
-      },
-      {
-        "wet": 7,
-        "dry": 6,
-        "bio": 27,
-        "hazard": 6,
-        "total": 46,
-        "timestamp": "2026-01-20T05:42:42.088Z"
-      },
-      {
-        "wet": 8,
-        "dry": 7,
-        "bio": 32,
-        "hazard": 7,
-        "total": 54,
-        "timestamp": "2026-01-20T05:42:52.091Z"
-      },
-      {
-        "wet": 9,
-        "dry": 8,
-        "bio": 37,
-        "hazard": 7,
-        "total": 61,
-        "timestamp": "2026-01-20T05:43:02.115Z"
-      },
-      {
-        "wet": 10,
-        "dry": 10,
-        "bio": 44,
-        "hazard": 8,
-        "total": 72,
-        "timestamp": "2026-01-20T05:43:12.117Z"
-      },
-      {
-        "wet": 13,
-        "dry": 11,
-        "bio": 51,
-        "hazard": 9,
-        "total": 84,
-        "timestamp": "2026-01-20T05:43:22.130Z"
-      },
-      {
-        "wet": 14,
-        "dry": 12,
-        "bio": 56,
-        "hazard": 10,
-        "total": 92,
-        "timestamp": "2026-01-20T05:43:32.142Z"
-      },
-      {
-        "wet": 0,
-        "dry": 0,
-        "bio": 0,
-        "hazard": 0,
-        "total": 0,
-        "timestamp": "2026-01-20T05:46:29.467Z"
-      },
-      {
-        "wet": 1,
-        "dry": 2,
-        "bio": 5,
-        "hazard": 0,
-        "total": 8,
-        "timestamp": "2026-01-20T05:49:37.476Z"
-      },
-      {
-        "wet": 3,
-        "dry": 3,
-        "bio": 9,
-        "hazard": 1,
-        "total": 16,
-        "timestamp": "2026-01-20T05:49:47.492Z"
-      },
-      {
-        "wet": 5,
-        "dry": 4,
-        "bio": 10,
-        "hazard": 2,
-        "total": 21,
-        "timestamp": "2026-01-20T05:49:57.505Z"
-      },
-      {
-        "wet": 5,
-        "dry": 6,
-        "bio": 15,
-        "hazard": 3,
-        "total": 29,
-        "timestamp": "2026-01-20T05:50:07.510Z"
-      },
-      {
-        "wet": 6,
-        "dry": 6,
-        "bio": 20,
-        "hazard": 3,
-        "total": 35,
-        "timestamp": "2026-01-20T05:50:17.528Z"
-      },
-      {
-        "wet": 9,
-        "dry": 7,
-        "bio": 23,
-        "hazard": 9,
-        "total": 48,
-        "timestamp": "2026-01-20T05:50:27.533Z"
-      },
-      {
-        "wet": 9,
-        "dry": 8,
-        "bio": 28,
-        "hazard": 11,
-        "total": 56,
-        "timestamp": "2026-01-20T05:50:37.535Z"
-      },
-      {
-        "wet": 10,
-        "dry": 9,
-        "bio": 35,
-        "hazard": 12,
-        "total": 66,
-        "timestamp": "2026-01-20T05:50:47.543Z"
-      },
-      {
-        "wet": 12,
-        "dry": 9,
-        "bio": 38,
-        "hazard": 13,
-        "total": 72,
-        "timestamp": "2026-01-20T05:50:57.550Z"
-      },
-      {
-        "wet": 12,
-        "dry": 10,
-        "bio": 41,
-        "hazard": 15,
-        "total": 78,
-        "timestamp": "2026-01-20T05:51:07.560Z"
-      },
-      {
-        "wet": 12,
-        "dry": 12,
-        "bio": 45,
-        "hazard": 16,
-        "total": 85,
-        "timestamp": "2026-01-20T05:51:17.573Z"
-      },
-      {
-        "wet": 14,
-        "dry": 14,
-        "bio": 47,
-        "hazard": 18,
-        "total": 93,
-        "timestamp": "2026-01-20T05:51:27.588Z"
-      },
-      {
-        "wet": 14,
-        "dry": 15,
-        "bio": 48,
-        "hazard": 19,
-        "total": 96,
-        "timestamp": "2026-01-20T05:51:37.589Z"
-      },
-      {
-        "wet": 14,
-        "dry": 17,
-        "bio": 48,
-        "hazard": 20,
-        "total": 99,
-        "timestamp": "2026-01-20T05:51:47.594Z"
-      },
-      {
-        "wet": 14,
-        "dry": 19,
-        "bio": 50,
-        "hazard": 20,
-        "total": 103,
-        "timestamp": "2026-01-20T05:51:57.600Z"
-      },
-      {
-        "wet": 14,
-        "dry": 19,
-        "bio": 51,
-        "hazard": 21,
-        "total": 105,
-        "timestamp": "2026-01-20T05:52:07.603Z"
-      },
-      {
-        "wet": 15,
-        "dry": 19,
-        "bio": 51,
-        "hazard": 22,
-        "total": 107,
-        "timestamp": "2026-01-20T05:52:17.603Z"
-      },
-      {
-        "wet": 17,
-        "dry": 20,
-        "bio": 51,
-        "hazard": 24,
-        "total": 112,
-        "timestamp": "2026-01-20T05:52:27.619Z"
-      },
-      {
-        "wet": 0,
-        "dry": 0,
-        "bio": 1,
-        "hazard": 2,
-        "total": 3,
-        "timestamp": "2026-01-20T08:26:17.361Z"
-      },
-      {
-        "wet": 0,
-        "dry": 1,
-        "bio": 2,
-        "hazard": 2,
-        "total": 5,
-        "timestamp": "2026-01-20T08:26:27.365Z"
-      },
-      {
-        "wet": 1,
-        "dry": 1,
-        "bio": 3,
-        "hazard": 3,
-        "total": 8,
-        "timestamp": "2026-01-20T08:26:37.366Z"
-      },
-      {
-        "wet": 1,
-        "dry": 2,
-        "bio": 4,
-        "hazard": 3,
-        "total": 10,
-        "timestamp": "2026-01-20T08:26:47.381Z"
-      },
-      {
-        "wet": 2,
-        "dry": 2,
-        "bio": 4,
-        "hazard": 5,
-        "total": 13,
-        "timestamp": "2026-01-20T08:26:57.390Z"
-      },
-      {
-        "wet": 4,
-        "dry": 3,
-        "bio": 6,
-        "hazard": 6,
-        "total": 19,
-        "timestamp": "2026-01-20T08:27:07.400Z"
-      },
-      {
-        "wet": 4,
-        "dry": 4,
-        "bio": 7,
-        "hazard": 7,
-        "total": 22,
-        "timestamp": "2026-01-20T08:27:17.406Z"
-      },
-      {
-        "wet": 4,
-        "dry": 4,
-        "bio": 9,
-        "hazard": 8,
-        "total": 25,
-        "timestamp": "2026-01-20T08:27:27.418Z"
-      },
-      {
-        "wet": 4,
-        "dry": 5,
-        "bio": 11,
-        "hazard": 10,
-        "total": 30,
-        "timestamp": "2026-01-20T08:27:37.423Z"
-      },
-      {
-        "wet": 5,
-        "dry": 7,
-        "bio": 12,
-        "hazard": 12,
-        "total": 36,
-        "timestamp": "2026-01-20T08:27:47.436Z"
-      },
-      {
-        "wet": 5,
-        "dry": 8,
-        "bio": 14,
-        "hazard": 13,
-        "total": 40,
-        "timestamp": "2026-01-20T08:27:57.446Z"
-      },
-      {
-        "wet": 5,
-        "dry": 9,
-        "bio": 14,
-        "hazard": 14,
-        "total": 42,
-        "timestamp": "2026-01-20T08:28:07.456Z"
-      },
-      {
-        "wet": 5,
-        "dry": 9,
-        "bio": 14,
-        "hazard": 15,
-        "total": 43,
-        "timestamp": "2026-01-20T08:28:17.459Z"
-      },
-      {
-        "wet": 6,
-        "dry": 9,
-        "bio": 14,
-        "hazard": 15,
-        "total": 44,
-        "timestamp": "2026-01-20T08:28:27.468Z"
-      },
-      {
-        "wet": 6,
-        "dry": 11,
-        "bio": 17,
-        "hazard": 18,
-        "total": 52,
-        "timestamp": "2026-01-20T08:28:37.479Z"
-      },
-      {
-        "wet": 7,
-        "dry": 12,
-        "bio": 19,
-        "hazard": 19,
-        "total": 57,
-        "timestamp": "2026-01-20T08:28:47.493Z"
-      },
-      {
-        "wet": 10,
-        "dry": 15,
-        "bio": 19,
-        "hazard": 19,
-        "total": 63,
-        "timestamp": "2026-01-20T08:28:57.494Z"
-      },
-      {
-        "wet": 12,
-        "dry": 15,
-        "bio": 21,
-        "hazard": 19,
-        "total": 67,
-        "timestamp": "2026-01-20T08:29:07.496Z"
-      },
-      {
-        "wet": 13,
-        "dry": 16,
-        "bio": 22,
-        "hazard": 20,
-        "total": 71,
-        "timestamp": "2026-01-20T08:29:17.496Z"
-      },
-      {
-        "wet": 14,
-        "dry": 18,
-        "bio": 22,
-        "hazard": 22,
-        "total": 76,
-        "timestamp": "2026-01-20T08:29:27.506Z"
-      },
-      {
-        "wet": 14,
-        "dry": 22,
-        "bio": 23,
-        "hazard": 24,
-        "total": 83,
-        "timestamp": "2026-01-20T08:29:37.516Z"
-      },
-      {
-        "wet": 16,
-        "dry": 23,
-        "bio": 24,
-        "hazard": 25,
-        "total": 88,
-        "timestamp": "2026-01-20T08:29:47.523Z"
-      },
-      {
-        "wet": 16,
-        "dry": 25,
-        "bio": 24,
-        "hazard": 27,
-        "total": 92,
-        "timestamp": "2026-01-20T08:29:57.524Z"
-      },
-      {
-        "wet": 19,
-        "dry": 28,
-        "bio": 25,
-        "hazard": 29,
-        "total": 101,
-        "timestamp": "2026-01-20T08:35:36.994Z"
-      },
-      {
-        "wet": 21,
-        "dry": 31,
-        "bio": 27,
-        "hazard": 30,
-        "total": 109,
-        "timestamp": "2026-01-20T08:35:46.995Z"
-      },
-      {
-        "wet": 0,
-        "dry": 0,
-        "bio": 0,
-        "hazard": 0,
-        "total": 0,
-        "timestamp": "2026-01-20T08:35:57.004Z"
-      },
-      {
-        "wet": 1,
-        "dry": 2,
-        "bio": 0,
-        "hazard": 1,
-        "total": 4,
-        "timestamp": "2026-01-20T08:46:32.147Z"
-      },
-      {
-        "wet": 1,
-        "dry": 2,
-        "bio": 0,
-        "hazard": 2,
-        "total": 5,
-        "timestamp": "2026-01-20T08:46:42.161Z"
-      },
-      {
-        "wet": 2,
-        "dry": 4,
-        "bio": 3,
-        "hazard": 3,
-        "total": 12,
-        "timestamp": "2026-01-20T08:46:52.173Z"
-      },
-      {
-        "wet": 4,
-        "dry": 7,
-        "bio": 3,
-        "hazard": 6,
-        "total": 20,
-        "timestamp": "2026-01-20T08:47:02.183Z"
-      },
-      {
-        "wet": 4,
-        "dry": 10,
-        "bio": 5,
-        "hazard": 7,
-        "total": 26,
-        "timestamp": "2026-01-20T08:47:12.196Z"
-      },
-      {
-        "wet": 7,
-        "dry": 10,
-        "bio": 5,
-        "hazard": 8,
-        "total": 30,
-        "timestamp": "2026-01-20T08:47:22.200Z"
-      },
-      {
-        "wet": 8,
-        "dry": 12,
-        "bio": 5,
-        "hazard": 9,
-        "total": 34,
-        "timestamp": "2026-01-20T08:47:32.206Z"
-      },
-      {
-        "wet": 8,
-        "dry": 13,
-        "bio": 5,
-        "hazard": 9,
-        "total": 35,
-        "timestamp": "2026-01-20T08:47:42.215Z"
-      },
-      {
-        "wet": 9,
-        "dry": 14,
-        "bio": 6,
-        "hazard": 9,
-        "total": 38,
-        "timestamp": "2026-01-20T08:47:52.217Z"
-      },
-      {
-        "wet": 10,
-        "dry": 14,
-        "bio": 7,
-        "hazard": 10,
-        "total": 41,
-        "timestamp": "2026-01-20T08:48:02.227Z"
-      },
-      {
-        "wet": 10,
-        "dry": 14,
-        "bio": 8,
-        "hazard": 10,
-        "total": 42,
-        "timestamp": "2026-01-20T08:48:12.237Z"
-      },
-      {
-        "wet": 12,
-        "dry": 16,
-        "bio": 9,
-        "hazard": 11,
-        "total": 48,
-        "timestamp": "2026-01-20T08:48:22.250Z"
-      },
-      {
-        "wet": 14,
-        "dry": 19,
-        "bio": 10,
-        "hazard": 12,
-        "total": 55,
-        "timestamp": "2026-01-20T08:48:32.259Z"
-      },
-      {
-        "wet": 15,
-        "dry": 21,
-        "bio": 10,
-        "hazard": 14,
-        "total": 60,
-        "timestamp": "2026-01-20T08:48:42.263Z"
-      },
-      {
-        "wet": 15,
-        "dry": 22,
-        "bio": 11,
-        "hazard": 15,
-        "total": 63,
-        "timestamp": "2026-01-20T08:48:52.279Z"
-      },
-      {
-        "wet": 15,
-        "dry": 22,
-        "bio": 14,
-        "hazard": 16,
-        "total": 67,
-        "timestamp": "2026-01-20T08:49:02.289Z"
-      },
-      {
-        "wet": 17,
-        "dry": 23,
-        "bio": 16,
-        "hazard": 17,
-        "total": 73,
-        "timestamp": "2026-01-20T08:49:12.292Z"
-      },
-      {
-        "wet": 18,
-        "dry": 23,
-        "bio": 17,
-        "hazard": 18,
-        "total": 76,
-        "timestamp": "2026-01-20T08:49:22.294Z"
-      },
-      {
-        "wet": 20,
-        "dry": 24,
-        "bio": 18,
-        "hazard": 18,
-        "total": 80,
-        "timestamp": "2026-01-20T08:49:32.302Z"
-      },
-      {
-        "wet": 20,
-        "dry": 24,
-        "bio": 20,
-        "hazard": 19,
-        "total": 83,
-        "timestamp": "2026-01-20T08:49:42.313Z"
-      },
-      {
-        "wet": 21,
-        "dry": 26,
-        "bio": 21,
-        "hazard": 21,
-        "total": 89,
-        "timestamp": "2026-01-20T08:49:52.313Z"
-      },
-      {
-        "wet": 22,
-        "dry": 28,
-        "bio": 21,
-        "hazard": 21,
-        "total": 92,
-        "timestamp": "2026-01-20T08:50:02.325Z"
-      },
-      {
-        "wet": 23,
-        "dry": 28,
-        "bio": 22,
-        "hazard": 21,
-        "total": 94,
-        "timestamp": "2026-01-20T08:50:12.329Z"
-      },
-      {
-        "wet": 23,
-        "dry": 29,
-        "bio": 23,
-        "hazard": 21,
-        "total": 96,
-        "timestamp": "2026-01-20T08:50:22.338Z"
-      },
-      {
-        "wet": 25,
-        "dry": 30,
-        "bio": 24,
-        "hazard": 23,
-        "total": 102,
-        "timestamp": "2026-01-20T08:51:10.972Z"
-      },
-      {
-        "wet": 27,
-        "dry": 31,
-        "bio": 26,
-        "hazard": 24,
-        "total": 108,
-        "timestamp": "2026-01-20T08:51:20.978Z"
-      },
-      {
-        "wet": 28,
-        "dry": 34,
-        "bio": 26,
-        "hazard": 25,
-        "total": 113,
-        "timestamp": "2026-01-20T08:51:30.987Z"
-      },
-      {
-        "wet": 28,
-        "dry": 35,
-        "bio": 27,
-        "hazard": 27,
-        "total": 117,
-        "timestamp": "2026-01-20T08:51:40.987Z"
-      },
-      {
-        "wet": 0,
-        "dry": 1,
-        "bio": 0,
-        "hazard": 0,
-        "total": 1,
-        "timestamp": "2026-01-20T16:31:13.022Z"
-      },
-      {
-        "wet": 0,
-        "dry": 2,
-        "bio": 0,
-        "hazard": 2,
-        "total": 4,
-        "timestamp": "2026-01-20T16:31:23.027Z"
-      },
-      {
-        "wet": 3,
-        "dry": 2,
-        "bio": 2,
-        "hazard": 3,
-        "total": 10,
-        "timestamp": "2026-01-20T16:31:33.041Z"
-      },
-      {
-        "wet": 5,
-        "dry": 3,
-        "bio": 4,
-        "hazard": 3,
-        "total": 15,
-        "timestamp": "2026-01-20T16:31:43.041Z"
-      },
-      {
-        "wet": 7,
-        "dry": 4,
-        "bio": 6,
-        "hazard": 5,
-        "total": 22,
-        "timestamp": "2026-01-20T16:31:53.042Z"
-      },
-      {
-        "wet": 8,
-        "dry": 4,
-        "bio": 7,
-        "hazard": 6,
-        "total": 25,
-        "timestamp": "2026-01-20T16:32:03.045Z"
-      },
-      {
-        "wet": 10,
-        "dry": 4,
-        "bio": 7,
-        "hazard": 7,
-        "total": 28,
-        "timestamp": "2026-01-20T16:32:13.055Z"
-      },
-      {
-        "wet": 12,
-        "dry": 6,
-        "bio": 8,
-        "hazard": 7,
-        "total": 33,
-        "timestamp": "2026-01-20T16:32:23.065Z"
-      },
-      {
-        "wet": 13,
-        "dry": 7,
-        "bio": 10,
-        "hazard": 8,
-        "total": 38,
-        "timestamp": "2026-01-20T16:32:33.067Z"
-      },
-      {
-        "wet": 13,
-        "dry": 9,
-        "bio": 11,
-        "hazard": 10,
-        "total": 43,
-        "timestamp": "2026-01-20T16:32:43.074Z"
-      },
-      {
-        "wet": 15,
-        "dry": 11,
-        "bio": 11,
-        "hazard": 12,
-        "total": 49,
-        "timestamp": "2026-01-20T16:32:53.083Z"
-      },
-      {
         "wet": 16,
         "dry": 12,
         "bio": 12,
@@ -173573,6 +172141,1438 @@
         "hazard": 0,
         "total": 0,
         "timestamp": "2026-01-20T18:27:20.579Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:38:23.233Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:38:33.243Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:38:43.243Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:38:53.255Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:39:03.261Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:39:13.266Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:39:23.276Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:39:33.286Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:39:43.295Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:39:53.310Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:40:03.317Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:40:13.317Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:40:23.331Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:40:33.342Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:40:43.348Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:40:53.360Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:41:03.365Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:41:13.375Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:41:23.378Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:41:33.394Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:41:43.407Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:41:53.415Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:42:03.419Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:42:13.427Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:42:23.431Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:42:33.438Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:42:43.448Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:42:53.462Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:43:03.468Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:43:13.479Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:43:23.487Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:43:33.498Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:43:43.506Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:43:53.512Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:44:03.521Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:44:13.535Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:44:23.545Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:44:33.553Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:44:43.555Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:44:53.559Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:45:03.563Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:45:13.565Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:45:23.572Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:45:33.576Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:45:43.583Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:45:53.586Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:46:03.593Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:46:13.603Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:46:23.606Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:46:33.621Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:46:43.632Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:46:53.634Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:47:03.648Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:47:13.658Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:47:23.663Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:47:33.672Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:47:43.685Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:47:53.688Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:48:03.688Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:48:13.694Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:48:23.714Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:48:33.722Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:48:43.728Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:48:53.741Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:49:03.744Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:49:13.752Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:49:23.764Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:49:33.773Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:49:43.776Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:49:53.789Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:50:03.794Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:50:13.807Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:50:23.807Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:50:33.814Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:50:43.819Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:50:53.824Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:51:03.824Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:51:13.831Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:51:23.835Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:51:33.844Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:51:43.857Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:51:53.864Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:52:03.875Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:52:13.883Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:52:23.887Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:52:33.901Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:52:43.910Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:52:53.919Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:53:03.921Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:53:13.934Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:53:23.939Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:53:33.945Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:53:43.948Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:53:53.953Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:54:03.956Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:54:13.969Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:54:23.978Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:54:33.992Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:54:44.006Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:54:54.012Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:55:04.025Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:55:14.037Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:55:24.040Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:55:34.048Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:55:44.056Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:55:54.056Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:56:04.065Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:56:14.073Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:56:24.077Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:56:34.079Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:56:44.082Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:56:54.083Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:57:04.088Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:57:14.097Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:57:24.097Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:57:34.106Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:57:44.112Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:57:54.119Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:58:04.127Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:58:14.130Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:58:24.138Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:58:34.167Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:58:44.173Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:58:54.175Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:59:04.189Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:59:14.199Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:59:24.206Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T19:59:34.220Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T20:23:20.011Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:24:31.893Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:24:41.904Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:24:51.905Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:25:01.910Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:25:11.919Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:25:21.919Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:25:31.933Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:25:41.935Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:25:51.936Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:26:01.942Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:26:11.946Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:26:21.949Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:26:31.952Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:26:41.961Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:26:51.966Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:27:01.973Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:27:11.981Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:27:21.994Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:27:32.010Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:27:42.023Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:27:52.033Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:28:02.036Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:28:12.050Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:28:22.052Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:28:32.063Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:28:42.068Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:28:52.079Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:29:02.086Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:29:12.098Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:29:22.104Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:29:32.120Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:29:42.125Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:29:52.139Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:30:02.152Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:30:12.162Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:30:22.164Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:30:32.165Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:30:42.167Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:30:52.182Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:31:02.187Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:31:12.188Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:31:22.190Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:31:32.202Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:31:42.203Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:31:52.204Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:32:02.205Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:32:12.207Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:32:22.210Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:32:32.211Z"
+      },
+      {
+        "recyclable": 0,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T21:32:42.211Z"
       }
     ]
   }

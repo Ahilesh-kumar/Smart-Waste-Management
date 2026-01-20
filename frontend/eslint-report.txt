@@ -1,0 +1,49 @@
+﻿
+C:\Users\Ahilesh Kumar\Downloads\New folder\waste-management-system\frontend\src\App.jsx
+     6:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                            no-unused-vars
+   193:10  error  'loadingExpanding' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         no-unused-vars
+   215:22  error  'setHourlyData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u            no-unused-vars
+   216:10  error  'showComparisonMode' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+   216:30  error  'setShowComparisonMode' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+   217:10  error  'drillDownCategory' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+   217:29  error  'setDrillDownCategory' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+   228:9   error  'ignoreMotionRef' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+   229:9   error  'resumeTimerRef' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+   230:9   error  'itemProcessedRef' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         no-unused-vars
+   232:9   error  'lastCountTimeRef' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         no-unused-vars
+   244:10  error  'graphType' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                no-unused-vars
+   244:21  error  'setGraphType' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+   245:10  error  'selectedBin' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+   245:23  error  'setSelectedBin' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+   302:10  error  'pipMode' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                  no-unused-vars
+   305:10  error  'confidenceThreshold' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+   305:31  error  'setConfidenceThreshold' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+   306:10  error  'lowConfidenceCount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+   306:30  error  'setLowConfidenceCount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+   309:10  error  'alertHistory' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+   313:10  error  'lastConnected' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u            no-unused-vars
+   316:24  error  'setBinFillRates' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+   322:10  error  'isFullscreen' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+   330:9   error  'detectionFrameCount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+   331:9   error  'lastDetectedClass' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+   366:24  error  'setShowLiveFeed' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+   367:28  error  'setRecentDetections' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+   375:10  error  'compositionChartView' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+   375:32  error  'setCompositionChartView' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   378:29  error  'setChartHistoryIndex' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+   387:32  error  'baseData' is defined but never used                                                                     no-unused-vars
+   630:9   error  'exportReport' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+   696:11  error  'swipeProps' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u               no-unused-vars
+   696:23  error  'isPulling' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                no-unused-vars
+   696:34  error  'pullDistance' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+   996:9   error  'getHistoricalData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+  1296:9   error  'getTimeUntilFull' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         no-unused-vars
+  1320:14  error  'e' is defined but never used                                                                            no-unused-vars
+  1326:9   error  'enableNotifications' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  1441:16  error  'e' is defined but never used                                                                            no-unused-vars
+  1468:10  error  'model' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+  1474:11  error  'speak' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+  2022:49  error  'i' is defined but never used                                                                            no-unused-vars
+
+Γ£û 44 problems (44 errors, 0 warnings)
+
