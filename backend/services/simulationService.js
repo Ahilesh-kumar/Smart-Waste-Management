@@ -36,22 +36,20 @@ const startSimulation = (broadcastCallback) => {
                 bin.health.battery = parseFloat(bin.health.battery.toFixed(1));
                 bin.health.clean = parseFloat(bin.health.clean.toFixed(1));
 
-                if (index !== 2) { // Skip Bio (Real)
-                    // Simulate random increase
-                    if (Math.random() > 0.7) {
-                        const increase = Math.random() * 0.5;
-                        let newVol = bin.volume + increase;
-                        if (newVol > 89) newVol = 89;
+                // Simulate random increase
+                if (Math.random() > 0.7) {
+                    const increase = Math.random() * 0.5;
+                    let newVol = bin.volume + increase;
+                    if (newVol > 89) newVol = 89;
 
-                        if (newVol > bin.volume) {
-                            bin.itemsCount += 1;
-                        }
-                        bin.volume = parseFloat(newVol.toFixed(1));
-
-                        let newWeight = bin.weight + (increase * 0.2);
-                        bin.weight = parseFloat(newWeight.toFixed(2));
-                        hasChanges = true;
+                    if (newVol > bin.volume) {
+                        bin.itemsCount += 1;
                     }
+                    bin.volume = parseFloat(newVol.toFixed(1));
+
+                    let newWeight = bin.weight + (increase * 0.2);
+                    bin.weight = parseFloat(newWeight.toFixed(2));
+                    hasChanges = true;
                 }
             });
 

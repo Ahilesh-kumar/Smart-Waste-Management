@@ -14,10 +14,10 @@ const defaultState = {
     revenue: 125.50,
     manualServo: { 0: 0, 1: 0, 2: 0, 3: 0 },
     bins: [
-        { id: 0, name: "Wet Waste", type: "wet", weight: 0, volume: 0, itemsCount: 0, isSimulated: false, health: { battery: 100, signal: 98, motor: 100, sensor: 100, clean: 100 } },
-        { id: 1, name: "Dry Waste", type: "dry", weight: 0, volume: 0, itemsCount: 0, isSimulated: true, health: { battery: 95, signal: 96, motor: 98, sensor: 99, clean: 95 } },
-        { id: 2, name: "Bio-medical", type: "bio", weight: 0, volume: 0, itemsCount: 0, isSimulated: false, health: { battery: 100, signal: 99, motor: 100, sensor: 100, clean: 100 } },
-        { id: 3, name: "Hazardous", type: "hazard", weight: 0, volume: 0, itemsCount: 0, isSimulated: true, health: { battery: 88, signal: 92, motor: 95, sensor: 97, clean: 80 } }
+        { id: 0, name: "Recyclable", type: "wet", weight: 0, volume: 0, itemsCount: 0, isSimulated: true, health: { battery: 100, signal: 98, motor: 100, sensor: 100, clean: 100 } },
+        { id: 1, name: "Wet Waste", type: "dry", weight: 0, volume: 0, itemsCount: 0, isSimulated: true, health: { battery: 95, signal: 96, motor: 98, sensor: 99, clean: 95 } },
+        { id: 2, name: "Hazardous", type: "bio", weight: 0, volume: 0, itemsCount: 0, isSimulated: true, health: { battery: 100, signal: 99, motor: 100, sensor: 100, clean: 100 } },
+        { id: 3, name: "Dry Waste", type: "hazard", weight: 0, volume: 0, itemsCount: 0, isSimulated: true, health: { battery: 88, signal: 92, motor: 95, sensor: 97, clean: 80 } }
     ]
 };
 

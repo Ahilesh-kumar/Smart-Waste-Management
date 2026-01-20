@@ -24,25 +24,25 @@ export const AnalyticsDeckWidget = ({
 
     // Pie chart data
     const pieData = [
-        { name: 'Bio', value: processingCounts.bio || 0 },
-        { name: 'Hazard', value: processingCounts.hazard || 0 },
+        { name: 'Recyclable', value: processingCounts.recyclable || 0 },
         { name: 'Wet', value: processingCounts.wet || 0 },
+        { name: 'Hazardous', value: processingCounts.hazardous || 0 },
         { name: 'Dry', value: processingCounts.dry || 0 }
     ];
 
     // Radar chart data
     const radarData = [
-        { subject: 'Bio', A: processingCounts.bio || 0, fullMark: 100 },
-        { subject: 'Hazard', A: processingCounts.hazard || 0, fullMark: 100 },
+        { subject: 'Recyclable', A: processingCounts.recyclable || 0, fullMark: 100 },
         { subject: 'Wet', A: processingCounts.wet || 0, fullMark: 100 },
+        { subject: 'Hazardous', A: processingCounts.hazardous || 0, fullMark: 100 },
         { subject: 'Dry', A: processingCounts.dry || 0, fullMark: 100 },
     ];
 
     // Comparison data
     const getComparisonData = () => [
         { name: 'Total', current: processingCounts.total, average: processingCounts.total * 0.8 },
-        { name: 'Wet', current: processingCounts.wet, average: processingCounts.wet * 0.9 },
-        { name: 'Dry', current: processingCounts.dry, average: processingCounts.dry * 0.7 }
+        { name: 'Rec', current: processingCounts.recyclable, average: processingCounts.recyclable * 0.9 },
+        { name: 'Wet', current: processingCounts.wet, average: processingCounts.wet * 0.7 }
     ];
 
     // Compute confidence histogram from recent detections
@@ -96,7 +96,7 @@ export const AnalyticsDeckWidget = ({
             <ChartCard
                 title="Waste Composition"
                 icon={PieChart}
-                description="Breakdown of detected waste by category (Bio, Hazard, Wet, Dry)."
+                description="Breakdown of detected waste by category (Recyclable, Wet, Hazardous, Dry)."
                 onExpand={() => onExpandChart('composition')}
                 className={clsx("card-modern", theme === 'dark' ? "card-modern-dark" : "card-modern-light", "p-4 flex flex-col group")}
                 actions={

@@ -21,10 +21,10 @@ const socket = io('http://localhost:3001');
 // --- Graph Enhancement Components ---
 // Premium 2-Color Theme: Slate + Teal
 const binColors = {
-  0: { main: '#14b8a6', gradient: ['#14b8a6', '#0d9488'] }, // Teal (Primary)
-  1: { main: '#64748b', gradient: ['#64748b', '#475569'] }, // Slate
-  2: { main: '#2dd4bf', gradient: ['#2dd4bf', '#14b8a6'] }, // Teal Light
-  3: { main: '#94a3b8', gradient: ['#94a3b8', '#64748b'] }  // Slate Light
+  0: { main: '#14b8a6', gradient: ['#14b8a6', '#0d9488'] }, // Teal (Recyclable)
+  1: { main: '#2dd4bf', gradient: ['#2dd4bf', '#14b8a6'] }, // Teal Light (Wet)
+  2: { main: '#f43f5e', gradient: ['#f43f5e', '#e11d48'] }, // Rose (Hazardous)
+  3: { main: '#64748b', gradient: ['#64748b', '#475569'] }  // Slate (Dry)
 };
 
 // ===== CINEMATIC LOADING SCREEN WITH WATER RIPPLES =====
@@ -172,10 +172,10 @@ function App() {
     revenue: 0,
     manualServo: { 0: 0, 1: 0, 2: 0, 3: 0 },
     bins: [
-      { id: 0, name: "Wet Waste", type: "wet", weight: 0, volume: 0 },
-      { id: 1, name: "Dry Waste", type: "dry", weight: 0, volume: 0 },
-      { id: 2, name: "Bio-medical", type: "bio", weight: 0, volume: 0 },
-      { id: 3, name: "Hazardous", type: "hazard", weight: 0, volume: 0 }
+      { id: 0, name: "Recyclable", type: "recyclable", weight: 0, volume: 0 },
+      { id: 1, name: "Wet Waste", type: "wet", weight: 0, volume: 0 },
+      { id: 2, name: "Hazardous", type: "hazard", weight: 0, volume: 0 },
+      { id: 3, name: "Dry Waste", type: "dry", weight: 0, volume: 0 }
     ]
   });
 
@@ -191,7 +191,7 @@ function App() {
   // Load Camera URL from Settings or Default
   const [camUrl, setCamUrl] = useState(() => {
     const saved = localStorage.getItem('waste_settings');
-    return saved ? JSON.parse(saved).camUrl : '10.205.209.232:8080';
+    return saved ? JSON.parse(saved).camUrl : '192.168.128.114:8080';
   });
 
   // Migration: Auto-update old IP to new one
@@ -199,11 +199,11 @@ function App() {
     const saved = localStorage.getItem('waste_settings');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.camUrl.includes('192.168.1.3')) {
+      if (parsed.camUrl.includes('10.205.209.232') || parsed.camUrl.includes('192.168.1.3') || parsed.camUrl.includes('10.63.6.215')) {
         console.log("Migrating old IP to new default...");
-        const newSettings = { ...parsed, camUrl: '10.205.209.232:8080' };
+        const newSettings = { ...parsed, camUrl: '192.168.128.114:8080' };
         localStorage.setItem('waste_settings', JSON.stringify(newSettings));
-        setCamUrl('10.205.209.232:8080');
+        setCamUrl('192.168.128.114:8080');
       }
     }
   }, []);
@@ -271,7 +271,7 @@ function App() {
   const [processingCounts, setProcessingCounts] = useState(() => {
     const saved = localStorage.getItem('waste_session_current');
     return saved ? JSON.parse(saved).processingCounts : {
-      total: 0, bio: 0, hazard: 0, wet: 0, dry: 0
+      total: 0, recyclable: 0, wet: 0, hazardous: 0, dry: 0
     };
   });
 
@@ -320,7 +320,7 @@ function App() {
   const [expandedGraph, setExpandedGraph] = useState(null); // For graph pop-out modal
 
   // Category flash animation (shows +1 Bio, +1 Haz, etc.)
-  const [categoryFlash, setCategoryFlash] = useState(null); // { category: 'Bio-medical', time: timestamp }
+  const [categoryFlash, setCategoryFlash] = useState(null); // { category: 'Recyclable', time: timestamp }
 
   // False positive filter (require multiple frames)
   const detectionFrameCount = useRef(0);
@@ -398,7 +398,7 @@ function App() {
 
   // Graph Info Descriptions for hover tooltips
   const MODAL_DESCRIPTIONS = {
-    composition: "Shows the distribution of waste across categories (Bio, Hazard, Wet, Dry). Helps identify which waste types are most common in your facility.",
+    composition: "Shows the distribution of waste across categories (Recyclable, Wet, Hazardous, Dry). Helps identify which waste types are most common in your facility.",
     radar: "Displays waste category distribution in a radar/spider chart format. Useful for comparing relative quantities across all categories at a glance.",
     throughput: "Tracks waste detection velocity over time. Shows how processing rates change throughout the day and helps identify peak hours.",
     session: "Compares current session performance against historical averages. Helps track whether you're processing more or less waste than usual.",
@@ -424,9 +424,9 @@ function App() {
           : processingCounts;
 
         return <PremiumPieChart data={[
-          { name: 'Bio', value: pieCounts.bio || 0 },
-          { name: 'Hazard', value: pieCounts.hazard || 0 },
+          { name: 'Recyclable', value: pieCounts.recyclable || 0 },
           { name: 'Wet', value: pieCounts.wet || 0 },
+          { name: 'Hazardous', value: pieCounts.hazardous || 0 },
           { name: 'Dry', value: pieCounts.dry || 0 }
         ]} height={400} />;
 
@@ -437,9 +437,9 @@ function App() {
           : processingCounts;
 
         return <PremiumRadarChart data={[
-          { subject: 'Bio', A: radarCounts.bio || 0, fullMark: 100 },
-          { subject: 'Hazard', A: radarCounts.hazard || 0, fullMark: 100 },
+          { subject: 'Recyclable', A: radarCounts.recyclable || 0, fullMark: 100 },
           { subject: 'Wet', A: radarCounts.wet || 0, fullMark: 100 },
+          { subject: 'Hazardous', A: radarCounts.hazardous || 0, fullMark: 100 },
           { subject: 'Dry', A: radarCounts.dry || 0, fullMark: 100 },
         ]} height={400} />;
       case 'throughput':
@@ -452,10 +452,10 @@ function App() {
         // Calculate category totals
         const latestPoint = trendData[trendData.length - 1] || {};
         const categoryStats = [
-          { name: 'Wet', value: latestPoint.wet || 0, color: '#06b6d4' },
-          { name: 'Dry', value: latestPoint.dry || 0, color: '#f59e0b' },
-          { name: 'Bio', value: latestPoint.bio || 0, color: '#10b981' },
-          { name: 'Hazard', value: latestPoint.hazard || 0, color: '#f43f5e' },
+          { name: 'Recyclable', value: latestPoint.recyclable || 0, color: '#14b8a6' },
+          { name: 'Wet', value: latestPoint.wet || 0, color: '#2dd4bf' },
+          { name: 'Hazardous', value: latestPoint.hazardous || 0, color: '#f43f5e' },
+          { name: 'Dry', value: latestPoint.dry || 0, color: '#64748b' },
         ];
 
         return (
@@ -516,10 +516,10 @@ function App() {
           <ResponsiveContainer width="100%" height={400} minWidth={0} minHeight={0}>
             <BarChart data={[
               { name: 'Total', current: processingCounts.total * histFactor, average: processingCounts.total * 0.8 },
-              { name: 'Wet', current: processingCounts.wet * histFactor, average: processingCounts.wet * 0.9 },
-              { name: 'Dry', current: processingCounts.dry * histFactor, average: processingCounts.dry * 0.7 },
-              { name: 'Bio', current: processingCounts.bio * histFactor, average: processingCounts.bio * 1.1 },
-              { name: 'Haz', current: processingCounts.hazard * histFactor, average: processingCounts.hazard * 0.5 }
+              { name: 'Rec', current: processingCounts.recyclable * histFactor, average: processingCounts.recyclable * 0.9 },
+              { name: 'Wet', current: processingCounts.wet * histFactor, average: processingCounts.wet * 0.7 },
+              { name: 'Haz', current: processingCounts.hazardous * histFactor, average: processingCounts.hazardous * 1.1 },
+              { name: 'Dry', current: processingCounts.dry * histFactor, average: processingCounts.dry * 0.5 }
             ]} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
               <XAxis dataKey="name" stroke="#64748b" />
@@ -742,7 +742,7 @@ function App() {
     gain.connect(audio.destination);
 
     // Different tones for different categories
-    const freqs = { 'Bio-medical': 523, 'Hazardous': 392, 'Wet Waste': 440, 'Dry Waste': 494 };
+    const freqs = { 'Recyclable': 523, 'Hazardous': 392, 'Wet Waste': 440, 'Dry Waste': 494 };
     osc.frequency.setValueAtTime(freqs[category] || 440, audio.currentTime);
     osc.frequency.exponentialRampToValueAtTime(freqs[category] * 1.5 || 660, audio.currentTime + 0.15);
     gain.gain.setValueAtTime(0.2, audio.currentTime);
@@ -771,6 +771,19 @@ function App() {
       setReconnectCount(prev => prev + 1);
     });
 
+    // Receive camera config from backend (set via start_all.bat)
+    socket.on('camera_config', (config) => {
+      console.log('Received camera config from backend:', config);
+      if (config && config.url) {
+        setCamUrl(config.url);
+        // Also update localStorage to persist
+        const settings = JSON.parse(localStorage.getItem('waste_settings') || '{}');
+        settings.camUrl = config.url;
+        localStorage.setItem('waste_settings', JSON.stringify(settings));
+        addToast(`Camera connected: ${config.url}`, 'info');
+      }
+    });
+
     socket.on('system_state', (newState) => {
       // Preserve local state if needed, but we rely on backend for single source
       setData(newState);
@@ -781,10 +794,10 @@ function App() {
         const newPoint = {
           time: now,
           // General Volume
-          wet: newState.bins[0].volume,
-          dry: newState.bins[1].volume,
-          bio: newState.bins[2].volume,
-          hazard: newState.bins[3].volume,
+          recyclable: newState.bins[0].volume,
+          wet: newState.bins[1].volume,
+          hazardous: newState.bins[2].volume,
+          dry: newState.bins[3].volume,
           // Individual Bin Details (we can filter from this history in the modal)
           bin0_vol: newState.bins[0].volume, bin0_items: newState.bins[0].itemsCount || 0,
           bin1_vol: newState.bins[1].volume, bin1_items: newState.bins[1].itemsCount || 0,
@@ -808,9 +821,9 @@ function App() {
     });
 
     socket.on('ai_inference', (data) => {
-      // Throttle updates to ~15 FPS to prevent React render thrashing
+      // Throttle updates to ~30 FPS to match IP camera phone
       const now = Date.now();
-      if (now - (window.lastAiUpdate || 0) > 60) {
+      if (now - (window.lastAiUpdate || 0) > 33) {
         setAiData(data);
         window.lastAiUpdate = now;
       }
@@ -840,10 +853,10 @@ function App() {
         // Transform to chart-friendly format with time labels
         const chartData = data.data.map(point => ({
           time: new Date(point.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          recyclable: point.recyclable || 0,
           wet: point.wet || 0,
+          hazardous: point.hazardous || 0,
           dry: point.dry || 0,
-          bio: point.bio || 0,
-          hazard: point.hazard || 0,
           total: point.total || 0
         }));
         setTimeSeriesData(chartData);
@@ -853,6 +866,7 @@ function App() {
     return () => {
       socket.off('connect');
       socket.off('disconnect');
+      socket.off('camera_config');
       socket.off('system_state');
       socket.off('alert');
       socket.off('ai_inference');
@@ -965,7 +979,7 @@ function App() {
 
     // If system turns ON -> Reset for fresh cycle
     if (data.isOn) {
-      setProcessingCounts({ total: 0, bio: 0, hazard: 0, wet: 0, dry: 0 });
+      setProcessingCounts({ total: 0, recyclable: 0, wet: 0, hazardous: 0, dry: 0 });
       setEventLog([]);
       setHistory([]); // Reset live history
       setTimeSeriesData([]); // Reset time-series charts
@@ -1455,10 +1469,10 @@ function App() {
           // Voice removed per user request (only system state/errors)
           // speak(`${detectedClass} detected.`);
 
-          // Categorize
+          // Categorize (updated for new AI model: Recyclable, Wet, Hazardous, Dry)
           let cat = 'Dry Waste';
           const lower = detectedClass.toLowerCase();
-          if (lower.includes('bio')) cat = 'Bio-medical';
+          if (lower.includes('rec')) cat = 'Recyclable';
           else if (lower.includes('haz')) cat = 'Hazardous';
           else if (lower.includes('wet') || lower.includes('org')) cat = 'Wet Waste';
 
@@ -1475,7 +1489,7 @@ function App() {
           // Play detection sound
           playDetectionSound(cat);
 
-          // Show category flash (+1 Bio, +1 Haz, etc.)
+          // Show category flash (+1 Recyclable, +1 Haz, etc.)
           setCategoryFlash({ category: cat, time: Date.now() });
           setTimeout(() => setCategoryFlash(null), 1500);
 
@@ -1488,31 +1502,31 @@ function App() {
             return updated;
           });
 
-          // Update Counts
+          // Update Counts (using correct state keys: recyclable, hazardous, wet, dry)
           setProcessingCounts(prev => {
             const next = { ...prev, total: prev.total + 1 };
-            if (cat === 'Bio-medical') next.bio++;
-            else if (cat === 'Hazardous') next.hazard++;
+            if (cat === 'Recyclable') next.recyclable++;
+            else if (cat === 'Hazardous') next.hazardous++;
             else if (cat === 'Wet Waste') next.wet++;
             else next.dry++;
 
-            // Update Time Series Data for charts
+            // Update Time Series Data for charts (using correct field names)
             const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
             setTimeSeriesData(prev => {
               const newPoint = {
                 time: now,
-                bio: cat === 'Bio-medical' ? 1 : 0,
-                hazard: cat === 'Hazardous' ? 1 : 0,
+                recyclable: cat === 'Recyclable' ? 1 : 0,
+                hazardous: cat === 'Hazardous' ? 1 : 0,
                 wet: cat === 'Wet Waste' ? 1 : 0,
                 dry: cat === 'Dry Waste' ? 1 : 0
               };
               // Merge with last point if same time, otherwise add new
               if (prev.length > 0 && prev[prev.length - 1].time === now) {
                 const last = { ...prev[prev.length - 1] };
-                last.bio += newPoint.bio;
-                last.hazard += newPoint.hazard;
-                last.wet += newPoint.wet;
-                last.dry += newPoint.dry;
+                last.recyclable = (last.recyclable || 0) + newPoint.recyclable;
+                last.hazardous = (last.hazardous || 0) + newPoint.hazardous;
+                last.wet = (last.wet || 0) + newPoint.wet;
+                last.dry = (last.dry || 0) + newPoint.dry;
                 return [...prev.slice(0, -1), last].slice(-30);
               }
               return [...prev, newPoint].slice(-30);
@@ -1526,8 +1540,9 @@ function App() {
             }].slice(-50));
 
             // Increase bin volume by 0.5% for the detected category
+            // Bin mapping: 0=Recyclable, 1=Wet, 2=Hazardous, 3=Dry
             setData(prev => {
-              const binIdMap = { 'Wet Waste': 0, 'Dry Waste': 1, 'Bio-medical': 2, 'Hazardous': 3 };
+              const binIdMap = { 'Recyclable': 0, 'Wet Waste': 1, 'Hazardous': 2, 'Dry Waste': 3 };
               const binId = binIdMap[cat];
               if (binId !== undefined) {
                 const updatedBins = prev.bins.map(bin =>
@@ -2267,7 +2282,7 @@ function App() {
                             <td className="p-2 font-bold">{log.rawClass}</td>
                             <td className="p-2">
                               <span className={clsx("px-2 py-0.5 rounded text-[10px]",
-                                log.category === 'Bio-medical' ? 'bg-red-500/20 text-red-300' :
+                                log.category === 'Recyclable' ? 'bg-emerald-500/20 text-emerald-300' :
                                   log.category === 'Hazardous' ? 'bg-orange-500/20 text-orange-300' :
                                     log.category === 'Wet Waste' ? 'bg-cyan-500/20 text-cyan-300' :
                                       log.category === 'Low Confidence' ? 'bg-yellow-500/20 text-yellow-300' :
@@ -2645,7 +2660,7 @@ function App() {
                               <td className="font-semibold">{event.rawClass}</td>
                               <td>
                                 <span className={clsx("badge-category",
-                                  event.category === 'Bio-medical' && "badge-bio",
+                                  event.category === 'Recyclable' && "badge-bio",
                                   event.category === 'Hazardous' && "badge-hazard",
                                   event.category === 'Wet Waste' && "badge-wet",
                                   event.category === 'Dry Waste' && "badge-dry",
@@ -2739,7 +2754,7 @@ function App() {
                     exit={{ opacity: 0, y: -20, scale: 0.8 }}
                     className={clsx(
                       "absolute -top-12 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full font-bold text-white shadow-lg",
-                      categoryFlash.category === 'Bio-medical' && "bg-bio",
+                      categoryFlash.category === 'Recyclable' && "bg-bio",
                       categoryFlash.category === 'Hazardous' && "bg-hazard",
                       categoryFlash.category === 'Wet Waste' && "bg-cyan-500",
                       categoryFlash.category === 'Dry Waste' && "bg-dry"
@@ -2803,8 +2818,8 @@ function App() {
                 <div className="category-icon category-icon-bio">
                   <Recycle size={18} className="text-white" />
                 </div>
-                <div className="stat-label text-slate-400">Bio-medical</div>
-                <AnimatedCounter value={processingCounts.bio} className="stat-number-sm text-slate-300" />
+                <div className="stat-label text-slate-400">Recyclable</div>
+                <AnimatedCounter value={processingCounts.recyclable} className="stat-number-sm text-slate-300" />
               </div>
 
               {/* Hazard Card */}
@@ -2816,7 +2831,7 @@ function App() {
                   <AlertTriangle size={18} className="text-white" />
                 </div>
                 <div className="stat-label text-slate-400">Hazardous</div>
-                <AnimatedCounter value={processingCounts.hazard} className="stat-number-sm text-slate-300" />
+                <AnimatedCounter value={processingCounts.hazardous} className="stat-number-sm text-slate-300" />
               </div>
 
               {/* Wet Card */}

@@ -16,6 +16,15 @@ const initSocket = (io) => {
         // Send initial state
         socket.emit('system_state', StateStore.getState());
 
+        // Send camera configuration (from environment variables set in start_all.bat)
+        const camIp = process.env.IP_CAM_IP || '192.168.128.114';
+        const camPort = process.env.IP_CAM_PORT || '8080';
+        socket.emit('camera_config', {
+            ip: camIp,
+            port: camPort,
+            url: `${camIp}:${camPort}`
+        });
+
         // --- EVENTS FROM DASHBOARD ---
         socket.on('toggle_power', (isOn) => {
             logger.info(`System Power: ${isOn}`);
@@ -68,10 +77,11 @@ const initSocket = (io) => {
 
             // Extract category for logging
             let category = "General";
-            if (data.class.includes("Bio")) category = "Bio-medical";
-            else if (data.class.includes("Hazard")) category = "Hazardous";
-            else if (data.class.includes("Wet")) category = "Wet Waste";
-            else if (data.class.includes("Dry")) category = "Dry Waste";
+            const clsLower = data.class.toLowerCase();
+            if (clsLower.includes("haz")) category = "Hazardous";
+            else if (clsLower.includes("wet")) category = "Wet Waste";
+            else if (clsLower.includes("dry")) category = "Dry Waste";
+            else if (clsLower.includes("rec")) category = "Recyclable";
 
             // Log to DB
             StateStore.addLog({
@@ -90,11 +100,11 @@ const initSocket = (io) => {
                 const state = StateStore.getState();
                 const bin = state.bins[typeIdx];
 
-                const updates = { itemsCount: bin.itemsCount + 1 };
-                if (typeIdx !== 2) {
-                    updates.volume = parseFloat((bin.volume + 2).toFixed(1));
-                    updates.weight = parseFloat((bin.weight + 0.5).toFixed(2));
-                }
+                const updates = {
+                    itemsCount: bin.itemsCount + 1,
+                    volume: parseFloat((bin.volume + 2).toFixed(1)),
+                    weight: parseFloat((bin.weight + 0.5).toFixed(2))
+                };
                 StateStore.updateBin(typeIdx, updates);
                 broadcastState();
             }

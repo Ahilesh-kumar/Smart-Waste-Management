@@ -8,9 +8,9 @@ export const WasteCompositionWidget = ({
     processingCounts = { total: 0, bio: 0, hazard: 0, wet: 0, dry: 0 }
 }) => {
     const radarData = [
-        { subject: 'Bio', A: processingCounts.bio, fullMark: 100 },
-        { subject: 'Haz', A: processingCounts.hazard, fullMark: 100 },
+        { subject: 'Recyclable', A: processingCounts.recyclable, fullMark: 100 },
         { subject: 'Wet', A: processingCounts.wet, fullMark: 100 },
+        { subject: 'Hazardous', A: processingCounts.hazardous, fullMark: 100 },
         { subject: 'Dry', A: processingCounts.dry, fullMark: 100 },
     ];
 

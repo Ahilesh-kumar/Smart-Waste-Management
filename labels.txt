@@ -1,4 +1,4 @@
-0 Wet
-1 Dry
-2 Recyclable
-3 Nothing
+0 Recyclable
+1 Wet
+2 Hazardous
+3 Dry

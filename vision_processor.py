@@ -20,7 +20,7 @@ from tensorflow.keras.layers import DepthwiseConv2D
 
 # --- CONFIGURATION ---
 class Config:
-    IP_CAM_URL = os.getenv("IP_CAM_URL", "http://10.205.209.232:8080/video")
+    IP_CAM_URL = os.getenv("IP_CAM_URL", "http://192.168.128.114:8080/video")
     BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:3001")
     MODEL_PATH = "keras_model.h5"
     LABELS_PATH = "labels.txt"
@@ -271,8 +271,8 @@ class WasteClassifier:
 
     def emit_realtime_data(self, cls, conf, label_id, weight):
         now = time.time()
-        # Increased to ~24 FPS cap for smoother camera
-        if now - self.last_emit_time > 0.04: 
+        # Increased to ~30 FPS cap to match IP camera phone
+        if now - self.last_emit_time > 0.033: 
             payload = {
                 'class': cls if not self.is_moving else "Moving...",
                 'confidence': conf if not self.is_moving else 0,
@@ -294,11 +294,12 @@ class WasteClassifier:
             # Map class to bin
             bin_id = -1
             name = cls.lower()
-            if "bio" in name: bin_id = 2
-            elif "haz" in name: bin_id = 3
-            elif "rec" in name or "dry" in name: bin_id = 1
-            elif "wet" in name or "org" in name: bin_id = 0
-            elif "met" in name or "e-waste" in name: bin_id = 1
+            
+            # Use Index-based mapping for the new model
+            if "0" in name or "rec" in name: bin_id = 0
+            elif "1" in name or "wet" in name: bin_id = 1
+            elif "2" in name or "haz" in name: bin_id = 2
+            elif "3" in name or "dry" in name: bin_id = 3
             
             if bin_id != -1:
                 print(f"SORTING: {cls} -> Bin {bin_id}")

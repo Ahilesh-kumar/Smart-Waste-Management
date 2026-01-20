@@ -6,7 +6,7 @@ import { TiltCard, AnimatedCounter } from '../UIComponents';
 
 export const StatsOverviewWidget = ({
     theme,
-    processingCounts = { total: 0, bio: 0, hazard: 0, wet: 0, dry: 0 },
+    processingCounts = { total: 0, recyclable: 0, hazardous: 0, wet: 0, dry: 0 },
     ecoMetrics = { co2Offset: 0, treesEquivalent: 0, energySaved: 0 },
     onHistoryClick
 }) => {
