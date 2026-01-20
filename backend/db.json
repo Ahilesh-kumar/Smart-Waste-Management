@@ -21,11 +21,11 @@
         "itemsCount": 0,
         "isSimulated": false,
         "health": {
-          "battery": 86.6,
-          "signal": 99,
+          "battery": 85.8,
+          "signal": 90,
           "motor": 100,
           "sensor": 100,
-          "clean": 95.1
+          "clean": 94.4
         }
       },
       {
@@ -37,11 +37,11 @@
         "itemsCount": 0,
         "isSimulated": true,
         "health": {
-          "battery": 81.5,
-          "signal": 98,
+          "battery": 81.1,
+          "signal": 93,
           "motor": 98,
           "sensor": 99,
-          "clean": 89.2
+          "clean": 88.9
         }
       },
       {
@@ -53,11 +53,11 @@
         "itemsCount": 0,
         "isSimulated": false,
         "health": {
-          "battery": 86.9,
-          "signal": 91,
+          "battery": 86.4,
+          "signal": 93,
           "motor": 100,
           "sensor": 100,
-          "clean": 94
+          "clean": 93.7
         }
       },
       {
@@ -69,11 +69,11 @@
         "itemsCount": 0,
         "isSimulated": true,
         "health": {
-          "battery": 70.8,
-          "signal": 98,
+          "battery": 70.4,
+          "signal": 95,
           "motor": 95,
           "sensor": 97,
-          "clean": 75.1
+          "clean": 74.4
         }
       }
     ]
@@ -169575,222 +169575,6 @@
     "sessions": [],
     "timeSeriesLog": [
       {
-        "wet": 24,
-        "dry": 3,
-        "bio": 0,
-        "hazard": 1,
-        "total": 28,
-        "timestamp": "2026-01-19T20:20:46.115Z"
-      },
-      {
-        "wet": 26,
-        "dry": 4,
-        "bio": 0,
-        "hazard": 2,
-        "total": 32,
-        "timestamp": "2026-01-19T20:20:56.119Z"
-      },
-      {
-        "wet": 29,
-        "dry": 6,
-        "bio": 0,
-        "hazard": 4,
-        "total": 39,
-        "timestamp": "2026-01-19T20:21:06.123Z"
-      },
-      {
-        "wet": 30,
-        "dry": 7,
-        "bio": 0,
-        "hazard": 4,
-        "total": 41,
-        "timestamp": "2026-01-19T20:21:16.131Z"
-      },
-      {
-        "wet": 31,
-        "dry": 8,
-        "bio": 0,
-        "hazard": 5,
-        "total": 44,
-        "timestamp": "2026-01-19T20:21:26.136Z"
-      },
-      {
-        "wet": 33,
-        "dry": 8,
-        "bio": 0,
-        "hazard": 6,
-        "total": 47,
-        "timestamp": "2026-01-19T20:21:36.140Z"
-      },
-      {
-        "wet": 33,
-        "dry": 9,
-        "bio": 0,
-        "hazard": 6,
-        "total": 48,
-        "timestamp": "2026-01-19T20:21:46.151Z"
-      },
-      {
-        "wet": 33,
-        "dry": 10,
-        "bio": 0,
-        "hazard": 7,
-        "total": 50,
-        "timestamp": "2026-01-19T20:21:56.164Z"
-      },
-      {
-        "wet": 33,
-        "dry": 11,
-        "bio": 0,
-        "hazard": 9,
-        "total": 53,
-        "timestamp": "2026-01-19T20:22:06.164Z"
-      },
-      {
-        "wet": 35,
-        "dry": 12,
-        "bio": 0,
-        "hazard": 11,
-        "total": 58,
-        "timestamp": "2026-01-19T20:22:16.169Z"
-      },
-      {
-        "wet": 35,
-        "dry": 13,
-        "bio": 0,
-        "hazard": 12,
-        "total": 60,
-        "timestamp": "2026-01-19T20:22:26.183Z"
-      },
-      {
-        "wet": 38,
-        "dry": 15,
-        "bio": 0,
-        "hazard": 13,
-        "total": 66,
-        "timestamp": "2026-01-19T20:22:36.187Z"
-      },
-      {
-        "wet": 38,
-        "dry": 17,
-        "bio": 0,
-        "hazard": 15,
-        "total": 70,
-        "timestamp": "2026-01-19T20:22:46.191Z"
-      },
-      {
-        "wet": 39,
-        "dry": 18,
-        "bio": 0,
-        "hazard": 15,
-        "total": 72,
-        "timestamp": "2026-01-19T20:22:56.192Z"
-      },
-      {
-        "wet": 40,
-        "dry": 20,
-        "bio": 0,
-        "hazard": 16,
-        "total": 76,
-        "timestamp": "2026-01-19T20:27:03.410Z"
-      },
-      {
-        "wet": 41,
-        "dry": 20,
-        "bio": 0,
-        "hazard": 17,
-        "total": 78,
-        "timestamp": "2026-01-19T20:27:13.421Z"
-      },
-      {
-        "wet": 41,
-        "dry": 20,
-        "bio": 0,
-        "hazard": 17,
-        "total": 78,
-        "timestamp": "2026-01-19T20:27:23.426Z"
-      },
-      {
-        "wet": 41,
-        "dry": 23,
-        "bio": 0,
-        "hazard": 19,
-        "total": 83,
-        "timestamp": "2026-01-19T20:27:33.428Z"
-      },
-      {
-        "wet": 42,
-        "dry": 24,
-        "bio": 0,
-        "hazard": 20,
-        "total": 86,
-        "timestamp": "2026-01-19T20:27:43.442Z"
-      },
-      {
-        "wet": 43,
-        "dry": 25,
-        "bio": 0,
-        "hazard": 22,
-        "total": 90,
-        "timestamp": "2026-01-19T20:27:53.448Z"
-      },
-      {
-        "wet": 44,
-        "dry": 28,
-        "bio": 0,
-        "hazard": 22,
-        "total": 94,
-        "timestamp": "2026-01-19T20:28:03.456Z"
-      },
-      {
-        "wet": 44,
-        "dry": 28,
-        "bio": 0,
-        "hazard": 22,
-        "total": 94,
-        "timestamp": "2026-01-19T20:28:13.458Z"
-      },
-      {
-        "wet": 44,
-        "dry": 29,
-        "bio": 0,
-        "hazard": 22,
-        "total": 95,
-        "timestamp": "2026-01-19T20:28:23.458Z"
-      },
-      {
-        "wet": 45,
-        "dry": 30,
-        "bio": 0,
-        "hazard": 23,
-        "total": 98,
-        "timestamp": "2026-01-19T20:28:33.468Z"
-      },
-      {
-        "wet": 47,
-        "dry": 31,
-        "bio": 0,
-        "hazard": 25,
-        "total": 103,
-        "timestamp": "2026-01-19T20:28:43.473Z"
-      },
-      {
-        "wet": 48,
-        "dry": 32,
-        "bio": 0,
-        "hazard": 25,
-        "total": 105,
-        "timestamp": "2026-01-19T20:28:53.484Z"
-      },
-      {
-        "wet": 49,
-        "dry": 36,
-        "bio": 0,
-        "hazard": 25,
-        "total": 110,
-        "timestamp": "2026-01-19T20:29:03.486Z"
-      },
-      {
         "wet": 49,
         "dry": 37,
         "bio": 0,
@@ -173381,6 +173165,414 @@
         "hazard": 0,
         "total": 0,
         "timestamp": "2026-01-20T18:18:50.232Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:19:00.241Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:19:10.246Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:19:20.256Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:19:30.263Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:19:40.268Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:19:50.272Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:20:00.283Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:20:10.284Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:20:20.290Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:20:30.295Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:20:40.304Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:20:50.313Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:21:00.320Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:21:10.331Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:21:20.342Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:21:30.348Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:21:40.354Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:21:50.362Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:22:00.368Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:22:10.373Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:22:20.387Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:22:30.387Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:22:40.389Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:22:50.393Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:23:00.402Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:23:10.412Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:23:20.418Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:23:30.420Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:23:40.425Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:23:50.432Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:24:00.435Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:24:10.448Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:24:20.452Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:24:30.465Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:24:40.468Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:24:50.481Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:25:00.490Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:25:10.500Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:25:20.502Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:25:30.507Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:25:40.514Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:25:50.523Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:26:00.525Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:26:10.526Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:26:20.537Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:26:30.544Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:26:40.548Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:26:50.553Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:27:00.563Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:27:10.571Z"
+      },
+      {
+        "wet": 0,
+        "dry": 0,
+        "bio": 0,
+        "hazard": 0,
+        "total": 0,
+        "timestamp": "2026-01-20T18:27:20.579Z"
       }
     ]
   }

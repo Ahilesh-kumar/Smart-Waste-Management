@@ -16,7 +16,11 @@ import AnalyticsDetailModal from './components/AnalyticsDetailModal';
 import HistorySlider from './components/HistorySlider';
 import { AnalyticsDeckWidget } from './widgets/AnalyticsDeckWidget';
 
-const socket = io('http://localhost:3001');
+// Socket connection - auto-detect environment
+const SOCKET_URL = import.meta.env.PROD
+  ? window.location.origin  // In production, use same host
+  : 'http://localhost:3001'; // In development, use local backend
+const socket = io(SOCKET_URL);
 
 // --- Graph Enhancement Components ---
 // Premium 2-Color Theme: Slate + Teal
