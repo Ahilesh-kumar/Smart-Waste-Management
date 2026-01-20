@@ -1414,22 +1414,27 @@ function App() {
         // HYSTERESIS logic:
         // Turn ON only when very dark (< 40)
         // Turn OFF only when very bright (> 120) - torch light alone won't reach this
+        // Build URL with proper protocol (same as manual toggleTorch)
+        const baseUrl = camUrl.startsWith('http') ? camUrl : `http://${camUrl}`;
+
         if (avgBrightness < DARK_THRESHOLD && !isTorchOn) {
           // Too dark - turn on torch
-          fetch(`${camUrl}/enabletorch`, { mode: 'no-cors' })
+          fetch(`${baseUrl}/enabletorch`, { mode: 'no-cors' })
             .then(() => {
               setIsTorchOn(true);
               autoTorchCooldownRef.current = Date.now();
               addToast('🔦 Auto-torch ON (low light detected)', 'info');
+              console.log('Auto-torch: Turned ON (brightness:', avgBrightness.toFixed(1), ')');
             })
             .catch(err => console.error('Auto-torch error:', err));
         } else if (avgBrightness > BRIGHT_THRESHOLD && isTorchOn) {
           // Very bright (external light source) - safe to turn off torch
-          fetch(`${camUrl}/disabletorch`, { mode: 'no-cors' })
+          fetch(`${baseUrl}/disabletorch`, { mode: 'no-cors' })
             .then(() => {
               setIsTorchOn(false);
               autoTorchCooldownRef.current = Date.now();
               addToast('🔦 Auto-torch OFF (sufficient ambient light)', 'info');
+              console.log('Auto-torch: Turned OFF (brightness:', avgBrightness.toFixed(1), ')');
             })
             .catch(err => console.error('Auto-torch error:', err));
         }
