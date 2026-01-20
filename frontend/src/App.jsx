@@ -261,6 +261,11 @@ function App() {
     return () => clearInterval(interval);
   }, [isAutoTheme]);
 
+  // Save theme to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
   // Save auto theme preference
   useEffect(() => {
     localStorage.setItem('isAutoTheme', isAutoTheme.toString());
