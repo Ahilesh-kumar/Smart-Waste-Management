@@ -2355,14 +2355,17 @@ function App() {
                   <>
                     <img
                       id="live-feed-img"
-                      crossOrigin="anonymous"
                       src={camUrl.startsWith('http') ? `${camUrl}/video` : `http://${camUrl}/video`}
-                      alt="Live Feed - Check Console for Errors"
-                      className="w-full h-full object-contain transition-all duration-300"
+                      alt="Live Feed"
+                      className="w-full h-full object-contain"
                       style={{
-                        transform: `rotate(${rotation}deg) scale(${cameraZoom})`,
-                        filter: `brightness(${cameraBrightness}%)`
+                        transform: `rotate(${rotation}deg) scale(${cameraZoom}) translateZ(0)`,
+                        filter: cameraBrightness !== 100 ? `brightness(${cameraBrightness}%)` : 'none',
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden'
                       }}
+                      loading="eager"
+                      decoding="async"
                       onError={(e) => {
                         console.error("Camera Feed Error:", e);
                       }}
