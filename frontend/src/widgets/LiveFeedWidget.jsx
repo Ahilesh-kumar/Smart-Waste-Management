@@ -31,18 +31,27 @@ export const LiveFeedWidget = ({
 
     return (
         <div className="relative w-full h-full rounded-3xl overflow-hidden group border border-white/10 bg-black shadow-2xl">
-            {/* Live Feed Image */}
+            {/* Live Feed Image - Optimized for streaming performance */}
             {!hasFeedError ? (
                 <img
                     id="live-feed-img"
                     src={`http://${camUrl}/video`}
                     alt="Live Stream"
                     className={clsx(
-                        "w-full h-full object-cover transition-transform duration-500 will-change-transform",
-                        !isConnected && "grayscale opacity-50 blur-sm"
+                        "w-full h-full object-cover",
+                        !isConnected && "grayscale opacity-50"
                     )}
-                    style={{ transform: `rotate(${rotation}deg)` }}
+                    style={{
+                        transform: `rotate(${rotation}deg) translateZ(0)`,
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        // GPU acceleration for smooth streaming
+                        willChange: rotation !== 0 ? 'transform' : 'auto'
+                    }}
                     onError={() => setHasFeedError(true)}
+                    // Disable lazy loading for live stream
+                    loading="eager"
+                    decoding="async"
                 />
             ) : (
                 /* Enhanced Offline/Error State */
@@ -150,9 +159,15 @@ export const LiveFeedWidget = ({
                 </div>
             </div>
 
-            {/* AI Scanning Effect Overlay */}
-            <div className="absolute inset-0 pointer-events-none opacity-20 bg-[url('https://media.istockphoto.com/id/1191599813/vector/cyber-grid-and-scan-lines.jpg?s=612x612&w=0&k=20&c=6XyXkFkX9XyXkFkX9XyXkFkX9XyXkFkX9')] bg-cover mix-blend-overlay" />
-            <div className="absolute inset-0 pointer-events-none bg-gradient-radial from-transparent to-black/60" />
+            {/* AI Scanning Effect Overlay - CSS-based for performance */}
+            <div
+                className="absolute inset-0 pointer-events-none opacity-10 mix-blend-overlay"
+                style={{
+                    backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,255,0.03) 2px, rgba(0,255,255,0.03) 4px)',
+                    backgroundSize: '100% 4px'
+                }}
+            />
+            <div className="absolute inset-0 pointer-events-none bg-gradient-radial from-transparent to-black/40" />
         </div>
     );
 };
