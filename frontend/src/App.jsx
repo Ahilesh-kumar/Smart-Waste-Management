@@ -244,9 +244,15 @@ function App() {
   const [graphType, setGraphType] = useState('line');
   const [selectedBin, setSelectedBin] = useState(null);
 
-  // Auto Day/Night Theme Effect
+  // Auto Day/Night Theme Effect - only runs interval if isAutoTheme is true
+  // Does NOT change theme on initial page load - respects saved theme
+  const isAutoThemeMountedRef = useRef(false);
+
   useEffect(() => {
-    if (!isAutoTheme) return;
+    if (!isAutoTheme) {
+      isAutoThemeMountedRef.current = false;
+      return;
+    }
 
     const checkTimeAndSetTheme = () => {
       const hour = new Date().getHours();
@@ -255,8 +261,17 @@ function App() {
       setTheme(shouldBeDark ? 'dark' : 'light');
     };
 
-    checkTimeAndSetTheme();
-    // Check every minute
+    // Skip the initial check on first mount - only start the interval
+    // This prevents theme from changing immediately when page loads
+    if (!isAutoThemeMountedRef.current) {
+      isAutoThemeMountedRef.current = true;
+      // Only start the interval, don't run immediately
+    } else {
+      // If isAutoTheme was just toggled ON, run the check immediately
+      checkTimeAndSetTheme();
+    }
+
+    // Check every minute while auto-theme is enabled
     const interval = setInterval(checkTimeAndSetTheme, 60000);
     return () => clearInterval(interval);
   }, [isAutoTheme]);
