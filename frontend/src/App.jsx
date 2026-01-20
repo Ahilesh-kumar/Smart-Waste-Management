@@ -2796,19 +2796,31 @@ function App() {
 
             {/* Category Cards with Icons - Staggered Entrance */}
             <div className="grid grid-cols-4 gap-3 stagger-enter">
-              {/* Bio Card */}
+              {/* Dry Card (Bin 0) */}
               <div className={clsx(
-                "category-card category-card-bio card-animate",
+                "category-card category-card-dry card-animate",
                 theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
               )}>
-                <div className="category-icon category-icon-bio">
-                  <Recycle size={18} className="text-white" />
+                <div className="category-icon category-icon-dry">
+                  <Trash2 size={18} className="text-white" />
                 </div>
-                <div className="stat-label text-slate-400">Recyclable</div>
-                <AnimatedCounter value={processingCounts.recyclable} className="stat-number-sm text-slate-300" />
+                <div className="stat-label text-slate-400">Dry Waste</div>
+                <AnimatedCounter value={processingCounts.dry} className="stat-number-sm text-slate-300" />
               </div>
 
-              {/* Hazard Card */}
+              {/* Wet Card (Bin 1) */}
+              <div className={clsx(
+                "category-card category-card-wet card-animate",
+                theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
+              )}>
+                <div className="category-icon category-icon-wet">
+                  <Droplets size={18} className="text-white" />
+                </div>
+                <div className="stat-label text-slate-400">Wet Waste</div>
+                <AnimatedCounter value={processingCounts.wet} className="stat-number-sm text-slate-300" />
+              </div>
+
+              {/* Hazard Card (Bin 2) */}
               <div className={clsx(
                 "category-card category-card-hazard card-animate",
                 theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
@@ -2820,28 +2832,16 @@ function App() {
                 <AnimatedCounter value={processingCounts.hazardous} className="stat-number-sm text-slate-300" />
               </div>
 
-              {/* Wet Card */}
+              {/* Recyclable Card (Bin 3) */}
               <div className={clsx(
-                "category-card category-card-wet card-animate",
+                "category-card category-card-bio card-animate",
                 theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
               )}>
-                <div className="category-icon category-icon-wet">
-                  <Activity size={18} className="text-white" />
+                <div className="category-icon category-icon-bio">
+                  <Recycle size={18} className="text-white" />
                 </div>
-                <div className="stat-label text-slate-400">Wet Waste</div>
-                <AnimatedCounter value={processingCounts.wet} className="stat-number-sm text-slate-300" />
-              </div>
-
-              {/* Dry Card */}
-              <div className={clsx(
-                "category-card category-card-dry card-animate",
-                theme === 'dark' ? "bg-neutral-900/60 border-white/10" : "bg-white/80 border border-slate-200"
-              )}>
-                <div className="category-icon category-icon-dry">
-                  <Trash2 size={18} className="text-white" />
-                </div>
-                <div className="stat-label text-slate-400">Dry Waste</div>
-                <AnimatedCounter value={processingCounts.dry} className="stat-number-sm text-slate-300" />
+                <div className="stat-label text-slate-400">Recyclable</div>
+                <AnimatedCounter value={processingCounts.recyclable} className="stat-number-sm text-slate-300" />
               </div>
             </div>
 
