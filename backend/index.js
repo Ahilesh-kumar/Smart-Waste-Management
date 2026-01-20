@@ -4,11 +4,13 @@ const { Server } = require("socket.io");
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config();
 
-const logger = require('./services/logger');
-const { initSocket } = require('./services/socketService');
-const { startSimulation } = require('./services/simulationService');
+// Load dotenv safely
+try {
+    require('dotenv').config();
+} catch (e) {
+    console.log('dotenv not configured, using environment variables');
+}
 
 const app = express();
 app.use(cors());
@@ -32,6 +34,35 @@ const io = new Server(server, {
     }
 });
 
+// Load services with error handling
+let logger, initSocket, startSimulation;
+
+try {
+    logger = require('./services/logger');
+    console.log('Logger loaded successfully');
+} catch (e) {
+    console.error('Failed to load logger:', e.message);
+    logger = { info: console.log, error: console.error, debug: console.log, warn: console.warn };
+}
+
+try {
+    const socketService = require('./services/socketService');
+    initSocket = socketService.initSocket;
+    console.log('Socket service loaded successfully');
+} catch (e) {
+    console.error('Failed to load socket service:', e.message);
+    initSocket = () => () => { };
+}
+
+try {
+    const simService = require('./services/simulationService');
+    startSimulation = simService.startSimulation;
+    console.log('Simulation service loaded successfully');
+} catch (e) {
+    console.error('Failed to load simulation service:', e.message);
+    startSimulation = () => { };
+}
+
 // Initialize Socket Service
 const broadcastState = initSocket(io);
 
@@ -44,12 +75,24 @@ if (fs.existsSync(indexPath)) {
     app.get('*', (req, res) => {
         res.sendFile(indexPath);
     });
+    console.log('SPA fallback enabled');
 }
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, '0.0.0.0', () => {
-    logger.info(`Server running on port ${PORT}`);
     console.log(`Server running on http://0.0.0.0:${PORT}`);
+    if (logger && logger.info) {
+        logger.info(`Server running on port ${PORT}`);
+    }
+});
+
+// Error handling
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 // Graceful shutdown
