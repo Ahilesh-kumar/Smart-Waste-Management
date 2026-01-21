@@ -1,38 +1,43 @@
 @echo off
-TITLE Waste Management Launcher
+title Smart Waste Management System - Launcher
+echo ============================================
+echo   Smart Waste Management System Launcher
+echo ============================================
+echo.
 
-REM ============================================
-REM    CONFIG IS NOW IN config.json
-REM    Edit config.json to change camera IP
-REM ============================================
+:: Set the project directory
+cd /d "%~dp0"
 
-REM Read config from config.json using PowerShell
-for /f "delims=" %%i in ('powershell -Command "(Get-Content config.json | ConvertFrom-Json).camera.ip"') do set IP_CAM_IP=%%i
-for /f "delims=" %%i in ('powershell -Command "(Get-Content config.json | ConvertFrom-Json).camera.port"') do set IP_CAM_PORT=%%i
-SET IP_CAM_URL=http://%IP_CAM_IP%:%IP_CAM_PORT%/video
+:: Kill any existing processes on our ports
+echo [1/4] Cleaning up existing processes...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :3001') do taskkill /F /PID %%a 2>nul
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :5173') do taskkill /F /PID %%a 2>nul
+timeout /t 2 /nobreak >nul
 
-ECHO.
-ECHO ============================================
-ECHO    Smart Waste Management System
-ECHO ============================================
-ECHO    Camera IP: %IP_CAM_IP%:%IP_CAM_PORT%
-ECHO    (Edit config.json to change)
-ECHO ============================================
-ECHO.
+:: Start Backend
+echo [2/4] Starting Backend Server...
+start "Backend Server" cmd /k "cd /d %~dp0backend && node index.js"
+timeout /t 3 /nobreak >nul
 
-ECHO Starting Backend Server...
-start "Backend Server" cmd /k "cd backend && set IP_CAM_IP=%IP_CAM_IP% && set IP_CAM_PORT=%IP_CAM_PORT% && node index.js"
+:: Start Frontend
+echo [3/4] Starting Frontend Dev Server...
+start "Frontend Dev" cmd /k "cd /d %~dp0frontend && npm run dev"
+timeout /t 3 /nobreak >nul
 
-ECHO Starting Frontend Dashboard...
-start "Frontend Dashboard" cmd /k "cd frontend && npm run dev"
+:: Start AI Vision Processor
+echo [4/4] Starting AI Vision Processor...
+start "AI Vision" cmd /k "cd /d %~dp0 && python vision_processor.py"
 
-ECHO Starting AI Vision Processor...
-start "AI Vision Processor" cmd /k "set IP_CAM_URL=%IP_CAM_URL% && python vision_processor.py"
-
-ECHO.
-ECHO All Systems Launched!
-ECHO Camera configured at: %IP_CAM_URL%
-ECHO Please wait for the browser to open...
-timeout /t 5
-start http://localhost:5173
-EXIT
+echo.
+echo ============================================
+echo   All services started successfully!
+echo ============================================
+echo.
+echo   Backend:  http://localhost:3001
+echo   Frontend: http://localhost:5173
+echo   AI:       Running in separate window
+echo.
+echo   Close this window or press any key to exit.
+echo   (Services will keep running in their windows)
+echo ============================================
+pause >nul

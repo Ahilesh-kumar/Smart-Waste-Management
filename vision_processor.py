@@ -52,16 +52,29 @@ class CustomDepthwiseConv2D(DepthwiseConv2D):
         super().__init__(**kwargs)
 
 class VideoStream:
-    """Reading frames in a separate thread"""
+    """Reading frames in a separate thread with robust reconnection"""
     def __init__(self, src=0):
-        self.stream = cv2.VideoCapture(src)
         self.src = src
         self.stopped = False
         self.grabbed = False
         self.frame = None
+        self.stream = self._create_capture()
+        self.fail_count = 0
         
-        if self.stream.isOpened():
+        if self.stream and self.stream.isOpened():
              (self.grabbed, self.frame) = self.stream.read()
+    
+    def _create_capture(self):
+        """Create VideoCapture with optimized settings for IP cameras"""
+        cap = cv2.VideoCapture(self.src, cv2.CAP_FFMPEG)
+        if cap.isOpened():
+            # Increase buffer size for slow connections
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
+            # Set longer timeout (10 seconds)
+            cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 10000)
+            cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 10000)
+            print(f"✅ Camera connected: {self.src}")
+        return cap
     
     def start(self):
         threading.Thread(target=self.update, args=(), daemon=True).start()
@@ -69,27 +82,35 @@ class VideoStream:
 
     def update(self):
         while not self.stopped:
-            if not self.stream.isOpened():
+            if not self.stream or not self.stream.isOpened():
                 print(f"Stream disconnected, retrying {self.src}...")
-                self.stream.release()
-                time.sleep(2)
-                self.stream = cv2.VideoCapture(self.src)
+                if self.stream:
+                    self.stream.release()
+                time.sleep(3)  # Wait longer before retry
+                self.stream = self._create_capture()
                 continue
                 
             (grabbed, frame) = self.stream.read()
             if grabbed:
                 self.grabbed = grabbed
                 self.frame = frame
+                self.fail_count = 0  # Reset on success
             else:
-                # End of stream or error
-                pass
+                self.fail_count += 1
+                if self.fail_count > 30:  # ~3 seconds of failures
+                    print("Too many read failures, reconnecting...")
+                    self.stream.release()
+                    self.stream = None
+                    self.fail_count = 0
+                time.sleep(0.1)
 
     def read(self):
         return self.frame
 
     def stop(self):
         self.stopped = True
-        self.stream.release()
+        if self.stream:
+            self.stream.release()
 
 # --- MAIN CLASSIFIER CLASS ---
 
@@ -181,11 +202,12 @@ class WasteClassifier:
              if self.box_data:
                  cached_weight = self.estimate_weight(cached_class, self.box_data['w'], self.box_data['h'])
         
-        # 3. Emit Data (Display only - no counting)
+        # 3. Emit Data
         self.emit_realtime_data(cached_class, cached_conf, cached_label_id, cached_weight)
         
-        # NOTE: Sorting/counting is now handled by ESP32, not AI vision
-        # ESP32 sends 'item_sorted' events directly to backend
+        # 4. Handle sorting/counting when detection is confident and stable
+        if cached_conf > 60.0 and cached_class not in ["Scanning...", "Moving..."]:
+            self.handle_sorting(cached_class, cached_conf, cached_weight)
 
     def detect_motion(self, roi, width, height, margin_x, margin_y):
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
