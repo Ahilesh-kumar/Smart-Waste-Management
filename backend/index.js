@@ -32,10 +32,12 @@ const io = new Server(server, {
         origin: "*",
         methods: ["GET", "POST"]
     },
-    // Optimize for low latency
+    // Socket stability settings
     transports: ['websocket', 'polling'],
-    pingTimeout: 5000,
-    pingInterval: 2000
+    allowUpgrades: true,
+    pingTimeout: 30000,          // 30 seconds before considering disconnected
+    pingInterval: 10000,         // Ping every 10 seconds
+    connectTimeout: 10000        // 10 seconds to establish connection
 });
 
 // Load services with error handling

@@ -220,14 +220,10 @@ class WasteClassifier:
         # 3. Emit Data
         self.emit_realtime_data(cached_class, cached_conf, cached_label_id, cached_weight)
         
-        # Reset counter when object leaves the frame
-        if not self.object_present:
-            self.current_object_counted = False
-        
-        # 4. Handle sorting/counting when detection is confident, stable, and not yet counted
-        if cached_conf > 60.0 and cached_class not in ["Scanning...", "Moving..."] and not self.current_object_counted:
+        # 4. Handle sorting when detection is confident and stable
+        # Backend will handle cooldown to prevent duplicate counts
+        if cached_conf > 60.0 and cached_class not in ["Scanning...", "Moving..."]:
             self.handle_sorting(cached_class, cached_conf, cached_weight)
-            self.current_object_counted = True  # Mark as counted
 
     def detect_motion(self, roi, width, height, margin_x, margin_y):
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)

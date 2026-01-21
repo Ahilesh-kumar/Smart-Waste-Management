@@ -113,8 +113,20 @@ const initSocket = (io) => {
             });
         });
 
+        // Cooldown tracking for item_sorted - prevent duplicate counts
+        let lastSortTime = 0;
+        const SORT_COOLDOWN_MS = 5000; // 5 seconds between counts
+
         // --- EVENTS FROM ESP32 (Master) ---
         socket.on('item_sorted', (data) => {
+            const now = Date.now();
+
+            // Check cooldown - ignore if within 5 seconds of last count
+            if (now - lastSortTime < SORT_COOLDOWN_MS) {
+                console.log('[BACKEND] Ignoring item_sorted - cooldown active');
+                return;
+            }
+
             console.log('[BACKEND] Received item_sorted:', data);
             const typeIdx = parseInt(data.type);
             if (typeIdx >= 0 && typeIdx < 4) {
@@ -142,6 +154,9 @@ const initSocket = (io) => {
                     confidence: data.confidence || null
                 });
                 console.log('[BACKEND] Emitted esp_item_sorted to all clients');
+
+                // Update cooldown timer
+                lastSortTime = now;
             }
         });
 

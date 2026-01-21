@@ -15,11 +15,9 @@ try {
   console.log('[DEBUG] Root created, rendering App...');
 
   root.render(
-    <StrictMode>
-      <ErrorBoundary>
-        <App />
-      </ErrorBoundary>
-    </StrictMode>,
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>,
   );
 
   console.log('[DEBUG] Render called successfully');

@@ -21,12 +21,16 @@ const SOCKET_URL = import.meta.env.PROD
   ? window.location.origin  // In production, use same host
   : 'http://localhost:3001'; // In development, use local backend
 
-// Use websocket transport for instant communication (polling is slow)
+// Socket configuration for stability
 const socket = io(SOCKET_URL, {
-  transports: ['websocket'],  // Force websocket only - no polling
+  transports: ['websocket', 'polling'],  // Allow both, prefer websocket
+  upgrade: true,                          // Upgrade from polling to websocket
   reconnection: true,
-  reconnectionDelay: 1000,
-  timeout: 10000
+  reconnectionAttempts: Infinity,         // Keep trying to reconnect
+  reconnectionDelay: 500,                 // Start reconnecting after 500ms
+  reconnectionDelayMax: 2000,             // Max 2 second delay between attempts
+  timeout: 5000,                          // Connection timeout
+  forceNew: false
 });
 
 // --- Graph Enhancement Components ---
