@@ -115,12 +115,14 @@ const initSocket = (io) => {
 
         // --- EVENTS FROM ESP32 (Master) ---
         socket.on('item_sorted', (data) => {
+            console.log('[BACKEND] Received item_sorted:', data);
             const typeIdx = parseInt(data.type);
             if (typeIdx >= 0 && typeIdx < 4) {
                 const categoryMap = { 0: 'Dry Waste', 1: 'Wet Waste', 2: 'Hazardous', 3: 'Recyclable' };
                 const category = categoryMap[typeIdx];
 
                 logger.info(`[ESP32] Item sorted: ${category} (Bin ${typeIdx})`);
+                console.log(`[BACKEND] Broadcasting to frontend: ${category}`);
 
                 const state = StateStore.getState();
                 const bin = state.bins[typeIdx];
@@ -139,6 +141,7 @@ const initSocket = (io) => {
                     category: category,
                     confidence: data.confidence || null
                 });
+                console.log('[BACKEND] Emitted esp_item_sorted to all clients');
             }
         });
 

@@ -31,7 +31,11 @@ const io = new Server(server, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"]
-    }
+    },
+    // Optimize for low latency
+    transports: ['websocket', 'polling'],
+    pingTimeout: 5000,
+    pingInterval: 2000
 });
 
 // Load services with error handling

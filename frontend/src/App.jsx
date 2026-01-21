@@ -20,7 +20,14 @@ import { AnalyticsDeckWidget } from './widgets/AnalyticsDeckWidget';
 const SOCKET_URL = import.meta.env.PROD
   ? window.location.origin  // In production, use same host
   : 'http://localhost:3001'; // In development, use local backend
-const socket = io(SOCKET_URL);
+
+// Use websocket transport for instant communication (polling is slow)
+const socket = io(SOCKET_URL, {
+  transports: ['websocket'],  // Force websocket only - no polling
+  reconnection: true,
+  reconnectionDelay: 1000,
+  timeout: 10000
+});
 
 // --- Graph Enhancement Components ---
 // Premium 2-Color Theme: Slate + Teal

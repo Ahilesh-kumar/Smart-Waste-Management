@@ -151,11 +151,23 @@ class WasteClassifier:
 
         @self.sio.event
         def disconnect():
-            print("❌ Disconnected from Server")
+            print("❌ Disconnected from Server - Reconnecting...")
+            # Auto-reconnect in background thread
+            if not self.stopped:
+                threading.Thread(target=self._reconnect, daemon=True).start()
             
         @self.sio.event
         def connect_error(data):
             pass # Suppress noise
+    
+    def _reconnect(self):
+        """Background reconnection"""
+        time.sleep(2)
+        if not self.stopped and not self.sio.connected:
+            try:
+                self.sio.connect(Config.BACKEND_URL, transports=['websocket', 'polling'], wait_timeout=10)
+            except:
+                pass
 
     def connect_backend(self):
         while not self.stopped:

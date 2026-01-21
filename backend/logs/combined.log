@@ -1071,3 +1071,98 @@
 2026-01-21 12:24:38 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
 2026-01-21 12:24:40 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
 2026-01-21 12:24:45 [INFO]: User disconnected: mWDcvXUy7tOUQngXAAAJ
+2026-01-21 13:19:08 [INFO]: Server running on port 3001
+2026-01-21 13:19:21 [INFO]: User connected: iD7XLxkCjwpwM1nzAAAB
+2026-01-21 13:19:49 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:19:58 [INFO]: User disconnected: iD7XLxkCjwpwM1nzAAAB
+2026-01-21 13:19:58 [INFO]: User connected: G5460-1S7qCcZnYnAAAD
+2026-01-21 13:19:58 [INFO]: System Power: true
+2026-01-21 13:19:58 [INFO]: System Power: true
+2026-01-21 13:19:58 [INFO]: System Power: true
+2026-01-21 13:19:58 [INFO]: System Power: true
+2026-01-21 13:19:58 [INFO]: System Power: true
+2026-01-21 13:19:58 [INFO]: System Power: true
+2026-01-21 13:19:58 [INFO]: System Power: true
+2026-01-21 13:19:58 [INFO]: System Power: true
+2026-01-21 13:19:59 [INFO]: System Power: true
+2026-01-21 13:19:59 [INFO]: System Power: true
+2026-01-21 13:19:59 [INFO]: System Power: true
+2026-01-21 13:19:59 [INFO]: System Power: true
+2026-01-21 13:19:59 [INFO]: System Power: true
+2026-01-21 13:22:05 [INFO]: Server running on port 3001
+2026-01-21 13:22:08 [INFO]: User connected: 0Nb1kdZ89cpwcg-jAAAB
+2026-01-21 13:22:21 [INFO]: User connected: 4QUTFJ42WakUWoECAAAD
+2026-01-21 13:22:21 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:22:28 [INFO]: User disconnected: 0Nb1kdZ89cpwcg-jAAAB
+2026-01-21 13:22:29 [INFO]: User connected: n5_t2IIP0Sq-H4kyAAAF
+2026-01-21 13:22:38 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:22:42 [INFO]: [ESP32] Item sorted: Wet Waste (Bin 1)
+2026-01-21 13:22:46 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:23:02 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:23:05 [INFO]: [ESP32] Item sorted: Wet Waste (Bin 1)
+2026-01-21 13:23:47 [INFO]: Server running on port 3001
+2026-01-21 13:23:47 [INFO]: User connected: QMW_njXR9SWrf6P9AAAB
+2026-01-21 13:24:14 [INFO]: User disconnected: QMW_njXR9SWrf6P9AAAB
+2026-01-21 13:24:15 [INFO]: User connected: y8mpzR-fqkPIQu3CAAAD
+2026-01-21 13:24:28 [INFO]: System Power: true
+2026-01-21 13:24:42 [INFO]: User connected: KccXhsKKL6FScWDjAAAF
+2026-01-21 13:24:43 [INFO]: User connected: h1dCavHeYc5gu415AAAH
+2026-01-21 13:24:44 [INFO]: User disconnected: h1dCavHeYc5gu415AAAH
+2026-01-21 13:24:57 [INFO]: Server running on port 3001
+2026-01-21 13:24:57 [INFO]: User connected: R51zHUy3ZD5zMesKAAAB
+2026-01-21 13:24:57 [INFO]: User connected: O6eeBFISj0vGxqwpAAAD
+2026-01-21 13:25:00 [INFO]: User disconnected: R51zHUy3ZD5zMesKAAAB
+2026-01-21 13:25:01 [INFO]: User connected: Gjhi5vI8SBWq_wenAAAF
+2026-01-21 13:25:08 [INFO]: System Power: true
+2026-01-21 13:25:10 [INFO]: User connected: Uqm3-AAeHTIjksbVAAAH
+2026-01-21 13:25:13 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:25:22 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:25:24 [INFO]: [ESP32] Item sorted: Wet Waste (Bin 1)
+2026-01-21 13:25:26 [INFO]: [ESP32] Item sorted: Wet Waste (Bin 1)
+2026-01-21 13:25:33 [INFO]: [ESP32] Item sorted: Wet Waste (Bin 1)
+2026-01-21 13:25:35 [INFO]: User disconnected: O6eeBFISj0vGxqwpAAAD
+2026-01-21 13:25:35 [INFO]: User disconnected: Gjhi5vI8SBWq_wenAAAF
+2026-01-21 13:25:44 [INFO]: [ESP32] Item sorted: Wet Waste (Bin 1)
+2026-01-21 13:25:49 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:25:52 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:25:56 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:26:03 [INFO]: [ESP32] Item sorted: Hazardous (Bin 2)
+2026-01-21 13:26:03 [INFO]: User disconnected: Uqm3-AAeHTIjksbVAAAH
+2026-01-21 13:26:03 [INFO]: User connected: UPAgJYEldLqmwK6RAAAO
+2026-01-21 13:26:07 [INFO]: User connected: s66u8W5V6gqweV1pAAAQ
+2026-01-21 13:26:40 [INFO]: User disconnected: s66u8W5V6gqweV1pAAAQ
+2026-01-21 13:26:40 [INFO]: User connected: 5XW5cKbQlZYIsAseAAAS
+2026-01-21 13:27:02 [INFO]: System Power: false
+2026-01-21 13:27:03 [INFO]: System Power: true
+2026-01-21 13:30:03 [INFO]: Server running on port 3001
+2026-01-21 13:30:03 [INFO]: User connected: HWwSjz8qgxTYaTFLAAAB
+2026-01-21 13:30:03 [INFO]: User connected: VvhWqTakeHb3YFW9AAAD
+2026-01-21 13:30:57 [INFO]: User connected: fjbi_0VDFNSyIvwzAAAF
+2026-01-21 13:30:57 [INFO]: User connected: 7HFAjtmYSv8CipwRAAAH
+2026-01-21 13:31:08 [INFO]: Server running on port 3001
+2026-01-21 13:31:08 [INFO]: User connected: 26pf_ZgsASKVim70AAAB
+2026-01-21 13:31:08 [INFO]: User connected: CP8MG8wXlEz_tAe3AAAD
+2026-01-21 13:31:08 [INFO]: User connected: T8d3pSHIY6ycNloDAAAF
+2026-01-21 13:31:10 [INFO]: User connected: mQo4H8MgQ7fKABvtAAAH
+2026-01-21 13:31:20 [INFO]: User disconnected: 26pf_ZgsASKVim70AAAB
+2026-01-21 13:31:21 [INFO]: User connected: PRL-IK8-MqwsrHOZAAAJ
+2026-01-21 13:31:28 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:31:30 [INFO]: User connected: aVW2njTCzcmJ-MTGAAAL
+2026-01-21 13:31:31 [INFO]: System Power: true
+2026-01-21 13:31:35 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:31:40 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:31:51 [INFO]: [ESP32] Item sorted: Dry Waste (Bin 0)
+2026-01-21 13:32:12 [INFO]: [ESP32] Item sorted: Wet Waste (Bin 1)
+2026-01-21 13:32:17 [INFO]: [ESP32] Item sorted: Wet Waste (Bin 1)
+2026-01-21 13:32:19 [INFO]: User disconnected: CP8MG8wXlEz_tAe3AAAD
+2026-01-21 13:32:19 [INFO]: User disconnected: T8d3pSHIY6ycNloDAAAF
+2026-01-21 13:32:19 [INFO]: User disconnected: mQo4H8MgQ7fKABvtAAAH
+2026-01-21 13:32:19 [INFO]: User disconnected: aVW2njTCzcmJ-MTGAAAL
+2026-01-21 13:32:19 [INFO]: User connected: esnv_xN4O6HPebJqAAAY
+2026-01-21 13:32:19 [INFO]: User connected: 05d6ce0r0B2_H1PEAAAb
+2026-01-21 13:32:19 [INFO]: User connected: Mdx4Qbm-EfAeTlYOAAAc
+2026-01-21 13:32:19 [INFO]: User connected: akl7wg1GK18NySxMAAAd
+2026-01-21 13:32:24 [INFO]: User disconnected: PRL-IK8-MqwsrHOZAAAJ
+2026-01-21 13:34:17 [INFO]: Server running on port 3001
+2026-01-21 13:34:19 [INFO]: User connected: VVX9JmprBWrpCM1mAAAB
+2026-01-21 13:34:30 [INFO]: User connected: Vwlno6asKv6ZwcXVAAAD
