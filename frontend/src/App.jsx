@@ -195,22 +195,10 @@ function App() {
   // Load Camera URL from Settings or Default
   const [camUrl, setCamUrl] = useState(() => {
     const saved = localStorage.getItem('waste_settings');
-    return saved ? JSON.parse(saved).camUrl : '192.0.0.4:8080';
+    return saved ? JSON.parse(saved).camUrl : '10.50.211.74:8080';
   });
 
-  // Migration: Auto-update old IP to new one
-  useEffect(() => {
-    const saved = localStorage.getItem('waste_settings');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.camUrl.includes('10.205.209.232') || parsed.camUrl.includes('192.168.1.3') || parsed.camUrl.includes('10.63.6.215') || parsed.camUrl.includes('192.168.128.114') || parsed.camUrl.includes('10.50.211.74') || parsed.camUrl.includes('192.168.128.206')) {
-        console.log("Migrating old IP to new default...");
-        const newSettings = { ...parsed, camUrl: '192.0.0.4:8080' };
-        localStorage.setItem('waste_settings', JSON.stringify(newSettings));
-        setCamUrl('192.0.0.4:8080');
-      }
-    }
-  }, []);
+  // NOTE: Migration script removed - camera IP should persist from user input
 
   const [hourlyData, setHourlyData] = useState([]); // Hourly stacked bar data
   const [showComparisonMode, setShowComparisonMode] = useState(false); // Toggle for comparison view
@@ -925,6 +913,29 @@ function App() {
       if (now - (window.lastAiUpdate || 0) > 33) {
         setAiData(data);
         window.lastAiUpdate = now;
+
+        // Bounding Box Logic: Show only when confidence > 50%
+        if (data.confidence > 50) {
+          // Set bounding box position (centered, since AI doesn't provide coordinates)
+          setBoxPos({ x: 25, y: 20, w: 50, h: 60 });
+
+          // Clear any existing hide timer
+          if (hideTimerRef.current) {
+            clearTimeout(hideTimerRef.current);
+          }
+
+          // Auto-hide after 4 seconds of no new detection
+          hideTimerRef.current = setTimeout(() => {
+            setBoxPos(null);
+          }, 4000);
+        } else {
+          // If confidence drops below 50%, hide the box
+          setBoxPos(null);
+          if (hideTimerRef.current) {
+            clearTimeout(hideTimerRef.current);
+            hideTimerRef.current = null;
+          }
+        }
       }
     });
 

@@ -38,8 +38,8 @@ const initSocket = (io) => {
         socket.emit('system_state', StateStore.getState());
 
         // Send camera configuration (from config.json, with env var fallback)
-        const camIp = process.env.IP_CAM_IP || sharedConfig.camera?.ip || '192.0.0.4';
-        const camPort = process.env.IP_CAM_PORT || sharedConfig.camera?.port || '8080';
+        const camIp = (process.env.IP_CAM_IP || sharedConfig.camera?.ip || '192.0.0.4').trim();
+        const camPort = (process.env.IP_CAM_PORT || sharedConfig.camera?.port || '8080').trim();
         socket.emit('camera_config', {
             ip: camIp,
             port: camPort,

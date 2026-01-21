@@ -136,10 +136,10 @@ class WasteClassifier:
     def connect_backend(self):
         while not self.stopped:
             try:
-                self.sio.connect(Config.BACKEND_URL)
+                self.sio.connect(Config.BACKEND_URL, transports=['websocket', 'polling'], wait_timeout=10)
                 break
-            except Exception:
-                print(f"Connecting to Backend at {Config.BACKEND_URL}...")
+            except Exception as e:
+                print(f"Connecting to Backend at {Config.BACKEND_URL}... ({e})")
                 time.sleep(3)
 
     def load_model_data(self):
