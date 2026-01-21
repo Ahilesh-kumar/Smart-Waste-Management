@@ -21,8 +21,8 @@
         "itemsCount": 7,
         "isSimulated": false,
         "health": {
-          "battery": 80.7,
-          "signal": 95,
+          "battery": 80.6,
+          "signal": 94,
           "motor": 100,
           "sensor": 100,
           "clean": 92.1
@@ -37,8 +37,8 @@
         "itemsCount": 0,
         "isSimulated": true,
         "health": {
-          "battery": 76.4,
-          "signal": 95,
+          "battery": 76.3,
+          "signal": 96,
           "motor": 98,
           "sensor": 99,
           "clean": 86.7
@@ -54,10 +54,10 @@
         "isSimulated": false,
         "health": {
           "battery": 81.4,
-          "signal": 92,
+          "signal": 98,
           "motor": 100,
           "sensor": 100,
-          "clean": 91.9
+          "clean": 91.6
         }
       },
       {
@@ -69,11 +69,11 @@
         "itemsCount": 0,
         "isSimulated": true,
         "health": {
-          "battery": 66.1,
-          "signal": 92,
+          "battery": 65.9,
+          "signal": 93,
           "motor": 95,
           "sensor": 97,
-          "clean": 73.2
+          "clean": 73
         }
       }
     ]
@@ -751772,94 +751772,6 @@
     "sessions": [],
     "timeSeriesLog": [
       {
-        "wet": 149,
-        "dry": 141,
-        "bio": 135,
-        "hazard": 144,
-        "total": 569,
-        "timestamp": "2026-01-20T16:55:04.167Z"
-      },
-      {
-        "wet": 151,
-        "dry": 141,
-        "bio": 136,
-        "hazard": 145,
-        "total": 573,
-        "timestamp": "2026-01-20T16:55:14.168Z"
-      },
-      {
-        "wet": 153,
-        "dry": 142,
-        "bio": 139,
-        "hazard": 147,
-        "total": 581,
-        "timestamp": "2026-01-20T16:55:24.169Z"
-      },
-      {
-        "wet": 154,
-        "dry": 143,
-        "bio": 139,
-        "hazard": 150,
-        "total": 586,
-        "timestamp": "2026-01-20T16:55:34.175Z"
-      },
-      {
-        "wet": 155,
-        "dry": 144,
-        "bio": 139,
-        "hazard": 151,
-        "total": 589,
-        "timestamp": "2026-01-20T16:55:44.176Z"
-      },
-      {
-        "wet": 157,
-        "dry": 145,
-        "bio": 141,
-        "hazard": 152,
-        "total": 595,
-        "timestamp": "2026-01-20T16:55:54.187Z"
-      },
-      {
-        "wet": 158,
-        "dry": 147,
-        "bio": 142,
-        "hazard": 153,
-        "total": 600,
-        "timestamp": "2026-01-20T16:56:04.191Z"
-      },
-      {
-        "wet": 158,
-        "dry": 147,
-        "bio": 143,
-        "hazard": 154,
-        "total": 602,
-        "timestamp": "2026-01-20T16:56:14.203Z"
-      },
-      {
-        "wet": 159,
-        "dry": 149,
-        "bio": 144,
-        "hazard": 155,
-        "total": 607,
-        "timestamp": "2026-01-20T16:56:24.205Z"
-      },
-      {
-        "wet": 159,
-        "dry": 152,
-        "bio": 146,
-        "hazard": 156,
-        "total": 613,
-        "timestamp": "2026-01-20T16:56:34.218Z"
-      },
-      {
-        "wet": 159,
-        "dry": 153,
-        "bio": 146,
-        "hazard": 157,
-        "total": 615,
-        "timestamp": "2026-01-20T16:56:44.229Z"
-      },
-      {
         "wet": 161,
         "dry": 153,
         "bio": 147,
@@ -755770,6 +755682,94 @@
         "dry": 0,
         "total": 7,
         "timestamp": "2026-01-21T06:55:17.467Z"
+      },
+      {
+        "recyclable": 7,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 7,
+        "timestamp": "2026-01-21T06:55:27.481Z"
+      },
+      {
+        "recyclable": 7,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 7,
+        "timestamp": "2026-01-21T06:55:37.485Z"
+      },
+      {
+        "recyclable": 7,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 7,
+        "timestamp": "2026-01-21T06:55:47.494Z"
+      },
+      {
+        "recyclable": 7,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 7,
+        "timestamp": "2026-01-21T06:55:57.504Z"
+      },
+      {
+        "recyclable": 7,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 7,
+        "timestamp": "2026-01-21T06:56:07.513Z"
+      },
+      {
+        "recyclable": 7,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 7,
+        "timestamp": "2026-01-21T06:56:17.526Z"
+      },
+      {
+        "recyclable": 7,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 7,
+        "timestamp": "2026-01-21T06:56:27.532Z"
+      },
+      {
+        "recyclable": 7,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 7,
+        "timestamp": "2026-01-21T06:56:37.537Z"
+      },
+      {
+        "recyclable": 7,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 7,
+        "timestamp": "2026-01-21T06:56:47.542Z"
+      },
+      {
+        "recyclable": 7,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 7,
+        "timestamp": "2026-01-21T06:56:57.542Z"
+      },
+      {
+        "recyclable": 7,
+        "wet": 0,
+        "hazardous": 0,
+        "dry": 0,
+        "total": 7,
+        "timestamp": "2026-01-21T06:57:07.546Z"
       }
     ]
   }

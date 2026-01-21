@@ -133,6 +133,9 @@ class WasteClassifier:
         # Box Smoothing
         self.prev_box = None
         
+        # Object counting - ensure each object counted only once
+        self.current_object_counted = False
+        
         # Analytics
         self.hourly_detections = {h: 0 for h in range(24)}
         self.bin_fill_levels = {0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0}
@@ -205,9 +208,14 @@ class WasteClassifier:
         # 3. Emit Data
         self.emit_realtime_data(cached_class, cached_conf, cached_label_id, cached_weight)
         
-        # 4. Handle sorting/counting when detection is confident and stable
-        if cached_conf > 60.0 and cached_class not in ["Scanning...", "Moving..."]:
+        # Reset counter when object leaves the frame
+        if not self.object_present:
+            self.current_object_counted = False
+        
+        # 4. Handle sorting/counting when detection is confident, stable, and not yet counted
+        if cached_conf > 60.0 and cached_class not in ["Scanning...", "Moving..."] and not self.current_object_counted:
             self.handle_sorting(cached_class, cached_conf, cached_weight)
+            self.current_object_counted = True  # Mark as counted
 
     def detect_motion(self, roi, width, height, margin_x, margin_y):
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
